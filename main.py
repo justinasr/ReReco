@@ -2,7 +2,6 @@ from api.campaign_api import CreateCampaignAPI, DeleteCampaignAPI, UpdateCampaig
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.search_api import SearchAPI
 import logging
-import json
 from flask_restful import Api
 from flask import Flask, render_template
 from flask_cors import CORS
@@ -18,7 +17,7 @@ CORS(app,
      allow_headers=["Content-Type",
                     "Authorization",
                     "Access-Control-Allow-Credentials"],
-    supports_credentials=True)
+     supports_credentials=True)
 
 api.add_resource(SearchAPI, '/api/search')
 

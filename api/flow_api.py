@@ -23,7 +23,7 @@ class CreateFlowAPI(APIBase):
         """
         data = flask.request.data
         flow_json = json.loads(data.decode('utf-8'))
-        prepid = flow_controller.create_flow(flow_json)
+        prepid = flow_controller.create(flow_json)
         return self.output_text({'response': prepid, 'success': True, 'message': ''})
 
 
@@ -40,7 +40,7 @@ class DeleteFlowAPI(APIBase):
         """
         data = flask.request.data
         flow_json = json.loads(data.decode('utf-8'))
-        prepid = flow_controller.delete_flow(flow_json)
+        prepid = flow_controller.delete(flow_json)
         return self.output_text({'response': prepid, 'success': True, 'message': ''})
 
 
@@ -57,7 +57,7 @@ class UpdateFlowAPI(APIBase):
         """
         data = flask.request.data
         flow_json = json.loads(data.decode('utf-8'))
-        prepid = flow_controller.update_flow(flow_json)
+        prepid = flow_controller.update(flow_json)
         return self.output_text({'response': prepid, 'success': True, 'message': ''})
 
 
@@ -71,5 +71,5 @@ class GetFlowAPI(APIBase):
         """
         Get a single flow with given prepid
         """
-        flow = flow_controller.get_flow(prepid)
+        flow = flow_controller.get(prepid)
         return self.output_text({'response': flow.json(), 'success': True, 'message': ''})

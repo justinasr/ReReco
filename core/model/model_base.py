@@ -32,10 +32,18 @@ class ModelBase():
             # Just to show errors if any incorrect keys are passed
             bad_keys = set(json_input.keys()) - keys - (set(['_id', '_rev']))
             if bad_keys:
-                raise Exception('Invalid key: %s' % (', '.join(bad_keys)))
+                raise Exception(f'Invalid key: {", ".join(bad_keys)}')
 
         for key in keys:
-            if key not in json_input:
+            if key == '_id':
+                # Do not do anything for _id, it will be set
+                # together with prepid
+                continue
+            elif key == 'prepid':
+                # Special case for prepid
+                self.__json['prepid'] = self.check_attribute('prepid', json_input[key])
+                self.__json['_id'] = self.__json['prepid']
+            elif key not in json_input:
                 self.__json[key] = deepcopy(self.__schema[key])
             else:
                 self.set(key, json_input[key])
@@ -55,30 +63,21 @@ class ModelBase():
             raise Exception('Attribute name not specified')
 
         if attribute not in self.__schema:
-            raise Exception('Attribute %s could not be found in %s schema' % (attribute,
-                                                                              self.__class_name))
+            raise Exception(f'Attribute {attribute} could not be found in {self.__class_name} schema')
+
+        if attribute == 'prepid' or attribute == '_id':
+            raise Exception('Changing prepid or _id is not allowed')
 
         if not isinstance(value, type(self.__schema[attribute])):
             expected_type = type(self.__schema[attribute]).__name__
             got_type = type(value).__name__
-            raise Exception('Object %s attribute %s is wrong type. Expected %s, got %s' % (prepid,
-                                                                                           attribute,
-                                                                                           expected_type,
-                                                                                           got_type))
+            raise Exception(f'Object {prepid} attribute {attribute} is wrong type. Expected {expected_type}, got {got_type}')
 
         if self.check_attribute(attribute, value):
-            if attribute == 'prepid':
-                self.__json['_id'] = value
-            elif attribute == '_id':
-                self.__json['prepid'] = value
-
             self.__json[attribute] = value
             return self.__json
         else:
-            raise Exception('Invalid value %s for key %s for object %s of type %s' % (value,
-                                                                                      attribute,
-                                                                                      prepid,
-                                                                                      self.__class_name))
+            raise Exception(f'Invalid value {value} for key {attribute} for object {prepid} of type {self.__class_name}')
 
     def get(self, attribute):
         """
@@ -88,8 +87,7 @@ class ModelBase():
             raise Exception('Attribute name not specified')
 
         if attribute not in self.__schema:
-            raise Exception('Attribute %s does not exist in %s schema' % (attribute,
-                                                                          self.__class_name))
+            raise Exception(f'Attribute {attribute} does not exist in {self.__class_name} schema')
 
         return self.__json[attribute]
 
@@ -127,7 +125,6 @@ class ModelBase():
         """
         return deepcopy(self.__json)
 
-
     @classmethod
     def schema(cls):
         """
@@ -136,15 +133,18 @@ class ModelBase():
         return deepcopy(cls.__schema)
 
     def __str__(self):
-        return 'Object ID: %s\nType: %s\nDict: %s\n' % (self.get_prepid(),
-                                                        self.__class_name,
-                                                        json.dumps(self.__json,
-                                                                   indent=4,
-                                                                   sort_keys=True))
+        """
+        String representation of the object
+        """
+        return f'Object ID: {self.get_prepid()}\nType: {self.__class_name}\nDict: {json.dumps(self.__json, indent=4, sort_keys=True)}\n'
 
-    def add_history(self, action, value, user):
+    def add_history(self, action, value, user, timestamp=None):
+        """
+        Add entry to object's history
+        If no time is specified, use current time
+        """
         history = self.get('history')
         history.append({'action': action,
-                        'time': int(time.time()),
+                        'time': int(timestamp if timestamp else time.time()),
                         'value': value})
         self.set('history', history)

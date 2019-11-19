@@ -6,93 +6,34 @@ from core.database.database import Database
 class FlowController(ControllerBase):
     def __init__(self):
         ControllerBase.__init__(self)
+        self.database_name = 'flows'
+        self.model_class = Flow
 
-    def __check_flow(self, flow):
+    def check_for_create(self, obj):
         """
-        Check if all attributes have valid relations and values
-        This does not overlap with checks done by object setter
+        Perform checks on object before adding it to database
         """
-        self.logger.debug('Checking flow %s', flow.get_prepid())
+        self.logger.debug('Checking flow %s', obj.get_prepid())
         campaign_db = Database('campaigns')
-        for source_campaign_prepid in flow.get('source_campaigns'):
+        for source_campaign_prepid in obj.get('source_campaigns'):
             if not campaign_db.document_exists(source_campaign_prepid):
                 raise Exception('"%s" does not exist' % (source_campaign_prepid))
 
-        target_campaign_prepid = flow.get('target_campaign')
+        target_campaign_prepid = obj.get('target_campaign')
         if target_campaign_prepid:
             if not campaign_db.document_exists(target_campaign_prepid):
                 raise Exception('"%s" does not exist' % (target_campaign_prepid))
 
         return True
 
-
-    def create_flow(self, flow_json):
+    def check_for_update(self, old_obj, new_obj):
         """
-        Create a new flow
+        Compare existing and updated objects to see if update is valid
         """
-        flow = Flow(json_input=flow_json)
-        prepid = flow.get_prepid()
-
-        flows_db = Database('flows')
-        if flows_db.get(prepid):
-            raise Exception('Flow with prepid "%s" already exists' % (prepid))
-
-        with self.locker.get_lock(prepid):
-            self.logger.info('Will create %s' % (prepid))
-            if self.__check_flow(flow):
-                flows_db.save(flow.json())
-                return flow.json()
-            else:
-                self.logger.error('Error while checking flow %s', prepid)
-                return None
-
-    def delete_flow(self, flow_json):
-        """
-        Delete a flow
-        """
-        flow = Flow(json_input=flow_json)
-        prepid = flow.get_prepid()
-
-        flows_db = Database('flows')
-        if not flows_db.get(prepid):
-            raise Exception('Flow with prepid does not "%s" exist' % (prepid))
-
-        flows_db.delete_object(flow.json())
         return True
 
-    def update_flow(self, flow_json):
+    def check_for_delete(self, obj):
         """
-        Update a flow with given json
+        Perform checks on object before deleting it from database
         """
-        new_flow = Flow(json_input=flow_json)
-        prepid = new_flow.get_prepid()
-        with self.locker.get_lock(prepid):
-            self.logger.info('Will edit %s' % (prepid))
-            flows_db = Database('flows')
-            old_flow = flows_db.get(prepid)
-            if not old_flow:
-                raise Exception('Flow with prepid does not "%s" exist' % (prepid))
-
-            old_flow = Flow(json_input=old_flow)
-            # Move over history, so it could not be overwritten
-            new_flow.set('history', old_flow.get('history'))
-            new_flow.set('_rev', old_flow.get('_rev'))
-            changed_values = self.get_changed_values(old_flow, new_flow)
-            new_flow.add_history('update', changed_values, None)
-            if self.__check_flow(new_flow):
-                flows_db.save(new_flow.json())
-                return new_flow.json()
-            else:
-                self.logger.error('Error while checking flow %s', prepid)
-                return None
-
-    def get_flow(self, flow_prepid):
-        """
-        Return a single flow if it exists in database
-        """
-        flows_db = Database('flows')
-        flow_json = flows_db.get(flow_prepid)
-        if flow_json:
-            return Flow(json_input=flow_json)
-        else:
-            return None
+        return True

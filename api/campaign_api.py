@@ -23,7 +23,7 @@ class CreateCampaignAPI(APIBase):
         """
         data = flask.request.data
         campaign_json = json.loads(data.decode('utf-8'))
-        prepid = campaign_controller.create_campaign(campaign_json)
+        prepid = campaign_controller.create(campaign_json)
         return self.output_text({'response': prepid, 'success': True, 'message': ''})
 
 
@@ -40,7 +40,7 @@ class DeleteCampaignAPI(APIBase):
         """
         data = flask.request.data
         campaign_json = json.loads(data.decode('utf-8'))
-        prepid = campaign_controller.delete_campaign(campaign_json)
+        prepid = campaign_controller.delete(campaign_json)
         return self.output_text({'response': prepid, 'success': True, 'message': ''})
 
 
@@ -57,7 +57,7 @@ class UpdateCampaignAPI(APIBase):
         """
         data = flask.request.data
         campaign_json = json.loads(data.decode('utf-8'))
-        prepid = campaign_controller.update_campaign(campaign_json)
+        prepid = campaign_controller.update(campaign_json)
         return self.output_text({'response': prepid, 'success': True, 'message': ''})
 
 
@@ -71,5 +71,5 @@ class GetCampaignAPI(APIBase):
         """
         Get a single campaign with given prepid
         """
-        campaign = campaign_controller.get_campaign(prepid)
+        campaign = campaign_controller.get(prepid)
         return self.output_text({'response': campaign.json(), 'success': True, 'message': ''})
