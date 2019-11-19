@@ -30,7 +30,7 @@ class ModelBase():
         keys = set(self.__schema.keys())
         if json_input:
             # Just to show errors if any incorrect keys are passed
-            bad_keys = set(json_input.keys()) - keys
+            bad_keys = set(json_input.keys()) - keys - (set(['_id', '_rev']))
             if bad_keys:
                 raise Exception('Invalid key: %s' % (', '.join(bad_keys)))
 
@@ -67,6 +67,11 @@ class ModelBase():
                                                                                            got_type))
 
         if self.check_attribute(attribute, value):
+            if attribute == 'prepid':
+                self.__json['_id'] = value
+            elif attribute == '_id':
+                self.__json['prepid'] = value
+
             self.__json[attribute] = value
             return self.__json
         else:

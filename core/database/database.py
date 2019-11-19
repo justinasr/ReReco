@@ -84,7 +84,7 @@ class Database():
         headers = {'Accept': 'application/json'}
         connection.request(method, path, data_string, headers=headers)
         response = connection.getresponse()
-        if response.status != 200:
+        if response.status != 200 and response.status != 201:
             self.logger.error('Code %s while doing a %s request to %s: %s',
                               response.status,
                               method,
@@ -128,30 +128,30 @@ class Database():
 
     def document_exists(self, document_id):
         """
-        Do a HEAD request to check whether document exists
+        Do a GET request to check whether document exists
         """
-        document_id = document_id.strip()
-        if not document_id:
-            return False
-
         connection = self.__get_database_connection()
-        response = self.__make_request(connection,
-                                       '/%s/%s' % (self.database_name, document_id),
-                                       method='HEAD')
+        response = self.get(document_id)
         return bool(response)
 
     def delete_document(self, document):
         """
         Delete a document
         """
+        if not isinstance(document, dict):
+            self.logger.error('%s is not a dictionary' % (document))
+            return
+
         document_id = document.get('_id', '')
         document_id = document_id.strip()
         if not document_id:
+            self.logger.error('%s does not have a _id' % (document))
             return
 
         document_rev = document.get('_rev', '')
         document_rev = document_rev.strip()
         if not document_rev:
+            self.logger.error('%s does not have a _rev' % (document))
             return
 
         connection = self.__get_database_connection()
@@ -163,9 +163,17 @@ class Database():
         """
         Save a document
         """
+        if not isinstance(document, dict):
+            self.logger.error('%s is not a dictionary' % (document))
+            return
+
         document_id = document.get('_id', '')
         if not document_id:
+            self.logger.error('%s does not have a _id' % (document))
             return
+
+        if '_rev' in document and not document['_rev']:
+            del document['_rev']
 
         connection = self.__get_database_connection()
         self.__make_request(connection,

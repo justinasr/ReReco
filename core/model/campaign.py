@@ -6,6 +6,8 @@ class Campaign(ModelBase):
     _ModelBase__schema = {
         # Database id
         '_id': '',
+        # Document revision
+        '_rev': '',
         # PrepID
         'prepid': '',
         # Energy in TeV

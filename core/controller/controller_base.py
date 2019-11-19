@@ -1,8 +1,11 @@
 from core.model.model_base import ModelBase
+from core.utils.locker import Locker
+
 
 class ControllerBase():
     def __init__(self):
         self.logger = ModelBase._ModelBase__logger
+        self.locker = Locker()
 
     def get_changed_values(self, reference, target, prefix='', changed_values=None):
         schema = reference.schema()
