@@ -104,7 +104,6 @@ class Database():
                               jde)
             return None
 
-
     def get_count(self):
         """
         Get number of documents in the database
@@ -112,7 +111,6 @@ class Database():
         connection = self.__get_database_connection()
         response = self.__make_request(connection, '/%s' % (self.database_name))
         return response.get('doc_count', 0)
-
 
     def get(self, document_id):
         """
@@ -130,7 +128,6 @@ class Database():
         """
         Do a GET request to check whether document exists
         """
-        connection = self.__get_database_connection()
         response = self.get(document_id)
         return bool(response)
 
@@ -190,7 +187,9 @@ class Database():
         Example prepid=*19*&&is_root=false
         """
         skip_documents = page * limit
-        query_string = query_string.replace(' ', '')
+        if query_string:
+            query_string = query_string.replace(' ', '')
+
         common_parameters = 'limit=%s&skip=%s&include_docs=True' % (limit, skip_documents)
         if not query_string:
             connection = self.__get_database_connection()

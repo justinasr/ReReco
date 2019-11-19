@@ -88,7 +88,7 @@ class ControllerBase():
         with self.locker.get_lock(prepid):
             self.logger.info('Will delete %s', (prepid))
             if self.check_for_delete(obj):
-                database.delete_object(obj.json())
+                database.delete_document(obj.json())
                 return {'prepid': prepid}
             else:
                 self.logger.error('Error while deleting %s' % (prepid))

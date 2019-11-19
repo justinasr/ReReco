@@ -1,7 +1,6 @@
 """
 Module that contains all search APIs
 """
-import json
 import flask
 from api.api_base import APIBase
 from core.database.database import Database
@@ -15,7 +14,7 @@ class SearchAPI(APIBase):
     @APIBase.exceptions_to_errors
     def get(self):
         """
-        Create a campaign with the provided JSON content. Requires a unique prepid
+        Perform a search
         """
         args = flask.request.args.to_dict()
         db_name = args.get('db_name', None)
@@ -30,7 +29,6 @@ class SearchAPI(APIBase):
 
         if 'limit' in args:
             del args['limit']
-
 
         query_string = '&&'.join(['%s=%s' % (pair) for pair in args.items()])
         db = Database(db_name)

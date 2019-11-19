@@ -41,12 +41,18 @@ class ModelBase():
                 continue
             elif key == 'prepid':
                 # Special case for prepid
-                self.__json['prepid'] = self.check_attribute('prepid', json_input[key])
-                self.__json['_id'] = self.__json['prepid']
+                if self.check_attribute('prepid', json_input[key]):
+                    self.__json['prepid'] = json_input[key]
+                    self.__json['_id'] = json_input[key]
+                else:
+                    raise Exception(f'Invalid prepid {json_input[key]} for {self.__class_name} object')
+
             elif key not in json_input:
                 self.__json[key] = deepcopy(self.__schema[key])
             else:
                 self.set(key, json_input[key])
+
+        self.logger.debug('\n' + str(self))
 
     def set(self, attribute, value=None):
         """

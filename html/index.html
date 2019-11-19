@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+    <link rel="stylesheet" href="static/style.css">
+    <link rel="shortcut icon" type="image/x-icon" href="static/favicon.png">
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Roboto:300,400,700">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="static/script.js" type="text/javascript"></script>
+    <title>ReReco</title>
+  </head>
+  <body>
+    <div>
+      {% if objects %}
+        <table border=1>
+          <tr>
+            <th>actions</th>
+            {% for attr in objects[0] %}
+              <th>{{attr}}</th>
+            {% endfor %}
+          </tr>
+          {% for obj in objects %}
+            <tr>
+              <td><button onclick="delete_object('{{database}}', '{{obj.prepid}}', '{{obj._rev}}')">Delete</button></td>
+              {% for attr in obj %}
+                <td>{{obj[attr]}}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <a href="campaigns">Campaigns</a>
+        <a href="flows">Flows</a>
+      {% endif %}
+    </div>
+  </body>
+</html>
