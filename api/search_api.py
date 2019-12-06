@@ -17,6 +17,9 @@ class SearchAPI(APIBase):
         Perform a search
         """
         args = flask.request.args.to_dict()
+        if args is None:
+            args = {}
+
         db_name = args.get('db_name', None)
         page = int(args.get('page', 0))
         limit = int(args.get('limit', 20))

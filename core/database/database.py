@@ -203,8 +203,14 @@ class Database():
                                                                                          query_string,
                                                                                          common_parameters)
         response = self.__make_request(connection, query_url)
-        results = [x['doc'] for x in response.get('rows', [])]
+        if not response:
+            total_rows = 0
+            results = []
+        else:
+            total_rows = response.get('total_rows')
+            results = [x['doc'] for x in response.get('rows', [])]
+
         if return_total_rows:
-            return results, response.get('total_rows')
+            return results, total_rows
         else:
             return results
