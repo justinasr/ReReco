@@ -10,19 +10,14 @@
                   disable-sort
                   hide-default-footer
                   class="elevation-1">
-      <template v-slot:item.notes="{ item }">
-        <div class="notes">{{item.notes}}</div>
+      <template v-slot:item._actions="{ item }">
+        &gt;&gt;Actions go here&lt;&lt;
       </template>
       <template v-slot:item.history="{ item }">
-        <pre>{{JSON.stringify(item.history, null, 4)}}</pre>
+        <pre>{{JSON.stringify(item.history, null, 2)}}</pre>
       </template>
       <template v-slot:item.request_parameters="{ item }">
-        <pre>{{JSON.stringify(item.request_parameters, null, 4)}}</pre>
-      </template>
-      <template v-slot:item.source_campaigns="{ item }">
-        <ul>
-          <li v-for="campaign in item.source_campaigns" :key="campaign">{{campaign}}</li>
-        </ul>
+        <pre>{{JSON.stringify(item.request_parameters, null, 2)}}</pre>
       </template>
     </v-data-table>
     <footer>
@@ -40,7 +35,6 @@ import ColumnSelector from './ColumnSelector'
 import Paginator from './Paginator'
 
 export default {
-  name: 'flows',
   components: {
     ColumnSelector,
     Paginator
@@ -50,6 +44,7 @@ export default {
       databaseName: undefined,
       columns: [
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
+        {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'source_campaigns', 'displayName': 'Source campaigns', 'visible': 1},
         {'dbName': 'target_campaign', 'displayName': 'Target campaign', 'visible': 1},
         {'dbName': 'request_parameters', 'displayName': 'Request parameters', 'visible': 0},
@@ -59,7 +54,7 @@ export default {
       headers: [],
       dataItems: [],
       loading: false,
-      itemsPerPage: 1,  // If initial value is 0, table does not appear after update 
+      itemsPerPage: 1,  // If initial value is 0, table does not appear after update
       totalItems: 0,
     }
   },
@@ -69,7 +64,7 @@ export default {
     }
   },
   created () {
-    this.databaseName = 'flows';
+
   },
   methods: {
     fetchObjects () {
@@ -84,7 +79,8 @@ export default {
       });
       axios.get('api/search?db_name=flows' + queryParams).then(response => {
         console.log(response.data);
-        component.dataItems = response.data.response.results;
+
+        component.dataItems = response.data.response.results.map(function (x) { x._actions = undefined; return x});
         component.totalItems = response.data.response.total_rows;
         component.loading = false;
       });
@@ -102,14 +98,5 @@ export default {
 </script>
 
 <style scoped>
-
-.notes {
-  background: #eee;
-  padding: 6px;
-  margin: 6px;
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.07);
-  max-width: 350px;
-  min-height: 33px;
-}
 
 </style>

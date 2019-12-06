@@ -1,11 +1,16 @@
 <template>
   <div>
-    <div class="button-group">
-      <button class="button-group-button" v-on:click="pageSize = 20">20</button>
-      <button class="button-group-button" v-on:click="pageSize = 50">50</button>
-      <button class="button-group-button" v-on:click="pageSize = 100">100</button>
+    <div style="display: inline-block;">
+      Page Size:
     </div>
-
+    <div class="button-group">
+      <button class="button-group-button" v-bind:class="[pageSize === 20 ? 'clicked' : '']" v-on:click="pageSize = 20">20</button>
+      <button class="button-group-button" v-bind:class="[pageSize === 50 ? 'clicked' : '']" v-on:click="pageSize = 50">50</button>
+      <button class="button-group-button" v-bind:class="[pageSize === 100 ? 'clicked' : '']" v-on:click="pageSize = 100">100</button>
+    </div>
+    <div style="display: inline-block;">
+      Page:
+    </div>
     <div class="button-group">
       <button class="button-group-button" v-if="page > 0" v-on:click="page -= 1">
         Previous
@@ -92,6 +97,11 @@
 
 .button-group-button:not(:first-child) {
   border-left: solid 1px #aaa;
+}
+
+.clicked {
+  background-color: #aaa;
+  color: white;
 }
 
 </style>
