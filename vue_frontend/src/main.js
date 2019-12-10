@@ -5,8 +5,15 @@ import vuetify from './plugins/vuetify';
 
 Vue.config.productionTip = false
 
+var mixin = {
+  created: function () {
+    console.log('mixin hook called')
+  }
+}
+
 new Vue({
   router,
   vuetify,
+  mixin,
   render: h => h(App)
 }).$mount('#app')

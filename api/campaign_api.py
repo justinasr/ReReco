@@ -5,6 +5,7 @@ import json
 import flask
 from api.api_base import APIBase
 from core.controller.campaign_controller import CampaignController
+from core.model.campaign import Campaign
 
 
 campaign_controller = CampaignController()
@@ -23,8 +24,8 @@ class CreateCampaignAPI(APIBase):
         """
         data = flask.request.data
         campaign_json = json.loads(data.decode('utf-8'))
-        prepid = campaign_controller.create(campaign_json)
-        return self.output_text({'response': prepid, 'success': True, 'message': ''})
+        obj = campaign_controller.create(campaign_json)
+        return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
 class DeleteCampaignAPI(APIBase):
@@ -40,8 +41,8 @@ class DeleteCampaignAPI(APIBase):
         """
         data = flask.request.data
         campaign_json = json.loads(data.decode('utf-8'))
-        prepid = campaign_controller.delete(campaign_json)
-        return self.output_text({'response': prepid, 'success': True, 'message': ''})
+        obj = campaign_controller.delete(campaign_json)
+        return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
 class UpdateCampaignAPI(APIBase):
@@ -57,8 +58,8 @@ class UpdateCampaignAPI(APIBase):
         """
         data = flask.request.data
         campaign_json = json.loads(data.decode('utf-8'))
-        prepid = campaign_controller.update(campaign_json)
-        return self.output_text({'response': prepid, 'success': True, 'message': ''})
+        obj = campaign_controller.update(campaign_json)
+        return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
 class GetCampaignAPI(APIBase):
@@ -73,3 +74,25 @@ class GetCampaignAPI(APIBase):
         """
         campaign = campaign_controller.get(prepid)
         return self.output_text({'response': campaign.json(), 'success': True, 'message': ''})
+
+
+class GetEditableCampaignAPI(APIBase):
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    def get(self, prepid=None):
+        """
+        Get a single campaign with given prepid
+        """
+        if prepid:
+            campaign = campaign_controller.get(prepid)
+        else:
+            campaign = Campaign()
+
+        editing_info = campaign_controller.get_editing_info(campaign)
+        return self.output_text({'response': {'object': campaign.json(),
+                                              'editing_info': editing_info},
+                                 'success': True,
+                                 'message': ''})

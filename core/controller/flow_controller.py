@@ -26,7 +26,7 @@ class FlowController(ControllerBase):
 
         return True
 
-    def check_for_update(self, old_obj, new_obj):
+    def check_for_update(self, old_obj, new_obj, changed_values):
         """
         Compare existing and updated objects to see if update is valid
         """

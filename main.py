@@ -1,4 +1,4 @@
-from api.campaign_api import CreateCampaignAPI, DeleteCampaignAPI, UpdateCampaignAPI, GetCampaignAPI
+from api.campaign_api import CreateCampaignAPI, DeleteCampaignAPI, UpdateCampaignAPI, GetCampaignAPI, GetEditableCampaignAPI
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.search_api import SearchAPI
 import logging
@@ -27,6 +27,7 @@ api.add_resource(CreateCampaignAPI, '/api/campaigns/create')
 api.add_resource(DeleteCampaignAPI, '/api/campaigns/delete')
 api.add_resource(UpdateCampaignAPI, '/api/campaigns/update')
 api.add_resource(GetCampaignAPI, '/api/campaigns/get/<string:prepid>')
+api.add_resource(GetEditableCampaignAPI, '/api/campaigns/get_editable', '/api/campaigns/get_editable/<string:prepid>')
 
 api.add_resource(CreateFlowAPI, '/api/flows/create')
 api.add_resource(DeleteFlowAPI, '/api/flows/delete')

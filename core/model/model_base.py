@@ -27,27 +27,30 @@ class ModelBase():
         Copy values from given dictionary to object's json
         Initialize default values from schema if any are missing
         """
+        if json_input:
+            prepid = json_input.get('prepid')
+            if self.check_attribute('prepid', prepid):
+                self.__json['prepid'] = prepid
+                self.__json['_id'] = prepid
+            else:
+                self.logger.error('Invalid prepid %s for %s', prepid, self.__class_name)
+                raise Exception(f'Invalid prepid {prepid}')
+
+            if '_rev' in json_input:
+                self.__json['_rev'] = json_input['_rev']
+        else:
+            json_input = {}
+
+        ignore_keys = set(['_id', '_rev', 'prepid'])
         keys = set(self.__schema.keys())
         if json_input:
             # Just to show errors if any incorrect keys are passed
-            bad_keys = set(json_input.keys()) - keys - (set(['_id', '_rev']))
+            bad_keys = set(json_input.keys()) - keys - ignore_keys
             if bad_keys:
                 raise Exception(f'Invalid key: {", ".join(bad_keys)}')
 
-        for key in keys:
-            if key == '_id':
-                # Do not do anything for _id, it will be set
-                # together with prepid
-                continue
-            elif key == 'prepid':
-                # Special case for prepid
-                if self.check_attribute('prepid', json_input[key]):
-                    self.__json['prepid'] = json_input[key]
-                    self.__json['_id'] = json_input[key]
-                else:
-                    raise Exception(f'Invalid prepid {json_input[key]} for {self.__class_name} object')
-
-            elif key not in json_input:
+        for key in keys - ignore_keys:
+            if key not in json_input:
                 self.__json[key] = deepcopy(self.__schema[key])
             else:
                 self.set(key, json_input[key])
@@ -75,15 +78,22 @@ class ModelBase():
             raise Exception('Changing prepid or _id is not allowed')
 
         if not isinstance(value, type(self.__schema[attribute])):
-            expected_type = type(self.__schema[attribute]).__name__
-            got_type = type(value).__name__
-            raise Exception(f'Object {prepid} attribute {attribute} is wrong type. Expected {expected_type}, got {got_type}')
+            expected_type = type(self.__schema[attribute])
+            got_type = type(value)
+            expected_type_name = expected_type.__name__
+            got_type_name = got_type.__name__
+            try:
+                value = expected_type(value)
+            except Exception as ex:
+                print(ex)
+                raise Exception(f'Object {prepid} attribute {attribute} is wrong type. Expected {expected_type_name}, got {got_type_name}')
 
         if self.check_attribute(attribute, value):
             self.__json[attribute] = value
             return self.__json
         else:
-            raise Exception(f'Invalid value {value} for key {attribute} for object {prepid} of type {self.__class_name}')
+            self.logger.error('Invalid value "%s" for key "%s" for object %s of type %s', value, attribute, prepid, self.__class_name)
+            raise Exception(f'Invalid {attribute} value {value} for {prepid}')
 
     def get(self, attribute):
         """

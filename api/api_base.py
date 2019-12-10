@@ -37,6 +37,7 @@ class APIBase(Resource):
             data = request.data
             logging.getLogger().info('Checking if data exists...')
             if not data:
+                logging.getLogger().error('No data was found in request')
                 return APIBase.output_text({'response': None,
                                             'success': False,
                                             'message': 'No data was found in request'},

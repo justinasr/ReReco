@@ -4,9 +4,9 @@ from core.model.model_base import ModelBase
 class Campaign(ModelBase):
 
     _ModelBase__schema = {
-        # Database id
+        # Database id (required by CouchDB)
         '_id': '',
-        # Document revision
+        # Document revision (required by CouchDB)
         '_rev': '',
         # PrepID
         'prepid': '',
@@ -14,14 +14,12 @@ class Campaign(ModelBase):
         'energy': 0.0,
         # Type LHE, MCReproc, Prod
         'type': '',
-        # Step type: pLHE, wmLHEGS, GEN, GS, DR, MiniAOD, NanoAOD, etc.
-        'step': 'pLHE',
+        # Step type: DR, MiniAOD, NanoAOD, etc.
+        'step': 'DR',
         # CMSSW version
-        'cmssw_release': '',
+        'cmssw_version': '',
         # User notes
         'notes': '',
-        # Campaign is root campaign of the chain, i.e. is the first in chain
-        'is_root': True,
         # List of dictionaries that have cmsDriver options
         'sequences': [],
         # Action history
@@ -32,8 +30,10 @@ class Campaign(ModelBase):
     __lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9]{1,50}'),
         'energy': lambda energy: energy >= 0.0,
-        'step': lambda step: step in ['pLHE', 'wmLHEGS', 'GEN', 'GS', 'DR', 'MiniAOD', 'NanoAOD'],
+        'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
+        'type': lambda step: step in ['Prod', 'MCReproc', 'LHE'],
         'memory': lambda memory: memory >= 0,
+        'cmssw_version': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}')  # CMSSW_ddd_ddd_ddd[_XXX...]
     }
 
     def __init__(self, json_input=None):

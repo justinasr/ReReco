@@ -14,7 +14,7 @@ class CampaignController(ControllerBase):
         """
         return True
 
-    def check_for_update(self, old_obj, new_obj):
+    def check_for_update(self, old_obj, new_obj, changed_values):
         """
         Compare existing and updated objects to see if update is valid
         """
@@ -24,4 +24,13 @@ class CampaignController(ControllerBase):
         """
         Perform checks on object before deleting it from database
         """
+        if obj.get('prepid') == 'RunIIFall18GS':
+            raise Exception('Cannot delete this campaign for hardcoded testing reasons')
+
         return True
+
+    def get_editing_info(self, campaign):
+        editing_info = {k: not k.startswith('_') for k in campaign.json().keys()}
+        editing_info['prepid'] = not bool(editing_info.get('prepid'))
+        editing_info['history'] = False
+        return editing_info

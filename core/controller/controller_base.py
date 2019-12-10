@@ -64,14 +64,18 @@ class ControllerBase():
             old_object = self.model_class(json_input=old_object)
             # Move over history, so it could not be overwritten
             new_object.set('history', old_object.get('history'))
-            new_object.set('_rev', old_object.get('_rev'))
             changed_values = self.get_changed_values(old_object, new_object)
+            if not changed_values:
+                # Nothing was updated
+                self.logger.info('Nothing was updated for %s', prepid)
+                return old_object.json()
+
             new_object.add_history('update', changed_values, None)
-            if self.check_for_update(old_object, new_object):
+            if self.check_for_update(old_object, new_object, changed_values):
                 database.save(new_object.json())
                 return new_object.json()
             else:
-                self.logger.error('Error while updating %s' % (prepid))
+                self.logger.error('Error while updating %s', prepid)
                 return None
 
     def delete(self, json_data):
@@ -91,7 +95,7 @@ class ControllerBase():
                 database.delete_document(obj.json())
                 return {'prepid': prepid}
             else:
-                self.logger.error('Error while deleting %s' % (prepid))
+                self.logger.error('Error while deleting %s', prepid)
                 return None
 
     def check_for_create(self, obj):
@@ -116,26 +120,39 @@ class ControllerBase():
         """
         Get dictionary of different values across two objects
         """
-        schema = reference.schema()
-        schema_keys = schema.keys()
         if changed_values is None:
             changed_values = {}
 
         if prefix is None:
             prefix = ''
 
-        for key in schema_keys:
-            type_in_schema = type(schema.get(key))
-            key_with_prefix = prefix + ('.' if prefix else '') + key
-            if type_in_schema == dict:
+        if isinstance(reference, ModelBase) and isinstance(reference, ModelBase):
+            schema = reference.schema()
+            schema_keys = schema.keys()
+            for key in schema_keys:
                 self.get_changed_values(reference.get(key),
                                         target.get(key),
-                                        key_with_prefix,
+                                        '%s.%s' % (prefix, key),
                                         changed_values)
-            elif type_in_schema == list:
-                pass
+
+        elif isinstance(reference, dict) and isinstance(target, dict):
+            keys = reference.keys()
+            for key in keys:
+                self.get_changed_values(reference.get(key),
+                                        target.get(key),
+                                        '%s.%s' % (prefix, key),
+                                        changed_values)
+        elif isinstance(reference, list) and isinstance(target, list):
+            if len(reference) != len(target):
+                changed_values[prefix] = target
             else:
-                if reference.get(key) != target.get(key):
-                    changed_values[key_with_prefix] = target.get(key)
+                for i in range(min(len(reference), len(target))):
+                    self.get_changed_values(reference[i],
+                                            target[i],
+                                            '%s_%s' % (prefix, i),
+                                            changed_values)
+        else:
+            if reference != target:
+                changed_values[prefix.lstrip('.').lstrip('_')] = target
 
         return changed_values
