@@ -8,7 +8,7 @@ class Locker():
     __locks = {}
 
     def __init__(self, prepid=None):
-       self.logger = logging.getLogger()
+        self.logger = logging.getLogger()
 
     def get_lock(self, prepid):
         if prepid not in self.__locks:

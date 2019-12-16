@@ -1,17 +1,17 @@
 """
-Module that contains all campaign APIs
+Module that contains all campaign ticket APIs
 """
 import json
 import flask
 from api.api_base import APIBase
-from core.controller.campaign_controller import CampaignController
-from core.model.campaign import Campaign
+from core.controller.campaign_ticket_controller import CampaignTicketController
+from flask import request
 
 
-campaign_controller = CampaignController()
+campaign_ticket_controller = CampaignTicketController()
 
 
-class CreateCampaignAPI(APIBase):
+class CreateCampaignTicketAPI(APIBase):
 
     def __init__(self):
         APIBase.__init__(self)
@@ -20,15 +20,15 @@ class CreateCampaignAPI(APIBase):
     @APIBase.exceptions_to_errors
     def put(self):
         """
-        Create a campaign with the provided JSON content. Requires a unique prepid
+        Create a campaign ticket with the provided JSON content
         """
         data = flask.request.data
-        campaign_json = json.loads(data.decode('utf-8'))
-        obj = campaign_controller.create(campaign_json)
+        campaign_ticket_json = json.loads(data.decode('utf-8'))
+        obj = campaign_ticket_controller.create(campaign_ticket_json)
         return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
-class DeleteCampaignAPI(APIBase):
+class DeleteCampaignTicketAPI(APIBase):
 
     def __init__(self):
         APIBase.__init__(self)
@@ -40,12 +40,12 @@ class DeleteCampaignAPI(APIBase):
         Delete a campaign with the provided JSON content
         """
         data = flask.request.data
-        campaign_json = json.loads(data.decode('utf-8'))
-        obj = campaign_controller.delete(campaign_json)
+        campaign_ticket_json = json.loads(data.decode('utf-8'))
+        obj = campaign_ticket_controller.delete(campaign_ticket_json)
         return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
-class UpdateCampaignAPI(APIBase):
+class UpdateCampaignTicketAPI(APIBase):
 
     def __init__(self):
         APIBase.__init__(self)
@@ -57,12 +57,12 @@ class UpdateCampaignAPI(APIBase):
         Update a campaign with the provided JSON content
         """
         data = flask.request.data
-        campaign_json = json.loads(data.decode('utf-8'))
-        obj = campaign_controller.update(campaign_json)
+        campaign_ticket_json = json.loads(data.decode('utf-8'))
+        obj = campaign_ticket_controller.update(campaign_ticket_json)
         return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
-class GetCampaignAPI(APIBase):
+class GetCampaignTicketAPI(APIBase):
 
     def __init__(self):
         APIBase.__init__(self)
@@ -72,27 +72,23 @@ class GetCampaignAPI(APIBase):
         """
         Get a single campaign with given prepid
         """
-        obj = campaign_controller.get(prepid)
+        obj = campaign_ticket_controller.get(prepid)
         return self.output_text({'response': obj.json(), 'success': True, 'message': ''})
 
 
-class GetEditableCampaignAPI(APIBase):
+class GetCampaignTicketDatasetsAPI(APIBase):
 
     def __init__(self):
         APIBase.__init__(self)
 
     @APIBase.exceptions_to_errors
-    def get(self, prepid=None):
+    def get(self):
         """
         Get a single campaign with given prepid
         """
-        if prepid:
-            campaign = campaign_controller.get(prepid)
-        else:
-            campaign = Campaign()
+        query = request.args.get('q')
+        if not query:
+            raise Exception('No input was supplied')
 
-        editing_info = campaign_controller.get_editing_info(campaign)
-        return self.output_text({'response': {'object': campaign.json(),
-                                              'editing_info': editing_info},
-                                 'success': True,
-                                 'message': ''})
+        obj = campaign_ticket_controller.get_datasets(query)
+        return self.output_text({'response': obj, 'success': True, 'message': ''})

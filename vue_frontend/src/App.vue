@@ -15,6 +15,11 @@
       </v-btn>
       <v-btn
         text
+        href="campaign_tickets">
+        <span class="mr-2">Campaign Tickets</span>
+      </v-btn>
+      <v-btn
+        text
         href="flows">
         <span class="mr-2">Flows</span>
       </v-btn>

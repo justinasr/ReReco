@@ -2,6 +2,7 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Home from '@/components/Home'
 import Campaigns from '@/components/Campaigns'
+import CampaignTickets from '@/components/CampaignTickets'
 import CampaignsEdit from '@/components/CampaignsEdit'
 import Flows from '@/components/Flows'
 import ChainedCampaigns from '@/components/ChainedCampaigns'
@@ -26,6 +27,11 @@ const routes = [
     path: '/campaigns',
     name: 'campaigns',
     component: Campaigns
+  },
+  {
+    path: '/campaign_tickets',
+    name: 'campaign_tickets',
+    component: CampaignTickets
   },
   {
     path: '/flows',

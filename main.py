@@ -1,4 +1,5 @@
 from api.campaign_api import CreateCampaignAPI, DeleteCampaignAPI, UpdateCampaignAPI, GetCampaignAPI, GetEditableCampaignAPI
+from api.campaign_ticket_api import CreateCampaignTicketAPI, DeleteCampaignTicketAPI, UpdateCampaignTicketAPI, GetCampaignTicketAPI, GetCampaignTicketDatasetsAPI
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.search_api import SearchAPI
 import logging
@@ -28,6 +29,12 @@ api.add_resource(DeleteCampaignAPI, '/api/campaigns/delete')
 api.add_resource(UpdateCampaignAPI, '/api/campaigns/update')
 api.add_resource(GetCampaignAPI, '/api/campaigns/get/<string:prepid>')
 api.add_resource(GetEditableCampaignAPI, '/api/campaigns/get_editable', '/api/campaigns/get_editable/<string:prepid>')
+
+api.add_resource(CreateCampaignTicketAPI, '/api/campaign_tickets/create')
+api.add_resource(DeleteCampaignTicketAPI, '/api/campaign_tickets/delete')
+api.add_resource(UpdateCampaignTicketAPI, '/api/campaign_tickets/update')
+api.add_resource(GetCampaignTicketAPI, '/api/campaign_tickets/get/<string:prepid>')
+api.add_resource(GetCampaignTicketDatasetsAPI, '/api/campaign_tickets/get_datasets')
 
 api.add_resource(CreateFlowAPI, '/api/flows/create')
 api.add_resource(DeleteFlowAPI, '/api/flows/delete')
