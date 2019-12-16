@@ -1,2 +1,2 @@
-# mcm2
-Web based tool for Monte Carlo production management
+# ReReco Machine
+Web based tool for Data ReReco bookkeeping and submission
