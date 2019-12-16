@@ -5,6 +5,7 @@ module.exports = {
     "vuetify"
   ],
   publicPath: isProd ? '/rereco' : '',
+  assetsDir: 'static/',
   devServer: {
     port: 8003,
     logLevel: 'debug'

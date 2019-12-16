@@ -4,7 +4,7 @@ from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.search_api import SearchAPI
 import logging
 from flask_restful import Api
-from flask import Flask
+from flask import Flask, render_template
 from flask_cors import CORS
 
 
@@ -21,6 +21,13 @@ CORS(app,
                     "Authorization",
                     "Access-Control-Allow-Credentials"],
      supports_credentials=True)
+
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    return render_template('index.html')
+
 
 api.add_resource(SearchAPI, '/api/search')
 
@@ -43,6 +50,6 @@ api.add_resource(GetFlowAPI, '/api/flows/get/<string:prepid>')
 
 
 app.run(host='0.0.0.0',
-        port=8004,
+        port=8003,
         threaded=True,
         debug=True)
