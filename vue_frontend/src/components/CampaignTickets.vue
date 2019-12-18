@@ -18,8 +18,8 @@
       <template v-slot:item.history="{ item }">
         <pre>{{JSON.stringify(item.history, null, 2)}}</pre>
       </template>
-      <template v-slot:item.sequences="{ item }">
-        <pre>{{JSON.stringify(item.sequences, null, 2)}}</pre>
+      <template v-slot:item.input_datasets="{ item }">
+        {{item.input_datasets.length}} input datasets
       </template>
     </v-data-table>
 
@@ -88,13 +88,11 @@ export default {
       columns: [
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
-        {'dbName': 'type', 'displayName': 'Type', 'visible': 1},
-        {'dbName': 'memory', 'displayName': 'Memory', 'visible': 1},
-        {'dbName': 'cmssw_version', 'displayName': 'CMSSW Version', 'visible': 1},
+        {'dbName': 'campaign_name', 'displayName': 'Campaign name', 'visible': 1},
+        {'dbName': 'input_datasets', 'displayName': 'Input Datasets', 'visible': 1},
+        {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
-        {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0},
-        {'dbName': 'step', 'displayName': 'Step', 'visible': 0},
-        {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
+        {'dbName': 'created_requests', 'displayName': 'Created Requests', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
       ],
       headers: [],

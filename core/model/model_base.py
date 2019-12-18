@@ -29,6 +29,9 @@ class ModelBase():
         """
         if json_input:
             prepid = json_input.get('prepid')
+            if not prepid:
+                raise Exception('PrepID cannot be empty')
+
             if self.check_attribute('prepid', prepid):
                 self.__json['prepid'] = prepid
                 self.__json['_id'] = prepid
