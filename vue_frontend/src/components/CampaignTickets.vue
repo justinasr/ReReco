@@ -14,6 +14,8 @@
         <a :href="'campaign_tickets/edit?prepid=' + item.prepid">Edit</a>
         &nbsp;
         <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
+        &nbsp;
+        <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)">Create requests</a>
       </template>
       <template v-slot:item.history="{ item }">
         <pre>{{JSON.stringify(item.history, null, 2)}}</pre>
@@ -88,6 +90,7 @@ export default {
       columns: [
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
+        {'dbName': 'status', 'displayName': 'Status', 'visible': 1},
         {'dbName': 'campaign_name', 'displayName': 'Campaign name', 'visible': 1},
         {'dbName': 'input_datasets', 'displayName': 'Input Datasets', 'visible': 1},
         {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 1},
@@ -177,6 +180,25 @@ export default {
           console.log(error.response.data);
           component.clearDialog();
           component.showError("Error deleting campaign ticket", error.response.data.message);
+        });
+      }
+      this.dialog.cancel = function() {
+        component.clearDialog();
+      }
+      this.dialog.visible = true;
+    },
+    showCreateRequestsDialog: function(campaign_ticket) {
+      let component = this;
+      this.dialog.title = "Create requests for " + campaign_ticket.prepid + "?";
+      this.dialog.description = "Are you sure you want to generate requests for " + campaign_ticket.prepid + " campaign ticket?";
+      this.dialog.ok = function() {
+        axios.post('api/campaign_tickets/create_requests', {'prepid': campaign_ticket.prepid}).then(() => {
+          component.clearDialog();
+          component.fetchObjects();
+        }).catch(error => {
+          console.log(error.response.data);
+          component.clearDialog();
+          component.showError("Error creating requests", error.response.data.message);
         });
       }
       this.dialog.cancel = function() {

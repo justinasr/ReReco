@@ -1,6 +1,7 @@
 from api.campaign_api import CreateCampaignAPI, DeleteCampaignAPI, UpdateCampaignAPI, GetCampaignAPI, GetEditableCampaignAPI
-from api.campaign_ticket_api import CreateCampaignTicketAPI, DeleteCampaignTicketAPI, UpdateCampaignTicketAPI, GetCampaignTicketAPI, GetCampaignTicketDatasetsAPI, GetEditableCampaignTicketAPI
+from api.campaign_ticket_api import CreateCampaignTicketAPI, DeleteCampaignTicketAPI, UpdateCampaignTicketAPI, GetCampaignTicketAPI, GetCampaignTicketDatasetsAPI, GetEditableCampaignTicketAPI, CreateRequestsForCampaignTicketAPI
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
+from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI
 from api.search_api import SearchAPI
 import logging
 from flask_restful import Api
@@ -43,12 +44,18 @@ api.add_resource(UpdateCampaignTicketAPI, '/api/campaign_tickets/update')
 api.add_resource(GetCampaignTicketAPI, '/api/campaign_tickets/get/<string:prepid>')
 api.add_resource(GetEditableCampaignTicketAPI, '/api/campaign_tickets/get_editable', '/api/campaign_tickets/get_editable/<string:prepid>')
 api.add_resource(GetCampaignTicketDatasetsAPI, '/api/campaign_tickets/get_datasets')
+api.add_resource(CreateRequestsForCampaignTicketAPI, '/api/campaign_tickets/create_requests')
 
 api.add_resource(CreateFlowAPI, '/api/flows/create')
 api.add_resource(DeleteFlowAPI, '/api/flows/delete')
 api.add_resource(UpdateFlowAPI, '/api/flows/update')
 api.add_resource(GetFlowAPI, '/api/flows/get/<string:prepid>')
 
+api.add_resource(CreateRequestAPI, '/api/requests/create')
+api.add_resource(DeleteRequestAPI, '/api/requests/delete')
+api.add_resource(UpdateRequestAPI, '/api/requests/update')
+api.add_resource(GetRequestAPI, '/api/requests/get/<string:prepid>')
+api.add_resource(GetEditableRequestAPI, '/api/requests/get_editable', '/api/requests/get_editable/<string:prepid>')
 
 app.run(host='0.0.0.0',
         port=8003,

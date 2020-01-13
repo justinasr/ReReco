@@ -30,6 +30,7 @@ class ControllerBase():
 
         with self.locker.get_lock(prepid):
             self.logger.info('Will create %s', (prepid))
+            new_object.add_history('create', prepid, None)
             if self.check_for_create(new_object):
                 database.save(new_object.json())
                 return new_object.json()
@@ -121,12 +122,13 @@ class ControllerBase():
         Get dictionary of different values across two objects
         """
         if changed_values is None:
-            changed_values = {}
+            changed_values = []
 
         if prefix is None:
             prefix = ''
 
         if isinstance(reference, ModelBase) and isinstance(reference, ModelBase):
+            # Comparing two ReReco objects
             schema = reference.schema()
             schema_keys = schema.keys()
             for key in schema_keys:
@@ -136,6 +138,7 @@ class ControllerBase():
                                         changed_values)
 
         elif isinstance(reference, dict) and isinstance(target, dict):
+            # Comparing two dictionaries
             keys = reference.keys()
             for key in keys:
                 self.get_changed_values(reference.get(key),
@@ -143,8 +146,9 @@ class ControllerBase():
                                         '%s.%s' % (prefix, key),
                                         changed_values)
         elif isinstance(reference, list) and isinstance(target, list):
+            # Comparing two lists
             if len(reference) != len(target):
-                changed_values[prefix] = target
+                changed_values.append(prefix.lstrip('.').lstrip('_'))
             else:
                 for i in range(min(len(reference), len(target))):
                     self.get_changed_values(reference[i],
@@ -152,7 +156,8 @@ class ControllerBase():
                                             '%s_%s' % (prefix, i),
                                             changed_values)
         else:
+            # Comparing two values
             if reference != target:
-                changed_values[prefix.lstrip('.').lstrip('_')] = target
+                changed_values.append(prefix.lstrip('.').lstrip('_'))
 
         return changed_values

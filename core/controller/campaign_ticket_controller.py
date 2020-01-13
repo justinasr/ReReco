@@ -2,6 +2,7 @@ from core.controller.controller_base import ControllerBase
 from core.model.campaign_ticket import CampaignTicket
 from core.utils.cmsweb import ConnectionWrapper
 from core.database.database import Database
+from core.controller.request_controller import RequestController
 import json
 import time
 
@@ -60,7 +61,24 @@ class CampaignTicketController(ControllerBase):
         editing_info = {k: not k.startswith('_') for k in campaign_ticket.json().keys()}
         editing_info['prepid'] = not bool(editing_info.get('prepid'))
         editing_info['history'] = False
-        editing_info['campaign_name'] = not bool(campaign_ticket.get('created_requests'))
-        editing_info['processing_string'] = editing_info['campaign_name']
-        editing_info['input_datasets'] = editing_info['campaign_name']
+        is_new = campaign_ticket.get('status') == 'new'
+        editing_info['campaign_name'] = is_new
+        editing_info['processing_string'] = is_new
+        editing_info['input_datasets'] = is_new
         return editing_info
+
+    def create_requests_for_ticket(self, campaign_ticket):
+        ticket_prepid = campaign_ticket.get_prepid()
+        with self.locker.get_lock(ticket_prepid):
+            request_controller = RequestController()
+            campaign_name = campaign_ticket.get('campaign_name')
+            created_requests = campaign_ticket.get('created_requests')
+            for input_dataset in campaign_ticket.get('input_datasets'):
+                created_request_json = request_controller.create({'member_of_campaign': campaign_name, 'input_dataset': input_dataset})
+                created_requests.append(created_request_json.get('prepid'))
+
+            campaign_ticket.set('created_requests', created_requests)
+            campaign_ticket.set('status', 'done')
+            self.update(campaign_ticket.json())
+
+        return created_requests

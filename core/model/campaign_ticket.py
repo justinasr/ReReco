@@ -18,6 +18,8 @@ class CampaignTicket(ModelBase):
         'processing_string': '',
         # List of prepids of requests that were created from this ticket
         'created_requests': [],
+        # Status is either new or done
+        'status': 'new',
         # User notes
         'notes': '',
         # Action history
@@ -27,6 +29,9 @@ class CampaignTicket(ModelBase):
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9]{1,50}'),
         'campaign_name': lambda campaign_name: ModelBase.matches_regex(campaign_name, '[a-zA-Z0-9]{1,50}'),
         'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{0,100}'),
+        'status': lambda status: status in ('new', 'done'),
+
+        '__input_dataset': lambda ds: ModelBase.matches_regex(ds, '^/[a-zA-Z0-9\\-_]{1,99}/[a-zA-Z0-9\\.\\-_]{1,199}/[A-Z\\-]{1,50}$'),
     }
 
     def __init__(self, json_input=None):
@@ -38,7 +43,7 @@ class CampaignTicket(ModelBase):
 
         if attribute_name == 'input_datasets':
             for dataset in attribute_value:
-                if not ModelBase.matches_regex(dataset, '^/[a-zA-Z0-9\\-_]{1,99}/[a-zA-Z0-9\\.\\-_]{1,199}/[A-Z\\-]{1,50}$'):
+                if not self.__lambda_checks.get('__input_dataset')(dataset):
                     raise Exception('Invalid input dataset name: %s' % (dataset))
 
         return True

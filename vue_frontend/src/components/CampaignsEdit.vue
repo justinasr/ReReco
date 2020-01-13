@@ -90,15 +90,16 @@ export default {
     save: function() {
       console.log('Saving ' + this.prepid)
       this.loading = true;
+      let editableObject = JSON.parse(JSON.stringify(this.editableObject))
       let component = this;
-      this.editableObject['notes'] = this.editableObject['notes'].trim();
+      editableObject['notes'] = editableObject['notes'].trim();
       console.log(this.editableObject);
-      this.editableObject['sequences'] = JSON.parse(this.editableObject['sequences']);
+      editableObject['sequences'] = JSON.parse(editableObject['sequences']);
       let httpRequest;
       if (this.creatingNew) {
-        httpRequest = axios.put('api/campaigns/create', this.editableObject)
+        httpRequest = axios.put('api/campaigns/create', editableObject)
       } else {
-        httpRequest = axios.post('api/campaigns/update', this.editableObject)
+        httpRequest = axios.post('api/campaigns/update', editableObject)
       }
       httpRequest.then(response => {
         console.log(response.data.response.prepid);
@@ -106,6 +107,7 @@ export default {
         window.location = 'campaigns?prepid=' + response.data.response.prepid;
       }).catch(error => {
         console.log('Error!');
+        component.loading = false;
         alert(error.response.data.message);
         console.log(error.response.data);
       });

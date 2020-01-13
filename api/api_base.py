@@ -24,6 +24,7 @@ class APIBase(Resource):
         Init
         """
         Resource.__init__(self)
+        self.logger = logging.getLogger()
 
     @staticmethod
     def ensure_request_data(func):

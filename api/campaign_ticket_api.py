@@ -115,3 +115,29 @@ class GetEditableCampaignTicketAPI(APIBase):
                                               'editing_info': editing_info},
                                  'success': True,
                                  'message': ''})
+
+
+class CreateRequestsForCampaignTicketAPI(APIBase):
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.ensure_request_data
+    @APIBase.exceptions_to_errors
+    def post(self):
+        """
+        Create requests for give campaign ticket
+        """
+        data = flask.request.data
+        request_data = json.loads(data.decode('utf-8'))
+        prepid = request_data.get('prepid')
+        if not prepid:
+            self.logger.error('No prepid in given data: %s', json.dumps(request_data, indent=4))
+            raise Exception('No prepid in submitted data')
+
+        ticket = campaign_ticket_controller.get(prepid)
+        if not ticket:
+            raise Exception(f'Campaign ticket "{prepid}" does not exist')
+
+        result = campaign_ticket_controller.create_requests_for_ticket(ticket)
+        return self.output_text({'response': result, 'success': True, 'message': ''})

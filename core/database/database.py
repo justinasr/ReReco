@@ -214,3 +214,18 @@ class Database():
             return results, total_rows
         else:
             return results
+
+    def query_view(self, view_name, query_string):
+        """
+        Query a couchdb view
+        """
+        connection = self.__get_database_connection()
+        query_url = '/%s/_design/%s/_view/%s?%s' % (self.database_name,
+                                                    self.database_name,
+                                                    view_name,
+                                                    query_string)
+        response = self.__make_request(connection, query_url)
+        if not response:
+            return []
+        else:
+            return response.get('rows', [])
