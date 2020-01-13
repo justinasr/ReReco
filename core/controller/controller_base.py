@@ -65,12 +65,13 @@ class ControllerBase():
             old_object = self.model_class(json_input=old_object)
             # Move over history, so it could not be overwritten
             new_object.set('history', old_object.get('history'))
-            changed_values = self.get_changed_values(old_object, new_object)
+            changed_values = self.get_changes(old_object, new_object)
             if not changed_values:
                 # Nothing was updated
                 self.logger.info('Nothing was updated for %s', prepid)
                 return old_object.json()
 
+            self.edit_allowed(old_object, changed_values)
             new_object.add_history('update', changed_values, None)
             if self.check_for_update(old_object, new_object, changed_values):
                 database.save(new_object.json())
@@ -117,47 +118,98 @@ class ControllerBase():
         """
         raise NotImplementedError('This method must be implemented')
 
-    def get_changed_values(self, reference, target, prefix=None, changed_values=None):
+    def get_editing_info(self, obj):
         """
-        Get dictionary of different values across two objects
+        Return a dictionary of pairs where key is attribute name and value is
+        a boolean whether that attribute can be edited, for example
+        {
+          "prepid": False,
+          "notes": True
+        }
         """
-        if changed_values is None:
-            changed_values = []
+        raise NotImplementedError('This method must be implemented')
 
-        if prefix is None:
-            prefix = ''
+    def edit_allowed(self, obj, changed_values):
+        """
+        Check whether done edit is allowed based on editing info
+        and changed values
+        """
+        editing_info = self.get_editing_info(obj)
+        if not editing_info:
+            return True
 
+        def recursive_edit_allowed(editing_info, changed_values):
+            if isinstance(editing_info, bool):
+                return editing_info
+
+            elif isinstance(changed_values, dict):
+                for key, value in changed_values.items():
+                    allowed = recursive_edit_allowed(editing_info.get(key, False), value)
+                    if not allowed:
+                        raise Exception(f'It is not allowed to edit {key}')
+
+            elif isinstance(changed_values, list):
+                for i in range(len(changed_values)):
+                    allowed = recursive_edit_allowed(editing_info.get(key, False), value)
+                    if not allowed:
+                        return False
+
+            return True
+
+        self.logger.info(editing_info)
+        recursive_edit_allowed(editing_info, changed_values)
+        return True
+
+    def get_changes(self, reference, target):
+        """
+        Get dictionary of changed attributes
+        """
         if isinstance(reference, ModelBase) and isinstance(reference, ModelBase):
-            # Comparing two ReReco objects
+            # Compare two ReReco objects
+            changed_values = {}
             schema = reference.schema()
-            schema_keys = schema.keys()
+            schema_keys = set(schema.keys())
+            schema_keys.remove('history')
             for key in schema_keys:
-                self.get_changed_values(reference.get(key),
-                                        target.get(key),
-                                        '%s.%s' % (prefix, key),
-                                        changed_values)
+                reference_value = reference.get(key)
+                target_value = target.get(key)
+                changed = self.get_changes(reference_value, target_value)
+                if isinstance(changed, bool):
+                    if changed:
+                        changed_values[key] = changed
+                else:
+                    changed_values[key] = changed
 
+            return changed_values
         elif isinstance(reference, dict) and isinstance(target, dict):
-            # Comparing two dictionaries
+            changed_values = {}
             keys = reference.keys()
             for key in keys:
-                self.get_changed_values(reference.get(key),
-                                        target.get(key),
-                                        '%s.%s' % (prefix, key),
-                                        changed_values)
-        elif isinstance(reference, list) and isinstance(target, list):
-            # Comparing two lists
-            if len(reference) != len(target):
-                changed_values.append(prefix.lstrip('.').lstrip('_'))
-            else:
-                for i in range(min(len(reference), len(target))):
-                    self.get_changed_values(reference[i],
-                                            target[i],
-                                            '%s_%s' % (prefix, i),
-                                            changed_values)
-        else:
-            # Comparing two values
-            if reference != target:
-                changed_values.append(prefix.lstrip('.').lstrip('_'))
+                reference_value = reference.get(key)
+                target_value = target.get(key)
+                changed = self.get_changes(reference_value, target_value)
+                if isinstance(changed, bool):
+                    if changed:
+                        changed_values[key] = changed
+                else:
+                    changed_values[key] = changed
 
-        return changed_values
+            if changed_values:
+                return changed_values
+
+        elif isinstance(reference, list) and isinstance(target, list):
+            if len(reference) != len(target):
+                return True
+
+            changed_values = []
+            for i in range(len(reference)):
+                changed_values.append(self.get_changes(reference[i], target[i]))
+
+            for changed in changed_values:
+                if changed:
+                    return changed_values
+
+        else:
+            return reference != target
+
+        return False
