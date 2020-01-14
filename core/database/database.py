@@ -173,10 +173,12 @@ class Database():
             del document['_rev']
 
         connection = self.__get_database_connection()
-        self.__make_request(connection,
-                            '/%s/%s' % (self.database_name, document_id),
-                            method='PUT',
-                            data=document)
+        result = self.__make_request(connection,
+                                     '/%s/%s' % (self.database_name, document_id),
+                                     method='PUT',
+                                     data=document)
+
+        return result is not None
 
     def query(self, query_string=None, page=0, limit=20, return_total_rows=False):
         """

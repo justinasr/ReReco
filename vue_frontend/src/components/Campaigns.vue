@@ -21,6 +21,15 @@
       <template v-slot:item.sequences="{ item }">
         <pre>{{JSON.stringify(item.sequences, null, 2)}}</pre>
       </template>
+      <template v-slot:item.memory="{ item }">
+        {{item.memory}} MB
+      </template>
+      <template v-slot:item.energy="{ item }">
+        {{item.energy}} TeV
+      </template>
+      <template v-slot:item.cmssw_version="{ item }">
+        {{item.cmssw_version.replace('_', ' ').replace(/_/g, '.')}}
+      </template>
     </v-data-table>
 
     <v-dialog v-model="dialog.visible"

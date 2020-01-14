@@ -64,7 +64,9 @@ class RequestController(ControllerBase):
                 new_request.set('input_dataset', json_data['input_dataset'])
 
             if self.check_for_create(new_request):
-                request_db.save(new_request.json())
+                if not request_db.save(new_request.json()):
+                    raise Exception(f'Error saving {prepid}')
+
                 return new_request.json()
             else:
                 self.logger.error('Error while checking new item %s', prepid)

@@ -36,10 +36,15 @@ class CampaignTicketController(ControllerBase):
 
         return True
 
-    def check_for_delete(self, obj):
+    def check_for_delete(self, campaign_ticket):
         """
         Perform checks on object before deleting it from database
         """
+        created_requests = campaign_ticket.get('created_requests')
+        prepid = campaign_ticket.get('prepid')
+        if len(created_requests) > 0:
+            raise Exception(f'It is not allowed to delete tickets that have requests created. {prepid} has {len(created_requests)} requests')
+
         return True
 
     def get_datasets(self, query):
@@ -65,20 +70,27 @@ class CampaignTicketController(ControllerBase):
         editing_info['campaign_name'] = is_new
         editing_info['processing_string'] = is_new
         editing_info['input_datasets'] = is_new
+        editing_info['created_requests'] = False
         return editing_info
 
     def create_requests_for_ticket(self, campaign_ticket):
         ticket_prepid = campaign_ticket.get_prepid()
         with self.locker.get_lock(ticket_prepid):
+            created_requests = campaign_ticket.get('created_requests')
+            status = campaign_ticket.get('status')
+            if status != 'new':
+                raise Exception(f'Ticket is not new, it already has {len(created_requests)} requests created')
+
             request_controller = RequestController()
             campaign_name = campaign_ticket.get('campaign_name')
-            created_requests = campaign_ticket.get('created_requests')
             for input_dataset in campaign_ticket.get('input_datasets'):
                 created_request_json = request_controller.create({'member_of_campaign': campaign_name, 'input_dataset': input_dataset})
                 created_requests.append(created_request_json.get('prepid'))
 
             campaign_ticket.set('created_requests', created_requests)
             campaign_ticket.set('status', 'done')
-            self.update(campaign_ticket.json())
+            campaign_ticket.add_history('create_requests', created_requests, None)
+            database = Database('campaign_tickets')
+            database.save(campaign_ticket.json())
 
         return created_requests

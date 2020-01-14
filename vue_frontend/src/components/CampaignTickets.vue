@@ -23,6 +23,11 @@
       <template v-slot:item.input_datasets="{ item }">
         {{item.input_datasets.length}} input datasets
       </template>
+      <template v-slot:item.created_requests="{ item }">
+        <ul>
+          <li v-for="prepid in item.created_requests" :key="prepid"><a :href="'requests?prepid=' + prepid">{{prepid}}</a></li>
+        </ul>
+      </template>
     </v-data-table>
 
     <v-dialog v-model="dialog.visible"

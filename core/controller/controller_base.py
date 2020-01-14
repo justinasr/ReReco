@@ -84,13 +84,13 @@ class ControllerBase():
         """
         Delete a single object
         """
-        obj = self.model_class(json_input=json_data)
-        prepid = obj.get_prepid()
-
+        prepid = json_data.get('prepid', None)
         database = Database(self.database_name)
-        if not database.get(prepid):
+        json_data = database.get(prepid)
+        if not json_data:
             raise Exception(f'Object with prepid "{prepid}" does not exist in {self.database_name} database')
 
+        obj = self.model_class(json_input=json_data)
         with self.locker.get_lock(prepid):
             self.logger.info('Will delete %s', (prepid))
             if self.check_for_delete(obj):
