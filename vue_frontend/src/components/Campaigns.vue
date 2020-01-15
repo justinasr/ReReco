@@ -27,8 +27,8 @@
       <template v-slot:item.energy="{ item }">
         {{item.energy}} TeV
       </template>
-      <template v-slot:item.cmssw_version="{ item }">
-        {{item.cmssw_version.replace('_', ' ').replace(/_/g, '.')}}
+      <template v-slot:item.cmssw_release="{ item }">
+        {{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}
       </template>
     </v-data-table>
 
@@ -72,7 +72,7 @@
     </v-dialog>
 
     <footer>
-      <a :href="'campaigns/edit'">Create new campaign</a>
+      <a :href="'campaigns/edit'" style="float: left; margin: 16px;">Create new campaign</a>
       <Paginator style="float: right;"
                  :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
@@ -99,7 +99,7 @@ export default {
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'type', 'displayName': 'Type', 'visible': 1},
         {'dbName': 'memory', 'displayName': 'Memory', 'visible': 1},
-        {'dbName': 'cmssw_version', 'displayName': 'CMSSW Version', 'visible': 1},
+        {'dbName': 'cmssw_release', 'displayName': 'CMSSW Version', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0},
         {'dbName': 'step', 'displayName': 'Step', 'visible': 0},
@@ -200,5 +200,9 @@ export default {
 </script>
 
 <style scoped>
+
+h1 {
+  margin: 8px;
+}
 
 </style>

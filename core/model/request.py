@@ -8,39 +8,58 @@ class Request(ModelBase):
         '_id': '',
         # Document revision (required by CouchDB)
         '_rev': '',
-        # PrepID
-        'prepid': '',
+        # CMSSW version
+        'cmssw_release': '',
         # Energy in TeV
         'energy': 0.0,
-        # Type LHE, MCReproc, Prod
-        'type': '',
-        # Step type: DR, MiniAOD, NanoAOD, etc.
-        'step': 'DR',
-        # CMSSW version
-        'cmssw_version': '',
-        # User notes
-        'notes': '',
-        # List of dictionaries that have cmsDriver options
-        'sequences': [],
         # Action history
         'history': [],
-        # Default memory
-        'memory': 2300,
-        # Status is either new or done
-        'status': 'new',
-        # Campaign
-        'member_of_campaign': '',
         # Input dataset name
-        'input_dataset': ''}
+        'input_dataset': '',
+        # Campaign name
+        'member_of_campaign': '',
+        # Memory in MB
+        'memory': 2300,
+        # User notes
+        'notes': '',
+        # List of output
+        'output_datasets': [],
+        # PrepID
+        'prepid': '',
+        # Priority in computing
+        'priority': 110000,
+        # Processing string
+        'processing_string': '',
+        # List of runs to be processed
+        'runs': [],
+        # List of dictionaries that have cmsDriver options
+        'sequences': [],
+        # Disk size per event in kB
+        'size_per_event': 1.0,
+        # Status is either new, approved, submitted or done
+        'status': 'new',
+        # Step type: DR, MiniAOD, NanoAOD, etc.
+        'step': 'DR',
+        # Time per event in seconds
+        'time_per_event': 1.0,
+        # Type LHE, MCReproc, Prod
+        'type': '',
+        # List of workflows in computing
+        'workflows': []
+    }
 
     __lambda_checks = {
-        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\-]{1,50}'),
+        'cmssw_release': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}'),  # CMSSW_ddd_ddd_ddd[_XXX...]
         'energy': lambda energy: energy >= 0.0,
-        'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
-        'type': lambda step: step in ['Prod', 'MCReproc', 'LHE'],
         'memory': lambda memory: memory >= 0,
-        'cmssw_version': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}'),  # CMSSW_ddd_ddd_ddd[_XXX...]
-        'status': lambda status: status in ('new', 'approved', 'submitted', 'done')
+        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\-]{1,50}'),
+        'priority': lambda priority: priority >= 1 and priority <= 1000000,
+        'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{0,100}'),
+        'size_per_event': lambda spe: spe > 0.0,
+        'status': lambda status: status in ('new', 'approved', 'submitted', 'done'),
+        'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
+        'time_per_event': lambda tpe: tpe > 0.0,
+        'type': lambda step: step in ['Prod', 'MCReproc', 'LHE']
     }
 
     def __init__(self, json_input=None):

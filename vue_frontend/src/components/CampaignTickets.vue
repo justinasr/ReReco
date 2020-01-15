@@ -15,7 +15,7 @@
         &nbsp;
         <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
         &nbsp;
-        <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)">Create requests</a>
+        <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="item.status == 'new'">Create requests</a>
       </template>
       <template v-slot:item.history="{ item }">
         <pre>{{JSON.stringify(item.history, null, 2)}}</pre>
@@ -70,7 +70,7 @@
     </v-dialog>
 
     <footer>
-      <a :href="'campaign_tickets/edit'">Create new campaign ticket</a>
+      <a :href="'campaign_tickets/edit'" style="float: left; margin: 16px;">Create new campaign ticket</a>
       <Paginator style="float: right;"
                  :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
@@ -216,5 +216,9 @@ export default {
 </script>
 
 <style scoped>
+
+h1 {
+  margin: 8px;
+}
 
 </style>

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Campaigns Edit</h1>
+    <h1>Requests Edit</h1>
     <v-card raised style="margin: auto; padding: 16px; max-width: 750px;">
       <table v-if="editableObject">
         <tr>
@@ -10,16 +10,6 @@
         <tr>
           <td>Energy</td>
           <td><input type="number" v-model="editableObject.energy" :disabled="!editingInfo.energy">TeV</td>
-        </tr>
-        <tr>
-          <td>Step</td>
-          <td>
-            <select v-model="editableObject.step" :disabled="!editingInfo.step">
-              <option>DR</option>
-              <option>MiniAOD</option>
-              <option>NanoAOD</option>
-            </select>
-          </td>
         </tr>
         <tr>
           <td>Type</td>
@@ -40,6 +30,40 @@
         <tr>
           <td>Memory</td>
           <td><input type="number" v-model="editableObject.memory" :disabled="!editingInfo.memory">MB</td>
+        </tr>
+        <tr>
+          <td>Step</td>
+          <td>
+            <select v-model="editableObject.step" :disabled="!editingInfo.step">
+              <option>DR</option>
+              <option>MiniAOD</option>
+              <option>NanoAOD</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td>Input dataset</td>
+          <td><input v-model="editableObject.input_dataset" :disabled="!editingInfo.input_dataset"></td>
+        </tr>
+        <tr>
+          <td>Priority</td>
+          <td><input type="number" v-model="editableObject.priority" :disabled="!editingInfo.priority"></td>
+        </tr>
+        <tr>
+          <td>Processing String</td>
+          <td><input v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
+        </tr>
+        <tr>
+          <td>Runs</td>
+          <td><textarea v-model="editableObject.runs" :disabled="!editingInfo.runs"></textarea></td>
+        </tr>
+        <tr>
+          <td>Size per event</td>
+          <td><input type="number" v-model="editableObject.size_per_event" :disabled="!editingInfo.size_per_event">kB</td>
+        </tr>
+        <tr>
+          <td>Time per event</td>
+          <td><input type="number" v-model="editableObject.time_per_event" :disabled="!editingInfo.time_per_event">s</td>
         </tr>
       </table>
       <v-btn @click="save()">Save</v-btn>
@@ -80,7 +104,7 @@ export default {
     this.creatingNew = this.prepid === undefined;
     this.loading = true;
     let component = this;
-    axios.get('api/campaigns/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
+    axios.get('api/requests/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
       console.log(response.data);
       component.editableObject = response.data.response.object;
       component.editableObject.sequences = JSON.stringify(component.editableObject.sequences, null, 4);
@@ -99,14 +123,14 @@ export default {
       editableObject['sequences'] = JSON.parse(editableObject['sequences']);
       let httpRequest;
       if (this.creatingNew) {
-        httpRequest = axios.put('api/campaigns/create', editableObject)
+        httpRequest = axios.put('api/requests/create', editableObject)
       } else {
-        httpRequest = axios.post('api/campaigns/update', editableObject)
+        httpRequest = axios.post('api/requests/update', editableObject)
       }
       httpRequest.then(response => {
         console.log(response.data.response.prepid);
         component.loading = false;
-        window.location = 'campaigns?prepid=' + response.data.response.prepid;
+        window.location = 'requests?prepid=' + response.data.response.prepid;
       }).catch(error => {
         console.log('Error!');
         component.loading = false;

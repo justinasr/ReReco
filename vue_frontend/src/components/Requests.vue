@@ -27,8 +27,8 @@
       <template v-slot:item.energy="{ item }">
         {{item.energy}} TeV
       </template>
-      <template v-slot:item.cmssw_version="{ item }">
-        {{item.cmssw_version.replace('_', ' ').replace(/_/g, '.')}}
+      <template v-slot:item.cmssw_release="{ item }">
+        {{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}
       </template>
     </v-data-table>
 
@@ -72,7 +72,7 @@
     </v-dialog>
 
     <footer>
-      <a :href="'requests/edit'">Create new request</a>
+      <a :href="'requests/edit'" style="float: left; margin: 16px;">Create new request</a>
       <Paginator style="float: right;"
                  :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
@@ -97,14 +97,24 @@ export default {
       columns: [
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
+        {'dbName': 'status', 'displayName': 'Status', 'visible': 1},
         {'dbName': 'type', 'displayName': 'Type', 'visible': 1},
         {'dbName': 'memory', 'displayName': 'Memory', 'visible': 1},
-        {'dbName': 'cmssw_version', 'displayName': 'CMSSW Version', 'visible': 1},
+        {'dbName': 'cmssw_release', 'displayName': 'CMSSW Version', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0},
         {'dbName': 'step', 'displayName': 'Step', 'visible': 0},
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
+        {'dbName': 'input_dataset', 'displayName': 'Input dataset', 'visible': 0},
+        {'dbName': 'member_of_campaign', 'displayName': 'Member of Campaign', 'visible': 0},
+        {'dbName': 'output_datasets', 'displayName': 'Output datasets', 'visible': 0},
+        {'dbName': 'priority', 'displayName': 'Priority', 'visible': 0},
+        {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 0},
+        {'dbName': 'runs', 'displayName': 'Runs', 'visible': 0},
+        {'dbName': 'size_per_event', 'displayName': 'Size per Event', 'visible': 0},
+        {'dbName': 'time_per_event', 'displayName': 'Time per Event', 'visible': 0},
+        {'dbName': 'workflows', 'displayName': 'Computing Workflows', 'visible': 0},
       ],
       headers: [],
       dataItems: [],
@@ -200,5 +210,9 @@ export default {
 </script>
 
 <style scoped>
+
+h1 {
+  margin: 8px;
+}
 
 </style>

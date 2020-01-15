@@ -54,7 +54,7 @@ class RequestController(ControllerBase):
                                   'memory': 'memory',
                                   'energy': 'energy',
                                   'step': 'step',
-                                  'cmssw_version': 'cmssw_version',
+                                  'cmssw_release': 'cmssw_release',
                                   'type': 'type',
                                   'sequences': 'sequences'}
             for campaign_attr, request_attr in attributes_to_move.items():

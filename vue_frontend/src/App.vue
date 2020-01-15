@@ -18,7 +18,7 @@
         href="campaign_tickets">
         <span class="mr-2">Campaign Tickets</span>
       </v-btn>
-      <v-btn
+<!--       <v-btn
         text
         href="flows">
         <span class="mr-2">Flows</span>
@@ -32,7 +32,7 @@
         text
         href="chained_requests">
         <span class="mr-2">Chained Requests</span>
-      </v-btn>
+      </v-btn> -->
       <v-btn
         text
         href="requests">

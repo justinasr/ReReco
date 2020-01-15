@@ -17,7 +17,7 @@ class Campaign(ModelBase):
         # Step type: DR, MiniAOD, NanoAOD, etc.
         'step': 'DR',
         # CMSSW version
-        'cmssw_version': '',
+        'cmssw_release': '',
         # User notes
         'notes': '',
         # List of dictionaries that have cmsDriver options
@@ -33,7 +33,7 @@ class Campaign(ModelBase):
         'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
         'type': lambda step: step in ['Prod', 'MCReproc', 'LHE'],
         'memory': lambda memory: memory >= 0,
-        'cmssw_version': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}')  # CMSSW_ddd_ddd_ddd[_XXX...]
+        'cmssw_release': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}')  # CMSSW_ddd_ddd_ddd[_XXX...]
     }
 
     def __init__(self, json_input=None):

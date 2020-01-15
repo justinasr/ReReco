@@ -1,30 +1,32 @@
 <template>
   <div>
-    <h1>CampaignTicketsEdit</h1>
-    <table v-if="editableObject">
-      <tr>
-        <td>PrepID</td>
-        <td><input v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
-      </tr>
-      <tr>
-        <td>Campaign Name</td>
-        <td><input v-model="editableObject.campaign_name" :disabled="!editingInfo.campaign_name"></td>
-      </tr>
-      <tr>
-        <td>Processing String</td>
-        <td><input v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
-      </tr>
-      <tr>
-        <td>Notes</td>
-        <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
-      </tr>
-      <tr>
-        <td>Input Datasets</td>
-        <td><textarea v-model="editableObject.input_datasets" :disabled="!editingInfo.input_datasets"></textarea></td>
-      </tr>
-    </table>
-    <v-btn @click="getDatasetsDialogVisible = true">Get dataset list from DBS</v-btn>
-    <v-btn @click="save()">Save</v-btn>
+    <h1>Campaign Tickets Edit</h1>
+    <v-card raised style="margin: auto; padding: 16px; max-width: 750px;">
+      <table v-if="editableObject">
+        <tr>
+          <td>PrepID</td>
+          <td><input v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
+        </tr>
+        <tr>
+          <td>Campaign Name</td>
+          <td><input v-model="editableObject.campaign_name" :disabled="!editingInfo.campaign_name"></td>
+        </tr>
+        <tr>
+          <td>Processing String</td>
+          <td><input v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
+        </tr>
+        <tr>
+          <td>Notes</td>
+          <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
+        </tr>
+        <tr>
+          <td>Input Datasets</td>
+          <td><textarea v-model="editableObject.input_datasets" :disabled="!editingInfo.input_datasets"></textarea></td>
+        </tr>
+      </table>
+      <v-btn @click="getDatasetsDialogVisible = true">Get dataset list from DBS</v-btn>
+      <v-btn @click="save()">Save</v-btn>
+    </v-card>
     <v-dialog v-model="getDatasetsDialogVisible"
               max-width="50%">
       <v-card>
@@ -137,13 +139,17 @@ input, select, textarea {
   border-style: inset;
   background-color: inherit;
   -webkit-appearance: auto;
-  min-width: 750px;
+  min-width: 500px;
 }
 
 textarea {
   min-height: 500px;
   font-family: monospace;
   font-size: 0.8em;
+}
+
+h1 {
+  margin: 8px;
 }
 
 </style>

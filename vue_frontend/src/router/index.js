@@ -9,6 +9,7 @@ import Flows from '@/components/Flows'
 import ChainedCampaigns from '@/components/ChainedCampaigns'
 import ChainedRequests from '@/components/ChainedRequests'
 import Requests from '@/components/Requests'
+import RequestsEdit from '@/components/RequestsEdit'
 
 
 Vue.use(VueRouter)
@@ -53,6 +54,11 @@ const routes = [
     path: '/chained_requests',
     name: 'chained_requests',
     component: ChainedRequests
+  },
+  {
+    path: '/requests/edit',
+    name: 'requests_edit',
+    component: RequestsEdit
   },
   {
     path: '/requests',
