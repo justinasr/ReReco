@@ -11,7 +11,7 @@ class CampaignTicket(ModelBase):
         # PrepID
         'prepid': '',
         # Name of campaign that was used as template for requests
-        'campaign_name': '',
+        'campaign': '',
         # List of input dataset names
         'input_datasets': [],
         # Processing string for this ticket
@@ -27,7 +27,7 @@ class CampaignTicket(ModelBase):
 
     __lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9]{1,50}'),
-        'campaign_name': lambda campaign_name: ModelBase.matches_regex(campaign_name, '[a-zA-Z0-9]{1,50}'),
+        'campaign': lambda campaign_name: ModelBase.matches_regex(campaign_name, '[a-zA-Z0-9]{1,50}'),
         'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{0,100}'),
         'status': lambda status: status in ('new', 'done'),
 

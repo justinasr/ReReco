@@ -80,12 +80,16 @@ class APIBase(Resource):
         return 400
 
     @staticmethod
-    def output_text(data, code=200, headers=None):
+    def output_text(data, code=200, headers=None, content_type='application/json'):
         """
         Makes a Flask response with a plain text encoded body
         """
-        resp = make_response(json.dumps(data, indent=2, sort_keys=True), code)
+        if content_type == 'application/json':
+            resp = make_response(json.dumps(data, indent=2, sort_keys=True), code)
+        else:
+            resp = make_response(data, code)
+
         resp.headers.extend(headers or {})
-        resp.headers['Content-Type'] = 'application/json'
+        resp.headers['Content-Type'] = content_type
         resp.headers['Access-Control-Allow-Origin'] = '*'
         return resp

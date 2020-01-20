@@ -204,6 +204,8 @@ class Database():
             query_url = '/local/%s/_design/lucene/search?q=%s&sort=prepid<string>&%s' % (self.database_name,
                                                                                          query_string,
                                                                                          common_parameters)
+
+        self.logger.debug('Query %s', query_url)
         response = self.__make_request(connection, query_url)
         if not response:
             total_rows = 0

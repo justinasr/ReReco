@@ -96,7 +96,7 @@ export default {
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'status', 'displayName': 'Status', 'visible': 1},
-        {'dbName': 'campaign_name', 'displayName': 'Campaign name', 'visible': 1},
+        {'dbName': 'campaign', 'displayName': 'Campaign', 'visible': 1},
         {'dbName': 'input_datasets', 'displayName': 'Input Datasets', 'visible': 1},
         {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},

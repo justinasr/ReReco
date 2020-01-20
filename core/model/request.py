@@ -70,3 +70,33 @@ class Request(ModelBase):
             return self.__lambda_checks.get(attribute_name)(attribute_value)
 
         return True
+
+    def get_cmssw_setup(self):
+        """
+        Return code needed to set up CMSSW environment
+        Basically, cmsenv command
+        """
+        cmssw_release = self.get('cmssw_release')
+        commands = ['if [ -r %s/src ] ; then' % (cmssw_release),
+                    '  echo release %s already exists' % (cmssw_release),
+                    'else',
+                    '  scram p CMSSW %s' % (cmssw_release),
+                    'fi',
+                    'cd %s/src' % (cmssw_release),
+                    'eval `scram runtime -sh`']
+
+        return '\n'.join(commands)
+
+    def get_cmsdriver(self, sequence_index):
+        sequence_json = self.get('sequences')[sequence_index]
+        cms_driver_command = 'cmsDriver.py'
+        for key, value in sequence_json.items():
+            if not value:
+                continue
+
+            if isinstance(value, list):
+                value = ','.join([str(x) for x in value])
+
+            cms_driver_command += ' -%s %s' % (key, value)
+
+        return cms_driver_command

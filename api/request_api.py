@@ -96,3 +96,18 @@ class GetEditableRequestAPI(APIBase):
                                               'editing_info': editing_info},
                                  'success': True,
                                  'message': ''})
+
+
+class GetCMSDriverCommands(APIBase):
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    def get(self, prepid=None):
+        """
+        Get a text file with request's cmsDriver.py commands
+        """
+        request = request_controller.get(prepid)
+        commands = request_controller.get_cmsdriver(request)
+        return self.output_text(commands, content_type='text/plain')

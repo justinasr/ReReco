@@ -95,3 +95,14 @@ class RequestController(ControllerBase):
         editing_info['prepid'] = not bool(editing_info.get('prepid'))
         editing_info['history'] = False
         return editing_info
+
+    def get_cmsdriver(self, request):
+        number_of_sequences = len(request.get('sequences'))
+        cms_driver = '#!/bin/bash\n\n'
+        cms_driver += request.get_cmssw_setup()
+        cms_driver += '\n\n'
+        for i in range(number_of_sequences):
+            cms_driver += request.get_cmsdriver(i)
+            cms_driver += '\n'
+
+        return cms_driver

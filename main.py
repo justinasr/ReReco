@@ -1,7 +1,7 @@
 from api.campaign_api import CreateCampaignAPI, DeleteCampaignAPI, UpdateCampaignAPI, GetCampaignAPI, GetEditableCampaignAPI
 from api.campaign_ticket_api import CreateCampaignTicketAPI, DeleteCampaignTicketAPI, UpdateCampaignTicketAPI, GetCampaignTicketAPI, GetCampaignTicketDatasetsAPI, GetEditableCampaignTicketAPI, CreateRequestsForCampaignTicketAPI
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
-from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI
+from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverCommands
 from api.search_api import SearchAPI
 import logging
 from flask_restful import Api
@@ -56,6 +56,7 @@ api.add_resource(DeleteRequestAPI, '/api/requests/delete')
 api.add_resource(UpdateRequestAPI, '/api/requests/update')
 api.add_resource(GetRequestAPI, '/api/requests/get/<string:prepid>')
 api.add_resource(GetEditableRequestAPI, '/api/requests/get_editable', '/api/requests/get_editable/<string:prepid>')
+api.add_resource(GetCMSDriverCommands, '/api/requests/get_cmsdrivers/<string:prepid>')
 
 app.run(host='0.0.0.0',
         port=8003,

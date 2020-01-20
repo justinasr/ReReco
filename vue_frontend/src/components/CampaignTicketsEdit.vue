@@ -8,8 +8,8 @@
           <td><input v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
         </tr>
         <tr>
-          <td>Campaign Name</td>
-          <td><input v-model="editableObject.campaign_name" :disabled="!editingInfo.campaign_name"></td>
+          <td>Campaign</td>
+          <td><input v-model="editableObject.campaign" :disabled="!editingInfo.campaign"></td>
         </tr>
         <tr>
           <td>Processing String</td>

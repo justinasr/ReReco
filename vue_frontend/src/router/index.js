@@ -10,6 +10,7 @@ import ChainedCampaigns from '@/components/ChainedCampaigns'
 import ChainedRequests from '@/components/ChainedRequests'
 import Requests from '@/components/Requests'
 import RequestsEdit from '@/components/RequestsEdit'
+import qs from 'qs';
 
 
 Vue.use(VueRouter)
@@ -70,6 +71,12 @@ const routes = [
 const router = new VueRouter({
   mode: 'history',
   base: process.env.BASE_URL,
+  stringifyQuery: query => {
+    var result = qs.stringify(query);
+    // Do not encode asterisks
+    result = result.replace(/%2A/g, '*');
+    return result ? ('?' + result) : '';
+  },
   routes
 })
 
