@@ -109,7 +109,7 @@ class Database():
         Get number of documents in the database
         """
         connection = self.__get_database_connection()
-        response = self.__make_request(connection, '/%s' % (self.database_name))
+        response = self.__make_request(connection, f'/{self.database_name}')
         return response.get('doc_count', 0)
 
     def get(self, document_id):
@@ -121,7 +121,7 @@ class Database():
             return None
 
         connection = self.__get_database_connection()
-        response = self.__make_request(connection, '/%s/%s' % (self.database_name, document_id))
+        response = self.__make_request(connection, f'/{self.database_name}/{document_id}')
         return response
 
     def document_exists(self, document_id):
@@ -136,24 +136,24 @@ class Database():
         Delete a document
         """
         if not isinstance(document, dict):
-            self.logger.error('%s is not a dictionary' % (document))
+            self.logger.error('%s is not a dictionary', document)
             return
 
         document_id = document.get('_id', '')
         document_id = document_id.strip()
         if not document_id:
-            self.logger.error('%s does not have a _id' % (document))
+            self.logger.error('%s does not have a _id', document)
             return
 
         document_rev = document.get('_rev', '')
         document_rev = document_rev.strip()
         if not document_rev:
-            self.logger.error('%s does not have a _rev' % (document))
+            self.logger.error('%s does not have a _rev', document)
             return
 
         connection = self.__get_database_connection()
         self.__make_request(connection,
-                            '/%s/%s?rev=%s' % (self.database_name, document_id, document_rev),
+                            f'/{self.database_name}/{document_id}?rev={document_rev}',
                             method='DELETE')
 
     def save(self, document):
@@ -161,12 +161,12 @@ class Database():
         Save a document
         """
         if not isinstance(document, dict):
-            self.logger.error('%s is not a dictionary' % (document))
+            self.logger.error('%s is not a dictionary', document)
             return
 
         document_id = document.get('_id', '')
         if not document_id:
-            self.logger.error('%s does not have a _id' % (document))
+            self.logger.error('%s does not have a _id', document)
             return
 
         if '_rev' in document and not document['_rev']:
@@ -174,7 +174,7 @@ class Database():
 
         connection = self.__get_database_connection()
         result = self.__make_request(connection,
-                                     '/%s/%s' % (self.database_name, document_id),
+                                     f'/{self.database_name}/{document_id}',
                                      method='PUT',
                                      data=document)
 
@@ -192,18 +192,18 @@ class Database():
         if query_string:
             query_string = query_string.replace(' ', '')
 
-        common_parameters = 'limit=%s&skip=%s&include_docs=True' % (limit, skip_documents)
+        common_parameters = f'limit={limit}&skip={skip_documents}&include_docs=True'
         if not query_string:
             connection = self.__get_database_connection()
-            query_url = '/%s/_design/%s/_view/all?%s&include_docs=True' % (self.database_name,
-                                                                           self.database_name,
-                                                                           common_parameters)
+            db_name = self.database_name
+            query_url = (f'/{db_name}/_design/{db_name}/_view/all?{common_parameters}')
         else:
-            query_string = query_string.replace('=', ':').replace('&&', '%20AND%20').replace('||', '%20OR%20')
+            query_string = query_string.replace('=', ':')
+            query_string = query_string.replace('&&', '%20AND%20')
+            query_string = query_string.replace('||', '%20OR%20')
             connection = self.__get_lucene_connection()
-            query_url = '/local/%s/_design/lucene/search?q=%s&sort=prepid<string>&%s' % (self.database_name,
-                                                                                         query_string,
-                                                                                         common_parameters)
+            query_url = (f'/local/{self.database_name}/_design/lucene/search?'
+                         f'q={query_string}&sort=prepid<string>&{common_parameters}')
 
         self.logger.debug('Query %s', query_url)
         response = self.__make_request(connection, query_url)
@@ -216,20 +216,18 @@ class Database():
 
         if return_total_rows:
             return results, total_rows
-        else:
-            return results
+
+        return results
 
     def query_view(self, view_name, query_string):
         """
         Query a couchdb view
         """
         connection = self.__get_database_connection()
-        query_url = '/%s/_design/%s/_view/%s?%s' % (self.database_name,
-                                                    self.database_name,
-                                                    view_name,
-                                                    query_string)
+        db_name = self.database_name
+        query_url = f'/{db_name}/_design/{db_name}/_view/{view_name}?{query_string}'
         response = self.__make_request(connection, query_url)
         if not response:
             return []
-        else:
-            return response.get('rows', [])
+
+        return response.get('rows', [])

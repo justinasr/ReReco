@@ -1,3 +1,6 @@
+"""
+Module that contains RequestController class
+"""
 from core.controller.controller_base import ControllerBase
 from core.model.request import Request
 from core.model.campaign import Campaign
@@ -6,15 +9,16 @@ from core.model.sequence import Sequence
 
 
 class RequestController(ControllerBase):
+    """
+    Controller that has all actions related to a request
+    """
+
     def __init__(self):
         ControllerBase.__init__(self)
         self.database_name = 'requests'
         self.model_class = Request
 
     def create(self, json_data):
-        """
-        Create a new request from given json_data
-        """
         request_db = Database('requests')
         # Get a campaign
         campaign_db = Database('campaigns')
@@ -37,7 +41,8 @@ class RequestController(ControllerBase):
 
         with self.locker.get_lock(f'generate-prepid-{campaign_name}'):
             # Get a new serial number
-            serial_numbers = request_db.query_view('serial_number', f'key="{campaign_name}"&group=true')
+            serial_numbers = request_db.query_view('serial_number',
+                                                   f'key="{campaign_name}"&group=true')
             if not serial_numbers:
                 serial_number = 0
             else:
@@ -64,19 +69,16 @@ class RequestController(ControllerBase):
             if 'input_dataset' in json_data:
                 new_request.set('input_dataset', json_data['input_dataset'])
 
-            if self.check_for_create(new_request):
-                if not request_db.save(new_request.get_json()):
-                    raise Exception(f'Error saving {prepid}')
-
-                return new_request.get_json()
-            else:
+            if not self.check_for_create(new_request):
                 self.logger.error('Error while checking new item %s', prepid)
                 return None
 
+            if not request_db.save(new_request.get_json()):
+                raise Exception(f'Error saving {prepid}')
+
+            return new_request.get_json()
+
     def check_for_create(self, obj):
-        """
-        Perform checks on object before adding it to database
-        """
         sequences = []
         for sequence_json in obj.get('sequences'):
             sequence = Sequence(json_input=sequence_json)
@@ -86,9 +88,6 @@ class RequestController(ControllerBase):
         return True
 
     def check_for_update(self, old_obj, new_obj, changed_values):
-        """
-        Compare existing and updated objects to see if update is valid
-        """
         sequences = []
         for sequence_json in new_obj.get('sequences'):
             sequence = Sequence(json_input=sequence_json)
@@ -98,18 +97,19 @@ class RequestController(ControllerBase):
         return True
 
     def check_for_delete(self, obj):
-        """
-        Perform checks on object before deleting it from database
-        """
         return True
 
-    def get_editing_info(self, request):
-        editing_info = {k: not k.startswith('_') for k in request.get_json().keys()}
+    def get_editing_info(self, obj):
+        editing_info = {k: not k.startswith('_') for k in obj.get_json().keys()}
         editing_info['prepid'] = not bool(editing_info.get('prepid'))
         editing_info['history'] = False
         return editing_info
 
     def get_cmsdriver(self, request):
+        """
+        Get bash script with cmsDriver commands for a given request
+        """
+        self.logger.debug('Getting cmsDriver commands for %s', request.get_prepid())
         number_of_sequences = len(request.get('sequences'))
         cms_driver = '#!/bin/bash\n\n'
         cms_driver += request.get_cmssw_setup()

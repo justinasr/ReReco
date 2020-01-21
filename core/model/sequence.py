@@ -1,7 +1,14 @@
+"""
+Module that contains Sequence class
+"""
 from core.model.model_base import ModelBase
 
 
 class Sequence(ModelBase):
+    """
+    Sequence is a dictionary that has all user editable attributes
+    for cmsDriver command
+    """
 
     _ModelBase__schema = {
         # What conditions to use. This has to be specified
@@ -27,8 +34,8 @@ class Sequence(ModelBase):
     __lambda_checks = {
         'conditions': lambda c: ModelBase.matches_regex(c, '[a-zA-Z0-9_]{0,50}'),
         'era': lambda e: ModelBase.matches_regex(e, '[a-zA-Z0-9_]{0,50}'),
-        'nThreads': lambda n: n > 0 and n < 64,
-        '__datatier': lambda s: s in ('AOD', 'MINIAOD', 'DQM'),
+        'nThreads': lambda n: 0 < n < 64,
+        '__datatier': lambda s: s in ('AOD', 'MINIAOD', 'DQMIO'),
         '__eventcontent': lambda s: s in ('AOD', 'MINIAOD', 'DQM'),
         '__step': lambda s: s in ('GEN', 'SIM', 'DIGI', 'L1', 'DIGI2RAW', 'HLT', 'RAW2DIGI', 'RECO', 'POSTRECO', 'DQM', 'ALCA', 'HARVESTING')
     }
@@ -54,8 +61,8 @@ class Sequence(ModelBase):
         if attribute_name in ('datatier', 'eventcontent', 'step'):
             if isinstance(attribute_value, str):
                 return [x.strip() for x in attribute_value.split(',') if x.strip()]
-            else:
-                raise Exception('Cannot convert {attribute_name} of Sequence to correct type')
+
+            raise Exception('Cannot convert {attribute_name} of Sequence to correct type')
 
         return super().cast_value_to_correct_type(attribute_name, attribute_value)
 

@@ -1,7 +1,15 @@
+"""
+Module that contains Request class
+"""
 from core.model.model_base import ModelBase
 
 
 class Request(ModelBase):
+    """
+    Request represents a single step in processing pipeline
+    Request contains one or a few cmsDriver commands
+    It is created based on a campaign that it is a member of
+    """
 
     _ModelBase__schema = {
         # Database id (required by CouchDB)
@@ -52,8 +60,8 @@ class Request(ModelBase):
         'cmssw_release': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}'),  # CMSSW_ddd_ddd_ddd[_XXX...]
         'energy': lambda energy: energy >= 0.0,
         'memory': lambda memory: memory >= 0,
-        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\-]{1,50}'),
-        'priority': lambda priority: priority >= 1 and priority <= 1000000,
+        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-]{1,50}'),
+        'priority': lambda priority: 1000 <= priority <= 1000000,
         'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{0,100}'),
         'size_per_event': lambda spe: spe > 0.0,
         'status': lambda status: status in ('new', 'approved', 'submitted', 'done'),
@@ -88,6 +96,9 @@ class Request(ModelBase):
         return '\n'.join(commands)
 
     def get_cmsdriver(self, sequence_index):
+        """
+        Return a build cmsDriver command for given sequence
+        """
         sequence_json = self.get('sequences')[sequence_index]
         cms_driver_command = 'cmsDriver.py'
         for key, value in sequence_json.items():

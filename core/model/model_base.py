@@ -1,3 +1,6 @@
+"""
+Module that contains ModelBase class
+"""
 import json
 import logging
 import re
@@ -6,6 +9,11 @@ from copy import deepcopy
 
 
 class ModelBase():
+    """
+    Base class for all ReReco objects in the system
+    Has some convenience methods as well as somewhat smart setter
+    Contains a bunch of sanity checks
+    """
     __json = {}
     __schema = {}
     __model_name = None
@@ -61,7 +69,7 @@ class ModelBase():
             else:
                 self.set(key, json_input[key])
 
-        self.logger.debug('\n' + str(self))
+        self.logger.debug('%s\n', str(self))
 
     def set(self, attribute, value=None):
         """
@@ -78,13 +86,14 @@ class ModelBase():
             raise Exception('Attribute name not specified')
 
         if attribute not in self.__schema:
-            raise Exception(f'Attribute {attribute} could not be found in {self.__class_name} schema')
+            raise Exception(f'Attribute {attribute} could not be '
+                            f'found in {self.__class_name} schema')
 
-        if attribute == 'prepid' or attribute == '_id':
+        if attribute in ('prepid', '_id'):
             raise Exception('Changing prepid or _id is not allowed')
 
         if not isinstance(value, type(self.__schema[attribute])):
-            self.logger.debug('%s of %s is not expected type. Expected %s, got %s, will ask for cast',
+            self.logger.debug('%s of %s is not expected (%s) type (got %s). Will try to cast',
                               attribute,
                               prepid,
                               type(self.__schema[attribute]),
@@ -92,12 +101,16 @@ class ModelBase():
             value = self.cast_value_to_correct_type(attribute, value)
 
         value = self.before_attribute_check(attribute, value)
-        if self.check_attribute(attribute, value):
-            self.__json[attribute] = value
-            return self.__json
-        else:
-            self.logger.error('Invalid value "%s" for key "%s" for object %s of type %s', value, attribute, prepid, self.__class_name)
+        if not self.check_attribute(attribute, value):
+            self.logger.error('Invalid value "%s" for key "%s" for object %s of type %s',
+                              value,
+                              attribute,
+                              prepid,
+                              self.__class_name)
             raise Exception(f'Invalid {attribute} value {value} for {prepid}')
+
+        self.__json[attribute] = value
+        return self.__json
 
     def get(self, attribute):
         """
@@ -118,17 +131,18 @@ class ModelBase():
         """
         if 'prepid' in self.__json:
             return self.__json['prepid']
-        elif '_id' in self.__json:
+
+        if '_id' in self.__json:
             return self.__json['_id']
 
         return None
 
     def check_attribute(self, attribute_name, attribute_value):
         """
-        This method should be overwritten in child classes and
-        check whether given value of attribute is valid
+        This method must return whether given value of attribute is valid
+        or raise exception with error
         """
-        return True
+        raise NotImplementedError('This method must be implemented')
 
     def cast_value_to_correct_type(self, attribute_name, attribute_value):
         """
@@ -150,6 +164,9 @@ class ModelBase():
 
     @classmethod
     def matches_regex(cls, value, regex):
+        """
+        Check if given string fully matches given regex
+        """
         matcher = re.compile(regex)
         match = matcher.fullmatch(value)
         if match:
@@ -186,6 +203,7 @@ class ModelBase():
         history = self.get('history')
         history.append({'action': action,
                         'time': int(timestamp if timestamp else time.time()),
+                        'user': user,
                         'value': value})
         self.set('history', history)
 
@@ -194,4 +212,5 @@ class ModelBase():
         Preprocess value if needed before performing checks setting it
         This should include sanitization and whitespace removal (stripping)
         """
+        self.logger.debug('Returning default %s value %s', attribute_name, attribute_value)
         return attribute_value

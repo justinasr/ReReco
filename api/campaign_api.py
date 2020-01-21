@@ -12,6 +12,9 @@ campaign_controller = CampaignController()
 
 
 class CreateCampaignAPI(APIBase):
+    """
+    Enpoint for creating campaigns
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -29,6 +32,9 @@ class CreateCampaignAPI(APIBase):
 
 
 class DeleteCampaignAPI(APIBase):
+    """
+    Endpoint for deleting campaigns
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -46,6 +52,9 @@ class DeleteCampaignAPI(APIBase):
 
 
 class UpdateCampaignAPI(APIBase):
+    """
+    Endpoint for updating campaigns
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -63,6 +72,9 @@ class UpdateCampaignAPI(APIBase):
 
 
 class GetCampaignAPI(APIBase):
+    """
+    Endpoint for retrieving a single campaign
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -77,6 +89,9 @@ class GetCampaignAPI(APIBase):
 
 
 class GetEditableCampaignAPI(APIBase):
+    """
+    Endpoint for getting information on which campaign fields are editable
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -99,6 +114,9 @@ class GetEditableCampaignAPI(APIBase):
 
 
 class GetDefaultCampaignSequenceAPI(APIBase):
+    """
+    Endpoint for getting a default (empty) sequence that could be used as a template
+    """
 
     def __init__(self):
         APIBase.__init__(self)

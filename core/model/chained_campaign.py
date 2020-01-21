@@ -1,7 +1,14 @@
+"""
+Module that contains ChainedCampaign class
+"""
 from core.model.model_base import ModelBase
 
 
 class ChainedCampaign(ModelBase):
+    """
+    Chained campaign represents a sequence of requests that run
+    separately one after another or combined bunch after bunch
+    """
 
     _ModelBase__schema = {
         # Database id

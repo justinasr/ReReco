@@ -1,7 +1,14 @@
+"""
+Module that contains CampaignTicket class
+"""
 from core.model.model_base import ModelBase
 
 
 class CampaignTicket(ModelBase):
+    """
+    Campaign ticket has a list of input datasets, a campaign and a processing string
+    Campaign ticket can be used to create requests for each input dataset
+    """
 
     _ModelBase__schema = {
         # Database id (required by CouchDB)
@@ -28,7 +35,7 @@ class CampaignTicket(ModelBase):
 
     __lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9]{1,50}'),
-        'campaign': lambda campaign_name: ModelBase.matches_regex(campaign_name, '[a-zA-Z0-9]{1,50}'),
+        'campaign': lambda campaign: ModelBase.matches_regex(campaign, '[a-zA-Z0-9]{1,50}'),
         'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{0,100}'),
         'status': lambda status: status in ('new', 'done'),
         '__input_dataset': lambda ds: ModelBase.matches_regex(ds, '^/[a-zA-Z0-9\\-_]{1,99}/[a-zA-Z0-9\\.\\-_]{1,199}/[A-Z\\-]{1,50}$'),

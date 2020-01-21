@@ -12,6 +12,9 @@ request_controller = RequestController()
 
 
 class CreateRequestAPI(APIBase):
+    """
+    Endpoint for creating a request
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -29,6 +32,9 @@ class CreateRequestAPI(APIBase):
 
 
 class DeleteRequestAPI(APIBase):
+    """
+    Endpoint for deleting a request
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -46,6 +52,9 @@ class DeleteRequestAPI(APIBase):
 
 
 class UpdateRequestAPI(APIBase):
+    """
+    Endpoint for updating a request
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -63,6 +72,9 @@ class UpdateRequestAPI(APIBase):
 
 
 class GetRequestAPI(APIBase):
+    """
+    Endpoint for retrieving a single request
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -77,6 +89,9 @@ class GetRequestAPI(APIBase):
 
 
 class GetEditableRequestAPI(APIBase):
+    """
+    Endpoint for getting information on which request fields are editable
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -99,6 +114,9 @@ class GetEditableRequestAPI(APIBase):
 
 
 class GetCMSDriverCommands(APIBase):
+    """
+    Endpoint for getting a bash script with cmsDriver.py commands of request
+    """
 
     def __init__(self):
         APIBase.__init__(self)

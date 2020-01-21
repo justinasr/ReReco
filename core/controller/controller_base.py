@@ -1,3 +1,6 @@
+"""
+Module that contains ControllerBase class
+"""
 from core.database.database import Database
 from core.model.model_base import ModelBase
 from core.utils.locker import Locker
@@ -7,6 +10,7 @@ class ControllerBase():
     """
     Controller base class implements simple create, read, update, delete methods
     as well as some convenience methods such as get_changed_values for update
+    It also has callback methods that are called before create, update or delete actions
     This is a base class for all controllers
     It requires database name and class object of model
     """
@@ -15,7 +19,7 @@ class ControllerBase():
         self.logger = ModelBase._ModelBase__logger
         self.locker = Locker()
         self.database_name = None
-        self.model_class = None
+        self.model_class = ModelBase
 
     def create(self, json_data):
         """
@@ -26,17 +30,18 @@ class ControllerBase():
 
         database = Database(self.database_name)
         if database.get(prepid):
-            raise Exception(f'Object with prepid "{prepid}" already exists in {self.database_name} database')
+            raise Exception(f'Object with prepid "{prepid}" already '
+                            f'exists in {self.database_name} database')
 
         with self.locker.get_lock(prepid):
             self.logger.info('Will create %s', (prepid))
             new_object.add_history('create', prepid, None)
-            if self.check_for_create(new_object):
-                database.save(new_object.get_json())
-                return new_object.get_json()
-            else:
+            if not self.check_for_create(new_object):
                 self.logger.error('Error while checking new item %s', prepid)
                 return None
+
+            database.save(new_object.get_json())
+            return new_object.get_json()
 
     def get(self, prepid):
         """
@@ -46,8 +51,8 @@ class ControllerBase():
         object_json = database.get(prepid)
         if object_json:
             return self.model_class(json_input=object_json)
-        else:
-            return None
+
+        return None
 
     def update(self, json_data):
         """
@@ -60,7 +65,8 @@ class ControllerBase():
             database = Database(self.database_name)
             old_object = database.get(prepid)
             if not old_object:
-                raise Exception(f'Object with prepid "{prepid}" does not exist in {self.database_name} database')
+                raise Exception(f'Object with prepid "{prepid}" does not '
+                                f'exist in {self.database_name} database')
 
             old_object = self.model_class(json_input=old_object)
             # Move over history, so it could not be overwritten
@@ -74,12 +80,12 @@ class ControllerBase():
 
             self.edit_allowed(old_object, changed_values)
             new_object.add_history('update', changed_values, None)
-            if self.check_for_update(old_object, new_object, changed_values):
-                database.save(new_object.get_json())
-                return new_object.get_json()
-            else:
+            if not self.check_for_update(old_object, new_object, changed_values):
                 self.logger.error('Error while updating %s', prepid)
                 return None
+
+            database.save(new_object.get_json())
+            return new_object.get_json()
 
     def delete(self, json_data):
         """
@@ -89,18 +95,19 @@ class ControllerBase():
         database = Database(self.database_name)
         json_data = database.get(prepid)
         if not json_data:
-            raise Exception(f'Object with prepid "{prepid}" does not exist in {self.database_name} database')
+            raise Exception(f'Object with prepid "{prepid}" does not '
+                            f'exist in {self.database_name} database')
 
         obj = self.model_class(json_input=json_data)
         with self.locker.get_lock(prepid):
             self.logger.info('Will delete %s', (prepid))
             self.before_delete(obj)
-            if self.check_for_delete(obj):
-                database.delete_document(obj.get_json())
-                return {'prepid': prepid}
-            else:
+            if not self.check_for_delete(obj):
                 self.logger.error('Error while deleting %s', prepid)
                 return None
+
+            database.delete_document(obj.get_json())
+            return {'prepid': prepid}
 
     def check_for_create(self, obj):
         """
@@ -108,7 +115,7 @@ class ControllerBase():
         """
         raise NotImplementedError('This method must be implemented')
 
-    def check_for_update(self, old_obj, new_obj):
+    def check_for_update(self, old_obj, new_obj, changed_values):
         """
         Compare existing and updated objects to see if update is valid
         """
@@ -122,21 +129,21 @@ class ControllerBase():
 
     def before_create(self, obj):
         """
-        Actions to be performed before object is updated
+        Actions to be performed on object before object is updated
         """
-        pass
+        return
 
     def before_update(self, obj):
         """
-        Actions to be performed before object is updated
+        Actions to be performed on object before object is updated
         """
-        pass
+        return
 
     def before_delete(self, obj):
         """
-        Actions to be performed before object is deleted
+        Actions to be performed on object before object is deleted
         """
-        pass
+        return
 
     def get_editing_info(self, obj):
         """
@@ -162,7 +169,7 @@ class ControllerBase():
             if isinstance(editing_info, bool):
                 return editing_info
 
-            elif isinstance(changed_values, dict):
+            if isinstance(changed_values, dict):
                 for key, value in changed_values.items():
                     allowed = recursive_edit_allowed(editing_info.get(key, False), value)
                     if not allowed:
@@ -170,7 +177,7 @@ class ControllerBase():
 
             elif isinstance(changed_values, list):
                 for i in range(len(changed_values)):
-                    allowed = recursive_edit_allowed(editing_info.get(key, False), value)
+                    allowed = recursive_edit_allowed(editing_info[i], value)
                     if not allowed:
                         return False
 
@@ -201,7 +208,8 @@ class ControllerBase():
                     changed_values[key] = changed
 
             return changed_values
-        elif isinstance(reference, dict) and isinstance(target, dict):
+
+        if isinstance(reference, dict) and isinstance(target, dict):
             changed_values = {}
             keys = reference.keys()
             for key in keys:

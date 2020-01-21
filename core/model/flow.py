@@ -1,7 +1,13 @@
+"""
+Module that contains a Flow class
+"""
 from core.model.model_base import ModelBase
 
 
 class Flow(ModelBase):
+    """
+    Flow is used to join two requests (campaigns) in a chained campaign
+    """
 
     _ModelBase__schema = {
         # Database id

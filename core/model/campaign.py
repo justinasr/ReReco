@@ -1,7 +1,14 @@
+"""
+Module that contains Campaign class
+"""
 from core.model.model_base import ModelBase
 
 
 class Campaign(ModelBase):
+    """
+    Class that represents a computing campaign
+    It is used as a template for requests
+    """
 
     _ModelBase__schema = {
         # Database id (required by CouchDB)

@@ -11,6 +11,9 @@ flow_controller = FlowController()
 
 
 class CreateFlowAPI(APIBase):
+    """
+    Endpoint for creating flows
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -28,6 +31,9 @@ class CreateFlowAPI(APIBase):
 
 
 class DeleteFlowAPI(APIBase):
+    """
+    Endpoint for deleting flows
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -45,6 +51,9 @@ class DeleteFlowAPI(APIBase):
 
 
 class UpdateFlowAPI(APIBase):
+    """
+    Endpoint for updating flows
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -62,6 +71,9 @@ class UpdateFlowAPI(APIBase):
 
 
 class GetFlowAPI(APIBase):
+    """
+    Endpoint for retrieving a single flow
+    """
 
     def __init__(self):
         APIBase.__init__(self)

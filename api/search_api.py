@@ -7,6 +7,9 @@ from core.database.database import Database
 
 
 class SearchAPI(APIBase):
+    """
+    Endpoint that is used for search in the database
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -34,7 +37,10 @@ class SearchAPI(APIBase):
             del args['limit']
 
         query_string = '&&'.join(['%s=%s' % (pair) for pair in args.items()])
-        db = Database(db_name)
-        results, total_rows = db.query(query_string, page, limit, return_total_rows=True)
+        database = Database(db_name)
+        results, total_rows = database.query(query_string, page, limit, return_total_rows=True)
 
-        return self.output_text({'response': {'results': results, 'total_rows': total_rows}, 'success': True, 'message': ''})
+        return self.output_text({'response': {'results': results,
+                                              'total_rows': total_rows},
+                                 'success': True,
+                                 'message': ''})

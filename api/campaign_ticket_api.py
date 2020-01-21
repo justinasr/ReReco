@@ -3,16 +3,19 @@ Module that contains all campaign ticket APIs
 """
 import json
 import flask
+from flask import request
 from api.api_base import APIBase
 from core.controller.campaign_ticket_controller import CampaignTicketController
 from core.model.campaign_ticket import CampaignTicket
-from flask import request
 
 
 campaign_ticket_controller = CampaignTicketController()
 
 
 class CreateCampaignTicketAPI(APIBase):
+    """
+    Endpoint for creating campaign ticket
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -30,6 +33,9 @@ class CreateCampaignTicketAPI(APIBase):
 
 
 class DeleteCampaignTicketAPI(APIBase):
+    """
+    Endpoint for deleting campaigns tickets
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -47,6 +53,9 @@ class DeleteCampaignTicketAPI(APIBase):
 
 
 class UpdateCampaignTicketAPI(APIBase):
+    """
+    Endpoint for updating campaign tickets
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -64,6 +73,9 @@ class UpdateCampaignTicketAPI(APIBase):
 
 
 class GetCampaignTicketAPI(APIBase):
+    """
+    Endpoint for retrieving a single campaign ticket
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -78,6 +90,9 @@ class GetCampaignTicketAPI(APIBase):
 
 
 class GetCampaignTicketDatasetsAPI(APIBase):
+    """
+    Endpoint for getting list of datasets from DBS for campaign ticket
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -96,6 +111,9 @@ class GetCampaignTicketDatasetsAPI(APIBase):
 
 
 class GetEditableCampaignTicketAPI(APIBase):
+    """
+    Endpoint for getting information on which campaign ticket fields are editable
+    """
 
     def __init__(self):
         APIBase.__init__(self)
@@ -118,6 +136,9 @@ class GetEditableCampaignTicketAPI(APIBase):
 
 
 class CreateRequestsForCampaignTicketAPI(APIBase):
+    """
+    Endpoing for creating requests from a campaign ticket
+    """
 
     def __init__(self):
         APIBase.__init__(self)
