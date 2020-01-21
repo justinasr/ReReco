@@ -29,17 +29,20 @@ class ModelBase():
         """
         if json_input:
             prepid = json_input.get('prepid')
-            if not prepid:
+            if not prepid and ('prepid' in self.__schema or '_id' in self.__schema):
                 raise Exception('PrepID cannot be empty')
 
             if self.check_attribute('prepid', prepid):
-                self.__json['prepid'] = prepid
-                self.__json['_id'] = prepid
+                if 'prepid' in self.__schema:
+                    self.__json['prepid'] = prepid
+
+                if '_id' in self.__schema:
+                    self.__json['_id'] = prepid
             else:
                 self.logger.error('Invalid prepid %s for %s', prepid, self.__class_name)
-                raise Exception(f'Invalid prepid {prepid}')
+                raise Exception(f'Invalid prepid {prepid} for {self.__class_name}')
 
-            if '_rev' in json_input:
+            if '_rev' in self.__schema and '_rev' in json_input:
                 self.__json['_rev'] = json_input['_rev']
         else:
             json_input = {}
@@ -50,7 +53,7 @@ class ModelBase():
             # Just to show errors if any incorrect keys are passed
             bad_keys = set(json_input.keys()) - keys - ignore_keys
             if bad_keys:
-                raise Exception(f'Invalid key: {", ".join(bad_keys)}')
+                raise Exception(f'Invalid key "{", ".join(bad_keys)}" for {self.__class_name}')
 
         for key in keys - ignore_keys:
             if key not in json_input:
@@ -81,16 +84,14 @@ class ModelBase():
             raise Exception('Changing prepid or _id is not allowed')
 
         if not isinstance(value, type(self.__schema[attribute])):
-            expected_type = type(self.__schema[attribute])
-            got_type = type(value)
-            expected_type_name = expected_type.__name__
-            got_type_name = got_type.__name__
-            try:
-                value = expected_type(value)
-            except Exception as ex:
-                print(ex)
-                raise Exception(f'Object {prepid} attribute {attribute} is wrong type. Expected {expected_type_name}, got {got_type_name}')
+            self.logger.debug('%s of %s is not expected type. Expected %s, got %s, will ask for cast',
+                              attribute,
+                              prepid,
+                              type(self.__schema[attribute]),
+                              type(value))
+            value = self.cast_value_to_correct_type(attribute, value)
 
+        value = self.before_attribute_check(attribute, value)
         if self.check_attribute(attribute, value):
             self.__json[attribute] = value
             return self.__json
@@ -129,6 +130,24 @@ class ModelBase():
         """
         return True
 
+    def cast_value_to_correct_type(self, attribute_name, attribute_value):
+        """
+        If value is not correct type, try to cast it to
+        correct type according to schema
+        """
+        prepid = self.get_prepid()
+        expected_type = type(self.__schema[attribute_name])
+        got_type = type(attribute_value)
+        expected_type_name = expected_type.__name__
+        got_type_name = got_type.__name__
+        try:
+            return expected_type(attribute_value)
+        except Exception as ex:
+            self.logger.error(ex)
+            raise Exception(f'Object {prepid} attribute {attribute_name} is wrong type. '
+                            f'Expected {expected_type_name}, got {got_type_name}. '
+                            f'It cannot be automatically casted to correct type')
+
     @classmethod
     def matches_regex(cls, value, regex):
         matcher = re.compile(regex)
@@ -138,7 +157,7 @@ class ModelBase():
 
         return False
 
-    def json(self):
+    def get_json(self):
         """
         Return JSON of the object
         """
@@ -155,7 +174,9 @@ class ModelBase():
         """
         String representation of the object
         """
-        return f'Object ID: {self.get_prepid()}\nType: {self.__class_name}\nDict: {json.dumps(self.__json, indent=4, sort_keys=True)}\n'
+        return (f'Object ID: {self.get_prepid()}\n'
+                f'Type: {self.__class_name}\n'
+                f'Dict: {json.dumps(self.__json, indent=4, sort_keys=True)}\n')
 
     def add_history(self, action, value, user, timestamp=None):
         """
@@ -167,3 +188,10 @@ class ModelBase():
                         'time': int(timestamp if timestamp else time.time()),
                         'value': value})
         self.set('history', history)
+
+    def before_attribute_check(self, attribute_name, attribute_value):
+        """
+        Preprocess value if needed before performing checks setting it
+        This should include sanitization and whitespace removal (stripping)
+        """
+        return attribute_value

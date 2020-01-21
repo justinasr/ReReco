@@ -74,7 +74,7 @@ class GetCampaignTicketAPI(APIBase):
         Get a single campaign with given prepid
         """
         obj = campaign_ticket_controller.get(prepid)
-        return self.output_text({'response': obj.json(), 'success': True, 'message': ''})
+        return self.output_text({'response': obj.get_json(), 'success': True, 'message': ''})
 
 
 class GetCampaignTicketDatasetsAPI(APIBase):
@@ -111,7 +111,7 @@ class GetEditableCampaignTicketAPI(APIBase):
             campaign_ticket = CampaignTicket()
 
         editing_info = campaign_ticket_controller.get_editing_info(campaign_ticket)
-        return self.output_text({'response': {'object': campaign_ticket.json(),
+        return self.output_text({'response': {'object': campaign_ticket.get_json(),
                                               'editing_info': editing_info},
                                  'success': True,
                                  'message': ''})

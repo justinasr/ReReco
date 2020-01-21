@@ -32,8 +32,8 @@ class ControllerBase():
             self.logger.info('Will create %s', (prepid))
             new_object.add_history('create', prepid, None)
             if self.check_for_create(new_object):
-                database.save(new_object.json())
-                return new_object.json()
+                database.save(new_object.get_json())
+                return new_object.get_json()
             else:
                 self.logger.error('Error while checking new item %s', prepid)
                 return None
@@ -65,17 +65,18 @@ class ControllerBase():
             old_object = self.model_class(json_input=old_object)
             # Move over history, so it could not be overwritten
             new_object.set('history', old_object.get('history'))
+            self.before_update(new_object)
             changed_values = self.get_changes(old_object, new_object)
             if not changed_values:
                 # Nothing was updated
                 self.logger.info('Nothing was updated for %s', prepid)
-                return old_object.json()
+                return old_object.get_json()
 
             self.edit_allowed(old_object, changed_values)
             new_object.add_history('update', changed_values, None)
             if self.check_for_update(old_object, new_object, changed_values):
-                database.save(new_object.json())
-                return new_object.json()
+                database.save(new_object.get_json())
+                return new_object.get_json()
             else:
                 self.logger.error('Error while updating %s', prepid)
                 return None
@@ -93,8 +94,9 @@ class ControllerBase():
         obj = self.model_class(json_input=json_data)
         with self.locker.get_lock(prepid):
             self.logger.info('Will delete %s', (prepid))
+            self.before_delete(obj)
             if self.check_for_delete(obj):
-                database.delete_document(obj.json())
+                database.delete_document(obj.get_json())
                 return {'prepid': prepid}
             else:
                 self.logger.error('Error while deleting %s', prepid)
@@ -117,6 +119,24 @@ class ControllerBase():
         Perform checks on object before deleting it from database
         """
         raise NotImplementedError('This method must be implemented')
+
+    def before_create(self, obj):
+        """
+        Actions to be performed before object is updated
+        """
+        pass
+
+    def before_update(self, obj):
+        """
+        Actions to be performed before object is updated
+        """
+        pass
+
+    def before_delete(self, obj):
+        """
+        Actions to be performed before object is deleted
+        """
+        pass
 
     def get_editing_info(self, obj):
         """

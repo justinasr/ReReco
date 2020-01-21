@@ -72,4 +72,4 @@ class GetFlowAPI(APIBase):
         Get a single flow with given prepid
         """
         flow = flow_controller.get(prepid)
-        return self.output_text({'response': flow.json(), 'success': True, 'message': ''})
+        return self.output_text({'response': flow.get_json(), 'success': True, 'message': ''})

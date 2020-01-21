@@ -73,7 +73,7 @@ class GetCampaignAPI(APIBase):
         Get a single campaign with given prepid
         """
         obj = campaign_controller.get(prepid)
-        return self.output_text({'response': obj.json(), 'success': True, 'message': ''})
+        return self.output_text({'response': obj.get_json(), 'success': True, 'message': ''})
 
 
 class GetEditableCampaignAPI(APIBase):
@@ -92,7 +92,28 @@ class GetEditableCampaignAPI(APIBase):
             campaign = Campaign()
 
         editing_info = campaign_controller.get_editing_info(campaign)
-        return self.output_text({'response': {'object': campaign.json(),
+        return self.output_text({'response': {'object': campaign.get_json(),
                                               'editing_info': editing_info},
+                                 'success': True,
+                                 'message': ''})
+
+
+class GetDefaultCampaignSequenceAPI(APIBase):
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    def get(self, prepid=None):
+        """
+        Get a default sequence that could be used as a template
+        """
+        if prepid:
+            campaign = campaign_controller.get(prepid)
+        else:
+            campaign = Campaign()
+
+        sequence = campaign_controller.get_default_sequence(campaign)
+        return self.output_text({'response': sequence.get_json(),
                                  'success': True,
                                  'message': ''})

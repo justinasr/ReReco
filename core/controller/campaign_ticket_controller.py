@@ -19,7 +19,7 @@ class CampaignTicketController(ControllerBase):
         Perform checks on object before adding it to database
         """
         campaign_database = Database('campaigns')
-        campaign_name = obj.get('campaign_name')
+        campaign_name = obj.get('campaign')
         if not campaign_database.document_exists(campaign_name):
             raise Exception('Campaign %s does not exist' % (campaign_name))
 
@@ -29,9 +29,9 @@ class CampaignTicketController(ControllerBase):
         """
         Compare existing and updated objects to see if update is valid
         """
-        if 'campaign_name' in changed_values:
+        if 'campaign' in changed_values:
             campaign_database = Database('campaigns')
-            campaign_name = new_obj.get('campaign_name')
+            campaign_name = new_obj.get('campaign')
             if not campaign_database.document_exists(campaign_name):
                 raise Exception('Campaign %s does not exist' % (campaign_name))
 
@@ -64,11 +64,11 @@ class CampaignTicketController(ControllerBase):
         return datasets
 
     def get_editing_info(self, campaign_ticket):
-        editing_info = {k: not k.startswith('_') for k in campaign_ticket.json().keys()}
+        editing_info = {k: not k.startswith('_') for k in campaign_ticket.get_json().keys()}
         editing_info['prepid'] = not bool(editing_info.get('prepid'))
         editing_info['history'] = False
         is_new = campaign_ticket.get('status') == 'new'
-        editing_info['campaign_name'] = is_new
+        editing_info['campaign'] = is_new
         editing_info['processing_string'] = is_new
         editing_info['input_datasets'] = is_new
         editing_info['created_requests'] = False
@@ -84,7 +84,7 @@ class CampaignTicketController(ControllerBase):
 
             request_controller = RequestController()
             campaign_controller = CampaignController()
-            campaign_name = campaign_ticket.get('campaign_name')
+            campaign_name = campaign_ticket.get('campaign')
             campaign = campaign_controller.get(campaign_name)
             processing_string = campaign_ticket.get('processing_string')
             for input_dataset in campaign_ticket.get('input_datasets'):
@@ -102,6 +102,6 @@ class CampaignTicketController(ControllerBase):
             campaign_ticket.set('status', 'done')
             campaign_ticket.add_history('create_requests', created_requests, None)
             database = Database('campaign_tickets')
-            database.save(campaign_ticket.json())
+            database.save(campaign_ticket.get_json())
 
         return created_requests

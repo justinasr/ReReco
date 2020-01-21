@@ -10,7 +10,7 @@ class CampaignTicket(ModelBase):
         '_rev': '',
         # PrepID
         'prepid': '',
-        # Name of campaign that was used as template for requests
+        # Name of campaign that is used as template for requests
         'campaign': '',
         # List of input dataset names
         'input_datasets': [],
@@ -23,14 +23,14 @@ class CampaignTicket(ModelBase):
         # User notes
         'notes': '',
         # Action history
-        'history': []}
+        'history': []
+    }
 
     __lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9]{1,50}'),
         'campaign': lambda campaign_name: ModelBase.matches_regex(campaign_name, '[a-zA-Z0-9]{1,50}'),
         'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{0,100}'),
         'status': lambda status: status in ('new', 'done'),
-
         '__input_dataset': lambda ds: ModelBase.matches_regex(ds, '^/[a-zA-Z0-9\\-_]{1,99}/[a-zA-Z0-9\\.\\-_]{1,199}/[A-Z\\-]{1,50}$'),
     }
 
@@ -44,6 +44,6 @@ class CampaignTicket(ModelBase):
         if attribute_name == 'input_datasets':
             for dataset in attribute_value:
                 if not self.__lambda_checks.get('__input_dataset')(dataset):
-                    raise Exception('Invalid input dataset name: %s' % (dataset))
+                    raise Exception(f'Invalid input dataset name: {dataset}')
 
         return True

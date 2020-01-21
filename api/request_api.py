@@ -73,7 +73,7 @@ class GetRequestAPI(APIBase):
         Get a single request with given prepid
         """
         obj = request_controller.get(prepid)
-        return self.output_text({'response': obj.json(), 'success': True, 'message': ''})
+        return self.output_text({'response': obj.get_json(), 'success': True, 'message': ''})
 
 
 class GetEditableRequestAPI(APIBase):
@@ -92,7 +92,7 @@ class GetEditableRequestAPI(APIBase):
             request = Request()
 
         editing_info = request_controller.get_editing_info(request)
-        return self.output_text({'response': {'object': request.json(),
+        return self.output_text({'response': {'object': request.get_json(),
                                               'editing_info': editing_info},
                                  'success': True,
                                  'message': ''})

@@ -1,4 +1,4 @@
-from api.campaign_api import CreateCampaignAPI, DeleteCampaignAPI, UpdateCampaignAPI, GetCampaignAPI, GetEditableCampaignAPI
+from api.campaign_api import CreateCampaignAPI, DeleteCampaignAPI, UpdateCampaignAPI, GetCampaignAPI, GetEditableCampaignAPI, GetDefaultCampaignSequenceAPI
 from api.campaign_ticket_api import CreateCampaignTicketAPI, DeleteCampaignTicketAPI, UpdateCampaignTicketAPI, GetCampaignTicketAPI, GetCampaignTicketDatasetsAPI, GetEditableCampaignTicketAPI, CreateRequestsForCampaignTicketAPI
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverCommands
@@ -37,6 +37,7 @@ api.add_resource(DeleteCampaignAPI, '/api/campaigns/delete')
 api.add_resource(UpdateCampaignAPI, '/api/campaigns/update')
 api.add_resource(GetCampaignAPI, '/api/campaigns/get/<string:prepid>')
 api.add_resource(GetEditableCampaignAPI, '/api/campaigns/get_editable', '/api/campaigns/get_editable/<string:prepid>')
+api.add_resource(GetDefaultCampaignSequenceAPI, '/api/campaigns/get_default_sequence', '/api/campaigns/get_default_sequence/<string:prepid>')
 
 api.add_resource(CreateCampaignTicketAPI, '/api/campaign_tickets/create')
 api.add_resource(DeleteCampaignTicketAPI, '/api/campaign_tickets/delete')

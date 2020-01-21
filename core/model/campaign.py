@@ -25,7 +25,8 @@ class Campaign(ModelBase):
         # Action history
         'history': [],
         # Default memory
-        'memory': 2300}
+        'memory': 2300
+    }
 
     __lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9]{1,50}'),
