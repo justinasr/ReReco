@@ -23,10 +23,16 @@
         </tr>
         <tr>
           <td>Type</td>
-          <td><input v-model="editableObject.type" :disabled="!editingInfo.type"></td>
+          <td>
+            <select v-model="editableObject.type" :disabled="!editingInfo.type">
+              <option>Prod</option>
+              <option>MCReproc</option>
+              <option>LHE</option>
+            </select>
+          </td>
         </tr>
         <tr>
-          <td>CMSSW Version</td>
+          <td>CMSSW Release</td>
           <td><input v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
         </tr>
         <tr>

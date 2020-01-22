@@ -18,7 +18,7 @@
         <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="item.status == 'new'">Create requests</a>
       </template>
       <template v-slot:item.history="{ item }">
-        <pre>{{JSON.stringify(item.history, null, 2)}}</pre>
+        <HistoryCell :data="item.history"/>
       </template>
       <template v-slot:item.input_datasets="{ item }">
         {{item.input_datasets.length}} input datasets
@@ -27,6 +27,9 @@
         <ul>
           <li v-for="prepid in item.created_requests" :key="prepid"><a :href="'requests?prepid=' + prepid">{{prepid}}</a></li>
         </ul>
+      </template>
+      <template v-slot:item.notes="{ item }">
+        <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
       </template>
     </v-data-table>
 
@@ -83,11 +86,13 @@
 import axios from 'axios'
 import ColumnSelector from './ColumnSelector'
 import Paginator from './Paginator'
+import HistoryCell from './HistoryCell'
 
 export default {
   components: {
     ColumnSelector,
-    Paginator
+    Paginator,
+    HistoryCell
   },
   data () {
     return {

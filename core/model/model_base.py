@@ -19,6 +19,7 @@ class ModelBase():
     __model_name = None
     __logger = logging.getLogger()
     __class_name = None
+    _lambda_checks = {}
 
     def __init__(self, json_input=None):
         self.__json = {}
@@ -141,17 +142,32 @@ class ModelBase():
         """
         This method must return whether given value of attribute is valid
         or raise exception with error
+        First it tries to find exact name match in lambda functions
+        Then it checks for lambda function with double underscore prefix which
+        indicates that this is a list of values
         """
-        raise NotImplementedError('This method must be implemented')
+        if attribute_name in self._lambda_checks:
+            return self._lambda_checks.get(attribute_name)(attribute_value)
+
+        if f'__{attribute_name}' in self._lambda_checks and isinstance(attribute_value, list):
+            lambda_check = self._lambda_checks.get(f'__{attribute_name}')
+            for item in attribute_value:
+                if not lambda_check(item):
+                    raise Exception(f'Bad {attribute_name} value "{item}"')
+
+        return True
 
     def cast_value_to_correct_type(self, attribute_name, attribute_value):
         """
         If value is not correct type, try to cast it to
         correct type according to schema
         """
-        prepid = self.get_prepid()
         expected_type = type(self.__schema[attribute_name])
         got_type = type(attribute_value)
+        if expected_type == list and got_type == str:
+            return [x.strip() for x in attribute_value.split(',') if x.strip()]
+
+        prepid = self.get_prepid()
         expected_type_name = expected_type.__name__
         got_type_name = got_type.__name__
         try:

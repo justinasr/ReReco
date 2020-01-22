@@ -75,4 +75,11 @@ footer {
   padding-bottom: 72px;
 }
 
+.notes {
+  font-size: 0.85em;
+  margin: 4px;
+  padding: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+}
+
 </style>

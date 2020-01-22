@@ -16,7 +16,7 @@
         <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
       </template>
       <template v-slot:item.history="{ item }">
-        <pre>{{JSON.stringify(item.history, null, 2)}}</pre>
+        <HistoryCell :data="item.history"/>
       </template>
       <template v-slot:item.sequences="{ item }">
         <pre>{{JSON.stringify(item.sequences, null, 2)}}</pre>
@@ -29,6 +29,9 @@
       </template>
       <template v-slot:item.cmssw_release="{ item }">
         {{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}
+      </template>
+      <template v-slot:item.notes="{ item }">
+        <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
       </template>
     </v-data-table>
 
@@ -85,11 +88,13 @@
 import axios from 'axios'
 import ColumnSelector from './ColumnSelector'
 import Paginator from './Paginator'
+import HistoryCell from './HistoryCell'
 
 export default {
   components: {
     ColumnSelector,
-    Paginator
+    Paginator,
+    HistoryCell
   },
   data () {
     return {

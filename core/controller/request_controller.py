@@ -1,11 +1,13 @@
 """
 Module that contains RequestController class
 """
+import json
 from core.controller.controller_base import ControllerBase
 from core.model.request import Request
 from core.model.campaign import Campaign
 from core.database.database import Database
 from core.model.sequence import Sequence
+from core.model.campaign_ticket import CampaignTicket
 
 
 class RequestController(ControllerBase):
@@ -97,6 +99,16 @@ class RequestController(ControllerBase):
         return True
 
     def check_for_delete(self, obj):
+        prepid = obj.get_prepid()
+        campaign_tickets_db = Database('campaign_tickets')
+        campaign_tickets = campaign_tickets_db.query(f'created_requests={prepid}')
+        self.logger.debug(json.dumps(campaign_tickets, indent=4))
+        for campaign_ticket_json in campaign_tickets:
+            campaign_ticket = CampaignTicket(json_input=campaign_ticket_json)
+            campaign_ticket.set('created_requests', [x for x in campaign_ticket.get('created_requests') if x != prepid])
+            campaign_ticket.add_history('remove_request', prepid, None)
+            campaign_tickets_db.save(campaign_ticket.get_json())
+
         return True
 
     def get_editing_info(self, obj):

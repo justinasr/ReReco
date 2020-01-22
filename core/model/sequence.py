@@ -31,7 +31,7 @@ class Sequence(ModelBase):
         # DQM,ALCA,VALIDATION,HARVESTING, NONE or ALL
         'step': []}
 
-    __lambda_checks = {
+    _lambda_checks = {
         'conditions': lambda c: ModelBase.matches_regex(c, '[a-zA-Z0-9_]{0,50}'),
         'era': lambda e: ModelBase.matches_regex(e, '[a-zA-Z0-9_]{0,50}'),
         'nThreads': lambda n: 0 < n < 64,
@@ -43,31 +43,5 @@ class Sequence(ModelBase):
     def __init__(self, json_input=None):
         ModelBase.__init__(self, json_input)
 
-    def check_attribute(self, attribute_name, attribute_value):
-        if attribute_name in self.__lambda_checks:
-            return self.__lambda_checks.get(attribute_name)(attribute_value)
-
-        if attribute_name in ('datatier', 'eventcontent', 'step'):
-            for value in attribute_value:
-                if not self.__lambda_checks.get(f'__{attribute_name}')(value):
-                    raise Exception(f'Invalid {attribute_name}: {value} in Sequence')
-
-        return True
-
     def get_prepid(self):
         return 'Sequence'
-
-    def cast_value_to_correct_type(self, attribute_name, attribute_value):
-        if attribute_name in ('datatier', 'eventcontent', 'step'):
-            if isinstance(attribute_value, str):
-                return [x.strip() for x in attribute_value.split(',') if x.strip()]
-
-            raise Exception('Cannot convert {attribute_name} of Sequence to correct type')
-
-        return super().cast_value_to_correct_type(attribute_name, attribute_value)
-
-    def before_attribute_check(self, attribute_name, attribute_value):
-        if attribute_name in ('datatier', 'eventcontent', 'step'):
-            return [x.strip() for x in attribute_value if x.strip()]
-
-        return attribute_value

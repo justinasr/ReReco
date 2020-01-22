@@ -56,13 +56,14 @@ class Request(ModelBase):
         'workflows': []
     }
 
-    __lambda_checks = {
+    _lambda_checks = {
         'cmssw_release': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}'),  # CMSSW_ddd_ddd_ddd[_XXX...]
         'energy': lambda energy: energy >= 0.0,
         'memory': lambda memory: memory >= 0,
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-]{1,50}'),
         'priority': lambda priority: 1000 <= priority <= 1000000,
         'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{0,100}'),
+        '__runs': lambda r: isinstance(r, int) and r > 0,
         'size_per_event': lambda spe: spe > 0.0,
         'status': lambda status: status in ('new', 'approved', 'submitted', 'done'),
         'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
@@ -73,11 +74,16 @@ class Request(ModelBase):
     def __init__(self, json_input=None):
         ModelBase.__init__(self, json_input)
 
-    def check_attribute(self, attribute_name, attribute_value):
-        if attribute_name in self.__lambda_checks:
-            return self.__lambda_checks.get(attribute_name)(attribute_value)
+    def before_attribute_check(self, attribute_name, attribute_value):
+        if attribute_name == 'runs':
+            runs = []
+            for run in attribute_value:
+                if run not in runs:
+                    runs.append(int(run))
 
-        return True
+            return runs
+
+        return super().before_attribute_check(attribute_name, attribute_value)
 
     def get_cmssw_setup(self):
         """
