@@ -7,22 +7,18 @@
       <th>Value</th>
     </tr>
     <tr v-for="entry in data" :key="entry.time">
-      <td>{{entry.time}}</td>
+      <td>{{niceDate(entry.time)}}</td>
       <td>{{entry.user}}</td>
       <td>{{entry.action}}</td>
-      <td v-if="entry.action !== 'update'" style="max-width: 200px;">{{entry.value}}</td>
-      <td v-if="entry.action === 'update'" style="max-width: 200px;">
-        <ul>
-          <li v-for="(value, attribute) in entry.value">
-            {{attribute}}
-          </li>
-        </ul>
-      </td>
+      <td style="max-width: 200px;"><pre>{{JSON.stringify(entry.value, null, 2)}}</pre></td>
     </tr>
   </table>
 </template>
 
 <script>
+
+  import dateFormat from 'dateformat'
+
   export default {
     props:{
       data: {
@@ -38,6 +34,12 @@
     watch:{
     },
     methods: {
+      niceDate: function (time) {
+        return dateFormat(new Date(time * 1000), 'yyyy-mm-dd HH:MM:ss')
+      }
+    },
+    computed: {
+      
     }
   }
 </script>
@@ -55,11 +57,7 @@
   margin-bottom: 4px;
 }
 
-tr {
-  height: 14px !important;
-}
-
-td {
+tr, td, th {
   height: 14px !important;
 }
 
