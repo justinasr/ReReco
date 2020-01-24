@@ -12,18 +12,12 @@
           <td><input type="number" v-model="editableObject.energy" :disabled="!editingInfo.energy">TeV</td>
         </tr>
         <tr>
-          <td>Type</td>
-          <td>
-            <select v-model="editableObject.type" :disabled="!editingInfo.type">
-              <option>Prod</option>
-              <option>MCReproc</option>
-              <option>LHE</option>
-            </select>
-          </td>
-        </tr>
-        <tr>
           <td>CMSSW Version</td>
           <td><input v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
+        </tr>
+        <tr>
+          <td>Campaign</td>
+          <td><input v-model="editableObject.member_of_campaign" :disabled="!editingInfo.member_of_campaign"></td>
         </tr>
         <tr>
           <td>Notes</td>
@@ -113,7 +107,7 @@ export default {
     axios.get('api/requests/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
       console.log(response.data);
       component.editableObject = response.data.response.object;
-      component.editableObject.sequences = JSON.stringify(component.editableObject.sequences, null, 4);
+      component.editableObject.sequences = JSON.stringify(component.editableObject.sequences, null, 2);
       component.editingInfo = response.data.response.editing_info;
       component.loading = false;
     });

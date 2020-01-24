@@ -19,8 +19,6 @@ class Campaign(ModelBase):
         'prepid': '',
         # Energy in TeV
         'energy': 0.0,
-        # Type LHE, MCReproc, Prod
-        'type': '',
         # Step type: DR, MiniAOD, NanoAOD, etc.
         'step': 'DR',
         # CMSSW version
@@ -39,7 +37,6 @@ class Campaign(ModelBase):
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9]{1,50}'),
         'energy': lambda energy: energy >= 0.0,
         'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
-        'type': lambda step: step in ['Prod', 'MCReproc', 'LHE'],
         'memory': lambda memory: memory >= 0,
         'cmssw_release': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}')  # CMSSW_ddd_ddd_ddd[_XXX...]
     }

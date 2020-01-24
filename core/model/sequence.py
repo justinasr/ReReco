@@ -35,9 +35,9 @@ class Sequence(ModelBase):
         'conditions': lambda c: ModelBase.matches_regex(c, '[a-zA-Z0-9_]{0,50}'),
         'era': lambda e: ModelBase.matches_regex(e, '[a-zA-Z0-9_]{0,50}'),
         'nThreads': lambda n: 0 < n < 64,
-        '__datatier': lambda s: s in ('AOD', 'MINIAOD', 'DQMIO'),
+        '__datatier': lambda s: s in ('AOD', 'MINIAOD', 'NANOAOD', 'DQMIO', 'USER', 'ALCARECO'),
         '__eventcontent': lambda s: s in ('AOD', 'MINIAOD', 'DQM'),
-        '__step': lambda s: s in ('GEN', 'SIM', 'DIGI', 'L1', 'DIGI2RAW', 'HLT', 'RAW2DIGI', 'RECO', 'POSTRECO', 'DQM', 'ALCA', 'HARVESTING')
+        '__step': lambda s: s in ('RAW2DIGI', 'L1Reco', 'RECO', 'EI', 'PAT', 'DQM', 'NANO') or s.startswith('ALCARECO') or s.startswith('DQM')
     }
 
     def __init__(self, json_input=None):

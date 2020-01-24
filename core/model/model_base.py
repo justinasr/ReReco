@@ -19,7 +19,10 @@ class ModelBase():
     __model_name = None
     __logger = logging.getLogger()
     __class_name = None
-    _lambda_checks = {}
+    _lambda_checks = {
+        'dataset': lambda ds: ModelBase.matches_regex(ds, '^/[a-zA-Z0-9\\-_]{1,99}/[a-zA-Z0-9\\.\\-_]{1,199}/[A-Z\\-]{1,50}$'),
+        'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{0,100}'),
+    }
 
     def __init__(self, json_input=None):
         self.__json = {}
@@ -62,7 +65,10 @@ class ModelBase():
             # Just to show errors if any incorrect keys are passed
             bad_keys = set(json_input.keys()) - keys - ignore_keys
             if bad_keys:
-                raise Exception(f'Invalid key "{", ".join(bad_keys)}" for {self.__class_name}')
+                self.logger.warning('Keys that are not in schema of %s: %s',
+                                    self.__class_name,
+                                    ', '.join(bad_keys))
+                # raise Exception(f'Invalid key "{", ".join(bad_keys)}" for {self.__class_name}')
 
         for key in keys - ignore_keys:
             if key not in json_input:
@@ -90,9 +96,6 @@ class ModelBase():
             raise Exception(f'Attribute {attribute} could not be '
                             f'found in {self.__class_name} schema')
 
-        if attribute in ('prepid', '_id'):
-            raise Exception('Changing prepid or _id is not allowed')
-
         if not isinstance(value, type(self.__schema[attribute])):
             self.logger.debug('%s of %s is not expected (%s) type (got %s). Will try to cast',
                               attribute,
@@ -111,6 +114,9 @@ class ModelBase():
             raise Exception(f'Invalid {attribute} value {value} for {prepid}')
 
         self.__json[attribute] = value
+        if attribute == 'prepid':
+            self.__json['_id'] = value
+
         return self.__json
 
     def get(self, attribute):

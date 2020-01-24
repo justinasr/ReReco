@@ -33,6 +33,9 @@
       <template v-slot:item.notes="{ item }">
         <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
       </template>
+      <template v-slot:item.dataset_name="{ item }">
+        {{item.input_dataset.split('/').filter(Boolean)[0]}}
+      </template>
     </v-data-table>
 
     <v-dialog v-model="dialog.visible"
@@ -103,7 +106,6 @@ export default {
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'status', 'displayName': 'Status', 'visible': 1},
-        {'dbName': 'type', 'displayName': 'Type', 'visible': 1},
         {'dbName': 'memory', 'displayName': 'Memory', 'visible': 1},
         {'dbName': 'cmssw_release', 'displayName': 'CMSSW Version', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
@@ -120,6 +122,7 @@ export default {
         {'dbName': 'size_per_event', 'displayName': 'Size per Event', 'visible': 0},
         {'dbName': 'time_per_event', 'displayName': 'Time per Event', 'visible': 0},
         {'dbName': 'workflows', 'displayName': 'Computing Workflows', 'visible': 0},
+        {'dbName': 'dataset_name', 'displayName': 'Dataset Name', 'visible': 0},
       ],
       headers: [],
       dataItems: [],

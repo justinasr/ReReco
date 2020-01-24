@@ -102,7 +102,6 @@ export default {
       columns: [
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
-        {'dbName': 'type', 'displayName': 'Type', 'visible': 1},
         {'dbName': 'memory', 'displayName': 'Memory', 'visible': 1},
         {'dbName': 'cmssw_release', 'displayName': 'CMSSW Release', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},

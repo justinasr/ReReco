@@ -50,8 +50,6 @@ class Request(ModelBase):
         'step': 'DR',
         # Time per event in seconds
         'time_per_event': 1.0,
-        # Type LHE, MCReproc, Prod
-        'type': '',
         # List of workflows in computing
         'workflows': []
     }
@@ -59,10 +57,11 @@ class Request(ModelBase):
     _lambda_checks = {
         'cmssw_release': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}'),  # CMSSW_ddd_ddd_ddd[_XXX...]
         'energy': lambda energy: energy >= 0.0,
+        'input_dataset': ModelBase._lambda_checks['dataset'],
         'memory': lambda memory: memory >= 0,
-        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-]{1,50}'),
+        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-_]{1,50}'),
         'priority': lambda priority: 1000 <= priority <= 1000000,
-        'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{0,100}'),
+        'processing_string': ModelBase._lambda_checks['processing_string'],
         '__runs': lambda r: isinstance(r, int) and r > 0,
         'size_per_event': lambda spe: spe > 0.0,
         'status': lambda status: status in ('new', 'approved', 'submitted', 'done'),

@@ -16,7 +16,6 @@ Structure in database:
 * `prepid` - unique identifier in the system
 * `sequences` - list of dictionaries that hold attributes for cmsDriver commands (see Sequences)
 * `step` - DR, MiniAOD or NanoAOD. Indicates which step of chained request is this
-* `type` - LHE, MCReproc or Prod (to be expanded)
 
 ### Requests
 
@@ -40,7 +39,6 @@ Structure in database:
 * `status` - status of this request. Can be new, approved, submitted or done
 * `step` - DR, MiniAOD or NanoAOD. Indicates which step of chained request is this
 * `time_per_event` - required time for one event in seconds
-* `type` - LHE, MCReproc or Prod (to be expanded)
 * `workflows` - TO BE FILLED
 
 ### Campaign tickets
@@ -137,7 +135,6 @@ function(doc) {
   var res = new Document();
   res.add(doc._id, {field:'_id', store:'yes', type:'string'});
   res.add(doc.prepid, {field:'prepid', store:'yes', type:'string'});
-  res.add(doc.type, {field:'type', store:'yes', type:'string'});
   res.add(doc.step, {field:'step', store:'yes', type:'string'});
   res.add(doc.cmssw_release, {field:'cmssw_release', store:'yes', type:'string'});
   res.add(doc.memory, {field:'memory', store:'yes', type:'int'});
@@ -183,7 +180,6 @@ function(doc) {
   var res = new Document();
   res.add(doc._id, {field:'_id', store:'yes', type:'string'});
   res.add(doc.prepid, {field:'prepid', store:'yes', type:'string'});
-  res.add(doc.type, {field:'type', store:'yes', type:'string'});
   res.add(doc.step, {field:'step', store:'yes', type:'string'});
   res.add(doc.input_dataset, {field:'input_dataset', store:'yes', type:'string'});
   res.add(doc.member_of_campaign, {field:'member_of_campaign', store:'yes', type:'string'});

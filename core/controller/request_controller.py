@@ -51,11 +51,16 @@ class RequestController(ControllerBase):
                 serial_number = serial_numbers[0]['value']
 
             serial_number += 1
-            # Form a new prepid
-            prepid = f'{campaign_name}-{serial_number:05d}'
-            json_data['prepid'] = prepid
+            # Form a new temporary prepid
+            json_data['prepid'] = 'NewReRecoRequest'
             # Finally create a request object
             new_request = Request(json_input=json_data)
+            input_dataset = new_request.get('input_dataset')
+            input_dataset_parts = [x for x in input_dataset.split('/') if x]
+            era = input_dataset_parts[1].split('-')[0]
+            processing_string = new_request.get('processing_string')
+            prepid = f'ReReco-{era}-{input_dataset_parts[0]}-{processing_string}-{serial_number:05d}'
+            new_request.set('prepid', prepid)
             self.logger.info('Will create %s', (prepid))
             new_request.add_history('create', prepid, None)
             attributes_to_move = {'prepid': 'member_of_campaign',
@@ -63,13 +68,9 @@ class RequestController(ControllerBase):
                                   'energy': 'energy',
                                   'step': 'step',
                                   'cmssw_release': 'cmssw_release',
-                                  'type': 'type',
                                   'sequences': 'sequences'}
             for campaign_attr, request_attr in attributes_to_move.items():
                 new_request.set(request_attr, campaign.get(campaign_attr))
-
-            if 'input_dataset' in json_data:
-                new_request.set('input_dataset', json_data['input_dataset'])
 
             if not self.check_for_create(new_request):
                 self.logger.error('Error while checking new item %s', prepid)
@@ -113,8 +114,13 @@ class RequestController(ControllerBase):
 
     def get_editing_info(self, obj):
         editing_info = {k: not k.startswith('_') for k in obj.get_json().keys()}
-        editing_info['prepid'] = not bool(editing_info.get('prepid'))
+        is_new = not bool(editing_info.get('prepid'))
+        editing_info['prepid'] = False
         editing_info['history'] = False
+        editing_info['input_dataset'] = is_new
+        editing_info['processing_string'] = is_new
+        editing_info['cmssw_release'] = is_new
+        editing_info['step'] = is_new
         return editing_info
 
     def get_cmsdriver(self, request):

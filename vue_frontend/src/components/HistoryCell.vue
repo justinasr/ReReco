@@ -10,7 +10,7 @@
       <td>{{niceDate(entry.time)}}</td>
       <td>{{entry.user}}</td>
       <td>{{entry.action}}</td>
-      <td style="max-width: 200px;"><pre>{{JSON.stringify(entry.value, null, 2)}}</pre></td>
+      <td><pre>{{JSON.stringify(entry.value, null, 2)}}</pre></td>
     </tr>
   </table>
 </template>
