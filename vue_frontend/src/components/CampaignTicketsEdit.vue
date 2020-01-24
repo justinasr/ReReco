@@ -24,21 +24,21 @@
           <td><textarea v-model="editableObject.input_datasets" :disabled="!editingInfo.input_datasets"></textarea></td>
         </tr>
       </table>
-      <v-btn @click="getDatasetsDialogVisible = true">Get dataset list from DBS</v-btn>
-      <v-btn @click="save()">Save</v-btn>
+      <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
+      <v-btn small class="mr-1 mb-1" color="primary" @click="getDatasetsDialogVisible = true">Get dataset list from DBS</v-btn>
     </v-card>
     <v-dialog v-model="getDatasetsDialogVisible"
               max-width="50%">
       <v-card>
         <v-card-title class="headline">Get dataset list</v-card-title>
         <v-card-text>
-          Automatically get a list of input datasets from DBS. Enter dataset name query, for example <pre>/ZeroBias/*/RAW</pre>
+          Automatically get a list of input datasets from DBS. Query must satisfy this format:<pre>/*/*/RAW</pre>Enter dataset name query below, for example:<pre>/ZeroBias/*/RAW</pre>
           <input v-model="getDatasetsDialogInput">
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn :disabled="!getDatasetsDialogInput.length" @click="getDatasets()">OK</v-btn>
-          <v-btn @click="getDatasetsDialogVisible = false; getDatasetsDialogInput = ''">Close</v-btn>
+          <v-btn small class="mr-1 mb-1" color="primary" :disabled="!getDatasetsDialogInput.length" @click="getDatasets()">Get</v-btn>
+          <v-btn small class="mr-1 mb-1" color="error" @click="getDatasetsDialogVisible = false; getDatasetsDialogInput = ''">Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -67,12 +67,6 @@ export default {
   computed: {
   },
   watch: {
-    editableObject: {
-      handler: function() {
-        console.log('Something changed')
-      },
-      deep: true
-    }
   },
   created () {
     let query = Object.assign({}, this.$route.query);
@@ -135,21 +129,14 @@ export default {
 
 <style scoped>
 
-input, select, textarea {
-  border-style: inset;
-  background-color: inherit;
-  -webkit-appearance: auto;
-  min-width: 500px;
-}
-
-textarea {
-  min-height: 500px;
-  font-family: monospace;
-  font-size: 0.8em;
-}
-
 h1 {
   margin: 8px;
+}
+
+td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-right: 4px;
 }
 
 </style>

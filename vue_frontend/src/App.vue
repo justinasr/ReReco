@@ -61,6 +61,37 @@ export default {
 
 <style>
 
+
+input, select, textarea {
+  border-style: inset !important;
+  min-width: 500px;
+}
+
+select {
+  min-width: 200px;
+}
+
+input[type="number"] {
+  width: 100px;
+  min-width: 100px;
+  text-align: right;
+}
+
+input {
+  -webkit-appearance: textfield !important;
+}
+
+textarea {
+  -webkit-appearance: textarea !important;
+  min-height: 200px;
+  font-family: monospace;
+  font-size: 0.8em;
+}
+
+select {
+  -webkit-appearance: menulist !important;
+}
+
 footer {
   height: 56px;
   left: 0px;
@@ -81,5 +112,11 @@ footer {
   padding: 4px;
   border: 1px solid rgba(0, 0, 0, 0.5);
 }
+
+input:disabled, select:disabled, textarea:disabled {
+  background: #dddddd !important;
+  cursor: not-allowed;
+}
+
 
 </style>

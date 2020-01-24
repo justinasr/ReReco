@@ -6,7 +6,7 @@
         <td>{{key}}</td><td><input v-model="editableObject[key]"></td>
       </tr>
     </table>
-    <v-btn @click="save()">Save</v-btn>
+    <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
   </div>
 </template>
 
@@ -53,6 +53,12 @@ input, select, textarea {
   background-color: inherit;
   -webkit-appearance: auto;
   min-width: 300px;
+}
+
+td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-right: 4px;
 }
 
 </style>

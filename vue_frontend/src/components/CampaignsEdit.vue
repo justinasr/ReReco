@@ -35,11 +35,11 @@
             <ul>
               <li v-for="(sequence, index) in editableObject.sequences" :key="index">
                 Sequence {{index + 1}}
-                <v-btn @click="showSequenceDialog(index)">Edit</v-btn>
-                <v-btn @click="deleteSequence(index)">Delete</v-btn>
+                <v-btn small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(index)">Edit</v-btn>
+                <v-btn small class="mr-1 mb-1" color="error" @click="deleteSequence(index)">Delete</v-btn>
               </li>
               <li>
-                <v-btn @click="showSequenceDialog(-1)">Add new sequence</v-btn>
+                <v-btn small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(-1)">Add sequence</v-btn>
               </li>
             </ul>
           </td>
@@ -49,7 +49,7 @@
           <td><input type="number" v-model="editableObject.memory" :disabled="!editingInfo.memory">MB</td>
         </tr>
       </table>
-      <v-btn @click="save()">Save</v-btn>
+      <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
     </v-card>
     <v-dialog v-model="sequenceEditDialog.visible"
               max-width="50%">
@@ -88,12 +88,6 @@ export default {
   computed: {
   },
   watch: {
-    editableObject: {
-      handler: function() {
-        console.log('Something changed')
-      },
-      deep: true
-    }
   },
   created () {
     let query = Object.assign({}, this.$route.query);
@@ -168,21 +162,14 @@ export default {
 
 <style scoped>
 
-input, select, textarea {
-  border-style: inset;
-  background-color: inherit;
-  -webkit-appearance: auto;
-  min-width: 500px;
-}
-
-textarea {
-  min-height: 500px;
-  font-family: monospace;
-  font-size: 0.8em;
-}
-
 h1 {
   margin: 8px;
+}
+
+td {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-right: 4px;
 }
 
 </style>

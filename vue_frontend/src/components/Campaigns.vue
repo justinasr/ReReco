@@ -46,10 +46,10 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn @click="dialog.cancel">
+          <v-btn small class="mr-1 mb-1" color="primary" @click="dialog.cancel">
             Cancel
           </v-btn>
-          <v-btn @click="dialog.ok">
+          <v-btn small class="mr-1 mb-1" color="error" @click="dialog.ok">
             OK
           </v-btn>
         </v-card-actions>
@@ -67,8 +67,8 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn @click="errorDialog.visible = false">
-            OK
+          <v-btn small class="mr-1 mb-1" color="primary" @click="errorDialog.visible = false">
+            Dismiss
           </v-btn>
         </v-card-actions>
       </v-card>
