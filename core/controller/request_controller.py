@@ -53,6 +53,9 @@ class RequestController(ControllerBase):
             serial_number += 1
             # Form a new temporary prepid
             json_data['prepid'] = 'NewReRecoRequest'
+            json_data['cmssw_release'] = campaign.get('cmssw_release')
+            json_data['member_of_campaign'] = campaign.get_prepid()
+            json_data['step'] = campaign.get('step')
             # Finally create a request object
             new_request = Request(json_input=json_data)
             input_dataset = new_request.get('input_dataset')
@@ -63,14 +66,13 @@ class RequestController(ControllerBase):
             new_request.set('prepid', prepid)
             self.logger.info('Will create %s', (prepid))
             new_request.add_history('create', prepid, None)
-            attributes_to_move = {'prepid': 'member_of_campaign',
-                                  'memory': 'memory',
-                                  'energy': 'energy',
-                                  'step': 'step',
-                                  'cmssw_release': 'cmssw_release',
-                                  'sequences': 'sequences'}
-            for campaign_attr, request_attr in attributes_to_move.items():
-                new_request.set(request_attr, campaign.get(campaign_attr))
+            if not json_data.get('sequences'):
+                new_request.set('sequences', campaign.get('sequences'))
+            if not json_data.get('memory'):
+                new_request.set('memory', campaign.get('memory'))
+
+            if not json_data.get('energy'):
+                new_request.set('energy', campaign.get('energy'))
 
             if not self.check_for_create(new_request):
                 self.logger.error('Error while checking new item %s', prepid)
@@ -117,10 +119,12 @@ class RequestController(ControllerBase):
         is_new = not bool(editing_info.get('prepid'))
         editing_info['prepid'] = False
         editing_info['history'] = False
+        editing_info['step'] = False
+        editing_info['cmssw_release'] = False
         editing_info['input_dataset'] = is_new
         editing_info['processing_string'] = is_new
-        editing_info['cmssw_release'] = is_new
-        editing_info['step'] = is_new
+        editing_info['member_of_campaign'] = is_new
+        editing_info['sequences'] = not is_new
         return editing_info
 
     def get_cmsdriver(self, request):

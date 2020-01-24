@@ -94,19 +94,12 @@ class CampaignTicketController(ControllerBase):
                                 f'{len(created_requests)} requests created')
 
             request_controller = RequestController()
-            campaign_controller = CampaignController()
             campaign_name = campaign_ticket.get('campaign')
-            campaign = campaign_controller.get(campaign_name)
             processing_string = campaign_ticket.get('processing_string')
             for input_dataset in campaign_ticket.get('input_datasets'):
                 new_request_json = {'member_of_campaign': campaign_name,
                                     'input_dataset': input_dataset,
-                                    'processing_string': processing_string,
-                                    'type': campaign.get('type'),
-                                    'step': campaign.get('step'),
-                                    'memory': campaign.get('memory'),
-                                    'cmssw_release': campaign.get('cmssw_release'),
-                                    'energy': campaign.get('energy')}
+                                    'processing_string': processing_string}
                 created_request_json = request_controller.create(new_request_json)
                 created_requests.append(created_request_json.get('prepid'))
 

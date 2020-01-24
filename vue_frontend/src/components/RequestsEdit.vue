@@ -127,6 +127,7 @@ export default {
       console.log(response.data);
       component.editableObject = response.data.response.object;
       // component.editableObject.sequences = JSON.stringify(component.editableObject.sequences, null, 2);
+      component.editableObject.runs = component.editableObject.runs.join('\n')
       component.editingInfo = response.data.response.editing_info;
       component.loading = false;
     });
