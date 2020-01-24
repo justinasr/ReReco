@@ -134,6 +134,6 @@ class RequestController(ControllerBase):
         cms_driver += '\n\n'
         for i in range(number_of_sequences):
             cms_driver += request.get_cmsdriver(i)
-            cms_driver += '\n'
+            cms_driver += '\n\n'
 
         return cms_driver

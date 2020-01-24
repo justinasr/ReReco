@@ -14,6 +14,8 @@
         <a :href="'requests/edit?prepid=' + item.prepid">Edit</a>
         &nbsp;
         <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
+        &nbsp;
+        <a :href="'api/requests/get_cmsdrivers/' + item.prepid">cmsDriver</a>
       </template>
       <template v-slot:item.history="{ item }">
         <HistoryCell :data="item.history"/>

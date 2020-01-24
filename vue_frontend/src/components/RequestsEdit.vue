@@ -138,6 +138,7 @@ export default {
       let editableObject = JSON.parse(JSON.stringify(this.editableObject))
       let component = this;
       editableObject['notes'] = editableObject['notes'].trim();
+      editableObject['runs'] = editableObject['runs'].replace(/,/g, '\n').split('\n').filter(Boolean);
       console.log(this.editableObject);
       // editableObject['sequences'] = JSON.parse(editableObject['sequences']);
       let httpRequest;
