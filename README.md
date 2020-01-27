@@ -66,6 +66,7 @@ Structure in database:
 * `eventcontent` - list of what event content to write out
 * `extra` - TO BE FILLED
 * `nThreads` - how many threads should CMSSW use
+* `scenario` - scenario overriding standard settings: 'pp', 'cosmics', 'nocoll', 'HeavyIons'
 * `step` - list of desired steps
 
 # Database index
@@ -112,7 +113,9 @@ function(doc) {
   if (doc.member_of_campaign) {
     var parts = doc._id.split('-');
     var number = parseInt(parts[parts.length - 1], 10);
-    emit(doc.member_of_campaign, number);
+    parts.shift();
+    parts.pop();
+    emit(parts.join('-'), number);
   };
 }
 ```

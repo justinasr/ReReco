@@ -5,15 +5,15 @@
       <table v-if="editableObject">
         <tr>
           <td>PrepID</td>
-          <td><input v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
+          <td><input type="text" v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
         </tr>
         <tr>
           <td>Campaign</td>
-          <td><input v-model="editableObject.campaign" :disabled="!editingInfo.campaign"></td>
+          <td><input type="text" v-model="editableObject.campaign" :disabled="!editingInfo.campaign"></td>
         </tr>
         <tr>
           <td>Processing String</td>
-          <td><input v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
+          <td><input type="text" v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
         </tr>
         <tr>
           <td>Notes</td>
@@ -33,7 +33,7 @@
         <v-card-title class="headline">Get dataset list</v-card-title>
         <v-card-text>
           Automatically get a list of input datasets from DBS. Query must satisfy this format:<pre>/*/*/RAW</pre>Enter dataset name query below, for example:<pre>/ZeroBias/*/RAW</pre>
-          <input v-model="getDatasetsDialogInput">
+          <input type="text" v-model="getDatasetsDialogInput">
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>

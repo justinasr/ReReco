@@ -63,16 +63,16 @@ class ControllerBase():
         with self.locker.get_lock(prepid):
             self.logger.info('Will edit %s', prepid)
             database = Database(self.database_name)
-            old_object = database.get(prepid)
-            if not old_object:
+            old_object_json = database.get(prepid)
+            if not old_object_json:
                 raise Exception(f'Object with prepid "{prepid}" does not '
                                 f'exist in {self.database_name} database')
 
-            old_object = self.model_class(json_input=old_object)
+            old_object = self.model_class(json_input=old_object_json)
             # Move over history, so it could not be overwritten
             new_object.set('history', old_object.get('history'))
             self.before_update(new_object)
-            changed_values = self.get_changes(old_object, new_object)
+            changed_values = self.get_changes(old_object_json, new_object.get_json())
             if not changed_values:
                 # Nothing was updated
                 self.logger.info('Nothing was updated for %s', prepid)
@@ -191,27 +191,14 @@ class ControllerBase():
         """
         Get dictionary of changed attributes
         """
-        if isinstance(reference, ModelBase) and isinstance(reference, ModelBase):
-            # Compare two ReReco objects
-            changed_values = {}
-            schema = reference.schema()
-            schema_keys = set(schema.keys())
-            schema_keys.remove('history')
-            for key in schema_keys:
-                reference_value = reference.get(key)
-                target_value = target.get(key)
-                changed = self.get_changes(reference_value, target_value)
-                if isinstance(changed, bool):
-                    if changed:
-                        changed_values[key] = changed
-                else:
-                    changed_values[key] = changed
-
-            return changed_values
-
         if isinstance(reference, dict) and isinstance(target, dict):
             changed_values = {}
-            keys = reference.keys()
+            keys_reference = set(reference.keys())
+            keys_target = set(target.keys())
+            keys = list(keys_reference.union(keys_target))
+            if 'history' in keys:
+                keys.remove('history')
+
             for key in keys:
                 reference_value = reference.get(key)
                 target_value = target.get(key)

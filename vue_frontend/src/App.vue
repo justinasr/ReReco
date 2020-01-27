@@ -62,9 +62,9 @@ export default {
 <style>
 
 
-input, select, textarea {
+select, textarea {
   border-style: inset !important;
-  min-width: 500px;
+  min-width: 400px;
 }
 
 select {
@@ -72,13 +72,16 @@ select {
 }
 
 input[type="number"] {
+  border-style: inset !important;
   width: 100px;
   min-width: 100px;
   text-align: right;
 }
 
-input {
+input[type="text"] {
+  border-style: inset !important;
   -webkit-appearance: textfield !important;
+  min-width: 400px;
 }
 
 textarea {

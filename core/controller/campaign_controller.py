@@ -16,33 +16,35 @@ class CampaignController(ControllerBase):
         self.database_name = 'campaigns'
         self.model_class = Campaign
 
+    def get(self, prepid):
+        obj = super().get(prepid)
+        if obj:
+            new_sequences = []
+            for sequence in obj.get('sequences'):
+                new_sequences.append(Sequence(json_input=sequence).get_json())
+
+            obj.set('sequences', new_sequences)
+            return obj
+
+        return None
+
     def check_for_create(self, obj):
+        sequences = []
+        for sequence_json in obj.get('sequences'):
+            sequence = Sequence(json_input=sequence_json)
+            sequences.append(sequence.get_json())
+
+        obj.set('sequences', sequences)
         return True
 
     def check_for_update(self, old_obj, new_obj, changed_values):
-        return True
-
-    def check_for_delete(self, obj):
-        if obj.get('prepid') == 'RunIIFall18GS':
-            raise Exception('Cannot delete this campaign for hardcoded testing reasons')
-
-        return True
-
-    def before_create(self, obj):
         sequences = []
-        for sequence_json in obj.get('sequences'):
+        for sequence_json in new_obj.get('sequences'):
             sequence = Sequence(json_input=sequence_json)
             sequences.append(sequence.get_json())
 
-        obj.set('sequences', sequences)
-
-    def before_update(self, obj):
-        sequences = []
-        for sequence_json in obj.get('sequences'):
-            sequence = Sequence(json_input=sequence_json)
-            sequences.append(sequence.get_json())
-
-        obj.set('sequences', sequences)
+        new_obj.set('sequences', sequences)
+        return True
 
     def get_editing_info(self, obj):
         editing_info = {k: not k.startswith('_') for k in obj.get_json().keys()}

@@ -5,7 +5,7 @@
       <table v-if="editableObject">
         <tr>
           <td>PrepID</td>
-          <td><input v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
+          <td><input type="text" v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
         </tr>
         <tr>
           <td>Energy</td>
@@ -23,7 +23,7 @@
         </tr>
         <tr>
           <td>CMSSW Release</td>
-          <td><input v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
+          <td><input type="text" v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
         </tr>
         <tr>
           <td>Notes</td>

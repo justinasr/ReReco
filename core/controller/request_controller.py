@@ -41,10 +41,20 @@ class RequestController(ControllerBase):
         if '_id' in json_data:
             del json_data['_id']
 
+        json_data['prepid'] = 'ReReco-Temp-00000'
+        json_data['cmssw_release'] = campaign.get('cmssw_release')
+        json_data['member_of_campaign'] = campaign.get_prepid()
+        json_data['step'] = campaign.get('step')
+        new_request = Request(json_input=json_data)
+        input_dataset = new_request.get('input_dataset')
+        input_dataset_parts = [x for x in input_dataset.split('/') if x]
+        era = input_dataset_parts[1].split('-')[0]
+        processing_string = new_request.get('processing_string')
+        prepid_middle_part = f'{era}-{input_dataset_parts[0]}-{processing_string}'
         with self.locker.get_lock(f'generate-prepid-{campaign_name}'):
             # Get a new serial number
             serial_numbers = request_db.query_view('serial_number',
-                                                   f'key="{campaign_name}"&group=true')
+                                                   f'key="{prepid_middle_part}"&group=true')
             if not serial_numbers:
                 serial_number = 0
             else:
@@ -52,19 +62,9 @@ class RequestController(ControllerBase):
 
             serial_number += 1
             # Form a new temporary prepid
-            json_data['prepid'] = 'NewReRecoRequest'
-            json_data['cmssw_release'] = campaign.get('cmssw_release')
-            json_data['member_of_campaign'] = campaign.get_prepid()
-            json_data['step'] = campaign.get('step')
-            # Finally create a request object
-            new_request = Request(json_input=json_data)
-            input_dataset = new_request.get('input_dataset')
-            input_dataset_parts = [x for x in input_dataset.split('/') if x]
-            era = input_dataset_parts[1].split('-')[0]
-            processing_string = new_request.get('processing_string')
-            prepid = f'ReReco-{era}-{input_dataset_parts[0]}-{processing_string}-{serial_number:05d}'
+            prepid = f'ReReco-{prepid_middle_part}-{serial_number:05d}'
             new_request.set('prepid', prepid)
-            self.logger.info('Will create %s', (prepid))
+            self.logger.info('Generated prepid %s', (prepid))
             new_request.add_history('create', prepid, None)
             if not json_data.get('sequences'):
                 new_request.set('sequences', campaign.get('sequences'))
@@ -82,6 +82,18 @@ class RequestController(ControllerBase):
                 raise Exception(f'Error saving {prepid}')
 
             return new_request.get_json()
+
+    def get(self, prepid):
+        obj = super().get(prepid)
+        if obj:
+            new_sequences = []
+            for sequence in obj.get('sequences'):
+                new_sequences.append(Sequence(json_input=sequence).get_json())
+
+            obj.set('sequences', new_sequences)
+            return obj
+
+        return None
 
     def check_for_create(self, obj):
         sequences = []

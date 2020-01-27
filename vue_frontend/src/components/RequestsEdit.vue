@@ -5,7 +5,7 @@
       <table v-if="editableObject">
         <tr>
           <td>PrepID</td>
-          <td><input v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
+          <td><input type="text" v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
         </tr>
         <tr>
           <td>Energy</td>
@@ -13,11 +13,11 @@
         </tr>
         <tr>
           <td>CMSSW Version</td>
-          <td><input v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
+          <td><input type="text" v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
         </tr>
         <tr>
           <td>Campaign</td>
-          <td><input v-model="editableObject.member_of_campaign" :disabled="!editingInfo.member_of_campaign"></td>
+          <td><input type="text" v-model="editableObject.member_of_campaign" :disabled="!editingInfo.member_of_campaign"></td>
         </tr>
         <tr>
           <td>Notes</td>
@@ -54,7 +54,7 @@
         </tr>
         <tr>
           <td>Input dataset</td>
-          <td><input v-model="editableObject.input_dataset" :disabled="!editingInfo.input_dataset"></td>
+          <td><input type="text" v-model="editableObject.input_dataset" :disabled="!editingInfo.input_dataset"></td>
         </tr>
         <tr>
           <td>Priority</td>
@@ -62,7 +62,7 @@
         </tr>
         <tr>
           <td>Processing String</td>
-          <td><input v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
+          <td><input type="text" v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
         </tr>
         <tr>
           <td>Runs</td>
