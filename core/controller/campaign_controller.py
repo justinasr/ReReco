@@ -46,6 +46,9 @@ class CampaignController(ControllerBase):
         new_obj.set('sequences', sequences)
         return True
 
+    def check_for_delete(self, obj):
+        return True
+
     def get_editing_info(self, obj):
         editing_info = {k: not k.startswith('_') for k in obj.get_json().keys()}
         editing_info['prepid'] = not bool(editing_info.get('prepid'))

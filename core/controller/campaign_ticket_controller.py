@@ -8,7 +8,6 @@ from core.model.campaign_ticket import CampaignTicket
 from core.utils.cmsweb import ConnectionWrapper
 from core.database.database import Database
 from core.controller.request_controller import RequestController
-from core.controller.campaign_controller import CampaignController
 
 
 class CampaignTicketController(ControllerBase):

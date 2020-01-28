@@ -36,7 +36,7 @@ class CampaignTicket(ModelBase):
     _lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9_\\-]{1,50}'),
         'campaign': lambda campaign: ModelBase.matches_regex(campaign, '[a-zA-Z0-9]{1,50}'),
-        'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{0,100}'),
+        'processing_string': ModelBase._lambda_checks['processing_string'],
         'status': lambda status: status in ('new', 'done'),
         '__input_datasets': ModelBase._lambda_checks['dataset'],
     }

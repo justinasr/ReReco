@@ -162,12 +162,12 @@ class Database():
         """
         if not isinstance(document, dict):
             self.logger.error('%s is not a dictionary', document)
-            return
+            return False
 
         document_id = document.get('_id', '')
         if not document_id:
             self.logger.error('%s does not have a _id', document)
-            return
+            return False
 
         if '_rev' in document and not document['_rev']:
             del document['_rev']
@@ -215,7 +215,7 @@ class Database():
             results = [x['doc'] for x in response.get('rows', [])]
 
         if return_total_rows:
-            return results, total_rows
+            results = (results, total_rows)
 
         return results
 

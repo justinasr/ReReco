@@ -56,7 +56,7 @@ class Request(ModelBase):
     }
 
     _lambda_checks = {
-        'cmssw_release': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}'),  # CMSSW_ddd_ddd_ddd[_XXX...]
+        'cmssw_release': lambda cmssw: ModelBase._lambda_checks['cmssw_release'],
         'energy': lambda energy: energy >= 0.0,
         'input_dataset': ModelBase._lambda_checks['dataset'],
         'memory': lambda memory: memory >= 0,
@@ -151,12 +151,15 @@ class Request(ModelBase):
             del arguments_dict['harvesting_config_id']
 
         # Handle input/output file names
-        if sequence_index == 0:
-            input_dataset = self.get("input_dataset")
-            arguments_dict['filein'] = f'"dbs:{input_dataset}"'
+        if overwrite_input:
+            arguments_dict['filein'] = overwrite_input
         else:
-            input_file = f'{self.get_sequence_name(sequence_index - 1)}.root'
-            arguments_dict['filein'] = f'"file:{input_file}"'
+            if sequence_index == 0:
+                input_dataset = self.get("input_dataset")
+                arguments_dict['filein'] = f'"dbs:{input_dataset}"'
+            else:
+                input_file = f'{self.get_sequence_name(sequence_index - 1)}.root'
+                arguments_dict['filein'] = f'"file:{input_file}"'
 
         # Build argument dictionary
         sequence_name = self.get_sequence_name(sequence_index)
