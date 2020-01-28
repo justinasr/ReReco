@@ -46,6 +46,8 @@ class APIBase(Resource):
 
             return func(*args, **kwargs)
 
+        ensure_request_data_wrapper.__name__ = func.__name__
+        ensure_request_data_wrapper.__doc__ = func.__doc__
         return ensure_request_data_wrapper
 
     @staticmethod
@@ -67,6 +69,8 @@ class APIBase(Resource):
                                             'message': str(ex)},
                                            code=APIBase.exception_to_http_code(ex))
 
+        exceptions_to_errors_wrapper.__name__ = func.__name__
+        exceptions_to_errors_wrapper.__doc__ = func.__doc__
         return exceptions_to_errors_wrapper
 
     @staticmethod

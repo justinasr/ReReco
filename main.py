@@ -5,7 +5,7 @@ from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI
 from api.search_api import SearchAPI
 import logging
 from flask_restful import Api
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect
 from flask_cors import CORS
 
 
@@ -28,6 +28,30 @@ CORS(app,
 @app.route('/<path:path>')
 def catch_all(path):
     return render_template('index.html')
+
+
+@app.route('/api', defaults={'path': ''})
+@app.route('/api/<path:path>')
+def api_documentation(path):
+    docs = {}
+    for endpoint, view in app.view_functions.items():
+        view_class = dict(view.__dict__).get('view_class')
+        if view_class is None:
+            continue
+
+        class_name = view_class.__name__
+        class_doc = view_class.__doc__.strip()
+        urls = sorted([r.rule for r in app.url_map._rules_by_endpoint[endpoint]])
+        category = [x for x in urls[0].split('/') if x][1]
+        if category not in docs:
+            docs[category] = {}
+
+        docs[category][class_name] = {'doc': class_doc, 'urls': urls, 'methods': {}}
+        for method_name in view_class.methods:
+            method = view_class.__dict__.get(method_name.lower())
+            docs[category][class_name]['methods'][method_name] = method.__doc__.strip()
+
+    return render_template('api_documentation.html', docs=docs)
 
 
 api.add_resource(SearchAPI, '/api/search')
