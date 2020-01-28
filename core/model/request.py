@@ -2,6 +2,7 @@
 Module that contains Request class
 """
 from core.model.model_base import ModelBase
+from core.model.sequence import Sequence
 
 
 class Request(ModelBase):
@@ -59,7 +60,7 @@ class Request(ModelBase):
         'energy': lambda energy: energy >= 0.0,
         'input_dataset': ModelBase._lambda_checks['dataset'],
         'memory': lambda memory: memory >= 0,
-        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-_]{1,50}'),
+        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-_]{1,75}'),
         'priority': lambda priority: 1000 <= priority <= 1000000,
         'processing_string': ModelBase._lambda_checks['processing_string'],
         '__runs': lambda r: isinstance(r, int) and r > 0,
@@ -91,7 +92,7 @@ class Request(ModelBase):
         """
         cmssw_release = self.get('cmssw_release')
         commands = ['if [ -r %s/src ] ; then' % (cmssw_release),
-                    '  echo release %s already exists' % (cmssw_release),
+                    '  echo %s already exist' % (cmssw_release),
                     'else',
                     '  scram p CMSSW %s' % (cmssw_release),
                     'fi',
@@ -100,44 +101,92 @@ class Request(ModelBase):
 
         return '\n'.join(commands)
 
-    def get_cmsdriver(self, sequence_index):
+    def get_sequence_name(self, sequence_index):
         """
-        Return a build cmsDriver command for given sequence
+        Return a sequence name which is based on request
+        prepid and sequence number
         """
-        sequence_json = self.get('sequences')[sequence_index]
-        sequence_json = dict(sequence_json)
         prepid = self.get_prepid()
-        if sequence_index == 0:
-            input_dataset = self.get("input_dataset")
-            sequence_json['filein'] = f'"dbs:{input_dataset}"'
-        else:
-            input_file = f'{prepid}_{sequence_index - 1}.root'
-            sequence_json['filein'] = f'"file:{input_file}"'
-
         if sequence_index != len(self.get('sequences')) - 1:
-            output_file = f'{prepid}_{sequence_index}.root'
-            sequence_json['fileout'] = f'"file:{output_file}"'
-
-        for datatier in sequence_json.get('datatier', []):
-            if datatier.startswith('DQM'):
-                step_type = 'HARVEST'
-                break
+            sequence_name = f'{prepid}_{sequence_index}'
         else:
-            step_type = 'RECO'
+            sequence_name = f'{prepid}'
 
-        cms_driver_command = f'cmsDriver.py {step_type}'
-        for key in sorted(sequence_json.keys()):
-            if not sequence_json[key]:
+        return sequence_name
+
+    def build_cmsdriver(self, cmsdriver_type, arguments):
+        """
+        Build a cmsDriver command from given arguments
+        """
+        command = f'# Command for {cmsdriver_type}:\ncmsDriver.py {cmsdriver_type}'
+        comment = f'# Arguments for {cmsdriver_type}:\n'
+        for key in sorted(arguments.keys()):
+            if not arguments[key]:
                 continue
 
-            if isinstance(sequence_json[key], list):
-                sequence_json[key] = ','.join([str(x) for x in sequence_json[key]])
+            if isinstance(arguments[key], bool):
+                arguments[key] = ''
 
-            cms_driver_command += ' --%s %s' % (key, sequence_json[key])
+            if isinstance(arguments[key], list):
+                arguments[key] = ','.join([str(x) for x in arguments[key]])
 
-        cms_driver_command += ' --no_exec'
-        cms_driver_command += ' --data'
-        python_filename = f'{step_type.lower()}_{prepid}_{sequence_index}_cfg.py'
-        cms_driver_command += f' --python_filename="{python_filename}"'
-        cms_driver_command += f'\ncmsRun {python_filename}'
+            command += f' --{key} {arguments[key]}'.rstrip()
+            comment += f'# --{key} {arguments[key]}'.rstrip() + '\n'
+
+        return comment + '\n' + command
+
+    def get_cmsdriver(self, sequence_index, overwrite_input=None):
+        """
+        Return a cmsDriver command for sequence at given index
+        """
+        prepid = self.get_prepid()
+        sequence_json = self.get('sequences')[sequence_index]
+        sequence = Sequence(json_input=sequence_json)
+        arguments_dict = dict(sequence_json)
+        # Delete sequence metadata
+        if 'config_id' in arguments_dict:
+            del arguments_dict['config_id']
+
+        if 'harvesting_config_id' in arguments_dict:
+            del arguments_dict['harvesting_config_id']
+
+        # Handle input/output file names
+        if sequence_index == 0:
+            input_dataset = self.get("input_dataset")
+            arguments_dict['filein'] = f'"dbs:{input_dataset}"'
+        else:
+            input_file = f'{self.get_sequence_name(sequence_index - 1)}.root'
+            arguments_dict['filein'] = f'"file:{input_file}"'
+
+        # Build argument dictionary
+        sequence_name = self.get_sequence_name(sequence_index)
+        arguments_dict['fileout'] = f'"file:{sequence_name}.root"'
+        arguments_dict['python_filename'] = f'"{prepid}_{sequence_index}_cfg.py"'
+        arguments_dict['data'] = True
+        arguments_dict['no_exec'] = True
+        arguments_dict['runUnscheduled'] = True
+
+        cms_driver_command = self.build_cmsdriver('RECO', arguments_dict)
+
+        # Add harvesting if needed
+        needs_harvest = sequence.needs_harvesting()
+        if needs_harvest:
+            for one_step in sequence.get('step'):
+                if one_step == 'DQM':
+                    step = 'HARVESTING'
+                    break
+                elif one_step.startswith('DQM:'):
+                    step = one_step.replace('DQM:', 'HARVESTING:', 1)
+                    break
+
+            harvesting_dict = {'conditions': arguments_dict['conditions'],
+                               'step': step,
+                               'era': arguments_dict['era'].split(',')[0],
+                               'scenario': arguments_dict['scenario'],
+                               'data': True,
+                               'no_exec': True,
+                               'filein': f'"file:{sequence_name}_inDQM.root"',
+                               'python_filename': f'"{sequence_name}_harvest_cfg.py"'}
+            cms_driver_command += '\n\n' + self.build_cmsdriver('HARVESTING', harvesting_dict)
+
         return cms_driver_command

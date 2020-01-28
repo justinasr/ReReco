@@ -38,6 +38,12 @@
       <template v-slot:item.dataset_name="{ item }">
         {{item.input_dataset.split('/').filter(Boolean)[0]}}
       </template>
+      <template v-slot:item.time_per_event="{ item }">
+        {{item.time_per_event}}s
+      </template>
+      <template v-slot:item.size_per_event="{ item }">
+        {{item.size_per_event}} kB
+      </template>
     </v-data-table>
 
     <v-dialog v-model="dialog.visible"

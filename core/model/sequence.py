@@ -43,8 +43,9 @@ class Sequence(ModelBase):
         'nThreads': lambda n: 0 < n < 64,
         'scenario': lambda s: s in ('pp', 'cosmics', 'nocoll', 'HeavyIons'),
         '__datatier': lambda s: s in ('AOD', 'MINIAOD', 'NANOAOD', 'DQMIO', 'USER', 'ALCARECO'),
-        '__eventcontent': lambda s: s in ('AOD', 'MINIAOD', 'DQM'),
-        '__step': lambda s: s in ('RAW2DIGI', 'L1Reco', 'RECO', 'EI', 'PAT', 'DQM', 'NANO') or s.startswith('ALCA') or s.startswith('DQM') or s.startswith('SKIM')
+        '__eventcontent': lambda s: s in ('AOD', 'MINIAOD', 'NANOAOD', 'DQM'),
+        '__step': lambda s: (s in ('RAW2DIGI', 'L1Reco', 'RECO', 'EI', 'PAT', 'DQM', 'NANO') or
+                             s.startswith('ALCA') or s.startswith('DQM') or s.startswith('SKIM'))
     }
 
     def __init__(self, json_input=None):
@@ -59,7 +60,7 @@ class Sequence(ModelBase):
         and harvesting step is needed
         """
         for step in self.get('step'):
-            if step == 'DQM' or step.startswith('DQM'):
+            if step == 'DQM' or step.startswith('DQM:'):
                 return True
 
         return False
