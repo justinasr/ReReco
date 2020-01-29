@@ -4,6 +4,7 @@ Module that contains SubcampaignController class
 from core.controller.controller_base import ControllerBase
 from core.model.subcampaign import Subcampaign
 from core.model.sequence import Sequence
+from core.database.database import Database
 
 
 class SubcampaignController(ControllerBase):
@@ -47,6 +48,13 @@ class SubcampaignController(ControllerBase):
         return True
 
     def check_for_delete(self, obj):
+        prepid = obj.get('prepid')
+        requests_db = Database('requests')
+        requests = requests_db.query(f'subcampaign={prepid}')
+        if requests:
+            raise Exception(f'It is not allowed to delete subcampaigns that have existing requests. '
+                            f'{prepid} has {len(requests)} requests')
+
         return True
 
     def get_editing_info(self, obj):
