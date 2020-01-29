@@ -1,5 +1,5 @@
-from api.campaign_api import CreateCampaignAPI, DeleteCampaignAPI, UpdateCampaignAPI, GetCampaignAPI, GetEditableCampaignAPI, GetDefaultCampaignSequenceAPI
-from api.campaign_ticket_api import CreateCampaignTicketAPI, DeleteCampaignTicketAPI, UpdateCampaignTicketAPI, GetCampaignTicketAPI, GetCampaignTicketDatasetsAPI, GetEditableCampaignTicketAPI, CreateRequestsForCampaignTicketAPI
+from api.subcampaign_api import CreateSubcampaignAPI, DeleteSubcampaignAPI, UpdateSubcampaignAPI, GetSubcampaignAPI, GetEditableSubcampaignAPI, GetDefaultSubcampaignSequenceAPI
+from api.subcampaign_ticket_api import CreateSubcampaignTicketAPI, DeleteSubcampaignTicketAPI, UpdateSubcampaignTicketAPI, GetSubcampaignTicketAPI, GetSubcampaignTicketDatasetsAPI, GetEditableSubcampaignTicketAPI, CreateRequestsForSubcampaignTicketAPI
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverCommands
 from api.search_api import SearchAPI
@@ -56,26 +56,26 @@ def api_documentation(path):
 
 api.add_resource(SearchAPI, '/api/search')
 
-api.add_resource(CreateCampaignAPI, '/api/campaigns/create')
-api.add_resource(DeleteCampaignAPI, '/api/campaigns/delete')
-api.add_resource(UpdateCampaignAPI, '/api/campaigns/update')
-api.add_resource(GetCampaignAPI, '/api/campaigns/get/<string:prepid>')
-api.add_resource(GetEditableCampaignAPI,
-                 '/api/campaigns/get_editable',
-                 '/api/campaigns/get_editable/<string:prepid>')
-api.add_resource(GetDefaultCampaignSequenceAPI,
-                 '/api/campaigns/get_default_sequence',
-                 '/api/campaigns/get_default_sequence/<string:prepid>')
+api.add_resource(CreateSubcampaignAPI, '/api/subcampaigns/create')
+api.add_resource(DeleteSubcampaignAPI, '/api/subcampaigns/delete')
+api.add_resource(UpdateSubcampaignAPI, '/api/subcampaigns/update')
+api.add_resource(GetSubcampaignAPI, '/api/subcampaigns/get/<string:prepid>')
+api.add_resource(GetEditableSubcampaignAPI,
+                 '/api/subcampaigns/get_editable',
+                 '/api/subcampaigns/get_editable/<string:prepid>')
+api.add_resource(GetDefaultSubcampaignSequenceAPI,
+                 '/api/subcampaigns/get_default_sequence',
+                 '/api/subcampaigns/get_default_sequence/<string:prepid>')
 
-api.add_resource(CreateCampaignTicketAPI, '/api/campaign_tickets/create')
-api.add_resource(DeleteCampaignTicketAPI, '/api/campaign_tickets/delete')
-api.add_resource(UpdateCampaignTicketAPI, '/api/campaign_tickets/update')
-api.add_resource(GetCampaignTicketAPI, '/api/campaign_tickets/get/<string:prepid>')
-api.add_resource(GetEditableCampaignTicketAPI,
-                 '/api/campaign_tickets/get_editable',
-                 '/api/campaign_tickets/get_editable/<string:prepid>')
-api.add_resource(GetCampaignTicketDatasetsAPI, '/api/campaign_tickets/get_datasets')
-api.add_resource(CreateRequestsForCampaignTicketAPI, '/api/campaign_tickets/create_requests')
+api.add_resource(CreateSubcampaignTicketAPI, '/api/subcampaign_tickets/create')
+api.add_resource(DeleteSubcampaignTicketAPI, '/api/subcampaign_tickets/delete')
+api.add_resource(UpdateSubcampaignTicketAPI, '/api/subcampaign_tickets/update')
+api.add_resource(GetSubcampaignTicketAPI, '/api/subcampaign_tickets/get/<string:prepid>')
+api.add_resource(GetEditableSubcampaignTicketAPI,
+                 '/api/subcampaign_tickets/get_editable',
+                 '/api/subcampaign_tickets/get_editable/<string:prepid>')
+api.add_resource(GetSubcampaignTicketDatasetsAPI, '/api/subcampaign_tickets/get_datasets')
+api.add_resource(CreateRequestsForSubcampaignTicketAPI, '/api/subcampaign_tickets/create_requests')
 
 api.add_resource(CreateFlowAPI, '/api/flows/create')
 api.add_resource(DeleteFlowAPI, '/api/flows/delete')
@@ -92,6 +92,6 @@ api.add_resource(GetEditableRequestAPI,
 api.add_resource(GetCMSDriverCommands, '/api/requests/get_cmsdrivers/<string:prepid>')
 
 app.run(host='0.0.0.0',
-        port=8003,
+        port=8005,
         threaded=True,
         debug=True)

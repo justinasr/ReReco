@@ -4,10 +4,10 @@ Module that contains RequestController class
 import json
 from core.controller.controller_base import ControllerBase
 from core.model.request import Request
-from core.model.campaign import Campaign
+from core.model.subcampaign import Subcampaign
 from core.database.database import Database
 from core.model.sequence import Sequence
-from core.model.campaign_ticket import CampaignTicket
+from core.model.subcampaign_ticket import SubcampaignTicket
 
 
 class RequestController(ControllerBase):
@@ -22,17 +22,17 @@ class RequestController(ControllerBase):
 
     def create(self, json_data):
         request_db = Database('requests')
-        # Get a campaign
-        campaign_db = Database('campaigns')
-        campaign_name = json_data.get('member_of_campaign')
-        if not campaign_name:
-            raise Exception('No campaign name is given')
+        # Get a subcampaign
+        subcampaign_db = Database('subcampaigns')
+        subcampaign_name = json_data.get('subcampaign')
+        if not subcampaign_name:
+            raise Exception('No subcampaigns name is given')
 
-        campaign_json = campaign_db.get(campaign_name)
-        if not campaign_json:
-            raise Exception(f'Campaign "{campaign_name}" does not exist')
+        subcampaign_json = subcampaign_db.get(subcampaign_name)
+        if not subcampaign_json:
+            raise Exception(f'Campaign "{subcampaign_name}" does not exist')
 
-        campaign = Campaign(json_input=campaign_json)
+        subcampaign = Subcampaign(json_input=subcampaign_json)
         # Clean up the request input
         json_data['history'] = []
         if '_rev' in json_data:
@@ -42,16 +42,16 @@ class RequestController(ControllerBase):
             del json_data['_id']
 
         json_data['prepid'] = 'ReReco-Temp-00000'
-        json_data['cmssw_release'] = campaign.get('cmssw_release')
-        json_data['member_of_campaign'] = campaign.get_prepid()
-        json_data['step'] = campaign.get('step')
+        json_data['cmssw_release'] = subcampaign.get('cmssw_release')
+        json_data['subcampaign'] = subcampaign.get_prepid()
+        json_data['step'] = subcampaign.get('step')
         new_request = Request(json_input=json_data)
         input_dataset = new_request.get('input_dataset')
         input_dataset_parts = [x for x in input_dataset.split('/') if x]
         era = input_dataset_parts[1].split('-')[0]
         processing_string = new_request.get('processing_string')
         prepid_middle_part = f'{era}-{input_dataset_parts[0]}-{processing_string}'
-        with self.locker.get_lock(f'generate-prepid-{campaign_name}'):
+        with self.locker.get_lock(f'generate-prepid-{subcampaign_name}'):
             # Get a new serial number
             serial_numbers = request_db.query_view('serial_number',
                                                    f'key="{prepid_middle_part}"&group=true')
@@ -67,12 +67,12 @@ class RequestController(ControllerBase):
             self.logger.info('Generated prepid %s', (prepid))
             new_request.add_history('create', prepid, None)
             if not json_data.get('sequences'):
-                new_request.set('sequences', campaign.get('sequences'))
+                new_request.set('sequences', subcampaign.get('sequences'))
             if not json_data.get('memory'):
-                new_request.set('memory', campaign.get('memory'))
+                new_request.set('memory', subcampaign.get('memory'))
 
             if not json_data.get('energy'):
-                new_request.set('energy', campaign.get('energy'))
+                new_request.set('energy', subcampaign.get('energy'))
 
             if not self.check_for_create(new_request):
                 self.logger.error('Error while checking new item %s', prepid)
@@ -115,14 +115,14 @@ class RequestController(ControllerBase):
 
     def check_for_delete(self, obj):
         prepid = obj.get_prepid()
-        campaign_tickets_db = Database('campaign_tickets')
-        campaign_tickets = campaign_tickets_db.query(f'created_requests={prepid}')
-        self.logger.debug(json.dumps(campaign_tickets, indent=4))
-        for campaign_ticket_json in campaign_tickets:
-            campaign_ticket = CampaignTicket(json_input=campaign_ticket_json)
-            campaign_ticket.set('created_requests', [x for x in campaign_ticket.get('created_requests') if x != prepid])
-            campaign_ticket.add_history('remove_request', prepid, None)
-            campaign_tickets_db.save(campaign_ticket.get_json())
+        subcampaign_tickets_db = Database('subcampaign_tickets')
+        subcampaign_tickets = subcampaign_tickets_db.query(f'created_requests={prepid}')
+        self.logger.debug(json.dumps(subcampaign_tickets, indent=4))
+        for subcampaign_ticket_json in subcampaign_tickets:
+            subcampaign_ticket = SubcampaignTicket(json_input=subcampaign_ticket_json)
+            subcampaign_ticket.set('created_requests', [x for x in subcampaign_ticket.get('created_requests') if x != prepid])
+            subcampaign_ticket.add_history('remove_request', prepid, None)
+            subcampaign_tickets_db.save(subcampaign_ticket.get_json())
 
         return True
 
@@ -135,7 +135,7 @@ class RequestController(ControllerBase):
         editing_info['cmssw_release'] = False
         editing_info['input_dataset'] = is_new
         editing_info['processing_string'] = is_new
-        editing_info['member_of_campaign'] = is_new
+        editing_info['subcampaign'] = is_new
         editing_info['sequences'] = not is_new
         return editing_info
 

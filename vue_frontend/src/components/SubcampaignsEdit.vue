@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Campaigns Edit</h1>
+    <h1>Subcampaigns Edit</h1>
     <v-card raised style="margin: auto; padding: 16px; max-width: 750px;">
       <table v-if="editableObject">
         <tr>
@@ -95,7 +95,7 @@ export default {
     this.creatingNew = this.prepid === undefined;
     this.loading = true;
     let component = this;
-    axios.get('api/campaigns/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
+    axios.get('api/subcampaigns/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
       console.log(response.data);
       component.editableObject = response.data.response.object;
       // component.editableObject.sequences = JSON.stringify(component.editableObject.sequences, null, 4);
@@ -114,14 +114,14 @@ export default {
       // editableObject['sequences'] = JSON.parse(editableObject['sequences']);
       let httpRequest;
       if (this.creatingNew) {
-        httpRequest = axios.put('api/campaigns/create', editableObject)
+        httpRequest = axios.put('api/subcampaigns/create', editableObject)
       } else {
-        httpRequest = axios.post('api/campaigns/update', editableObject)
+        httpRequest = axios.post('api/subcampaigns/update', editableObject)
       }
       httpRequest.then(response => {
         console.log(response.data.response.prepid);
         component.loading = false;
-        window.location = 'campaigns?prepid=' + response.data.response.prepid;
+        window.location = 'subcampaigns?prepid=' + response.data.response.prepid;
       }).catch(error => {
         console.log('Error!');
         component.loading = false;
@@ -132,7 +132,7 @@ export default {
     showSequenceDialog: function(index) {
       if (index < 0) {
         let component = this;
-        axios.get('api/campaigns/get_default_sequence' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
+        axios.get('api/subcampaigns/get_default_sequence' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
           component.sequenceEditDialog.visible = true;
           component.sequenceEditDialog.index = index;
           component.sequenceEditDialog.sequence = response.data.response;

@@ -1,10 +1,10 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Home from '@/components/Home'
-import Campaigns from '@/components/Campaigns'
-import CampaignTickets from '@/components/CampaignTickets'
-import CampaignTicketsEdit from '@/components/CampaignTicketsEdit'
-import CampaignsEdit from '@/components/CampaignsEdit'
+import Subcampaigns from '@/components/Subcampaigns'
+import SubcampaignTickets from '@/components/SubcampaignTickets'
+import SubcampaignTicketsEdit from '@/components/SubcampaignTicketsEdit'
+import SubcampaignsEdit from '@/components/SubcampaignsEdit'
 import Flows from '@/components/Flows'
 import ChainedCampaigns from '@/components/ChainedCampaigns'
 import ChainedRequests from '@/components/ChainedRequests'
@@ -22,24 +22,24 @@ const routes = [
     component: Home
   },
   {
-    path: '/campaigns/edit',
-    name: 'campaigns_edit',
-    component: CampaignsEdit
+    path: '/subcampaigns/edit',
+    name: 'subcampaigns_edit',
+    component: SubcampaignsEdit
   },
   {
-    path: '/campaigns',
-    name: 'campaigns',
-    component: Campaigns
+    path: '/subcampaigns',
+    name: 'subcampaigns',
+    component: Subcampaigns
   },
   {
-    path: '/campaign_tickets/edit',
-    name: 'campaign_tickets_edit',
-    component: CampaignTicketsEdit
+    path: '/subcampaign_tickets/edit',
+    name: 'subcampaign_tickets_edit',
+    component: SubcampaignTicketsEdit
   },
   {
-    path: '/campaign_tickets',
-    name: 'campaign_tickets',
-    component: CampaignTickets
+    path: '/subcampaign_tickets',
+    name: 'subcampaign_tickets',
+    component: SubcampaignTickets
   },
   {
     path: '/flows',

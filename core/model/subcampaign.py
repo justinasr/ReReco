@@ -1,12 +1,12 @@
 """
-Module that contains Campaign class
+Module that contains Subcampaign class
 """
 from core.model.model_base import ModelBase
 
 
-class Campaign(ModelBase):
+class Subcampaign(ModelBase):
     """
-    Class that represents a computing campaign
+    Class that represents a snapshot computing campaign
     It is used as a template for requests
     """
 
@@ -34,7 +34,7 @@ class Campaign(ModelBase):
     }
 
     _lambda_checks = {
-        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9]{1,50}'),
+        'prepid': lambda prepid: ModelBase._lambda_checks['subcampaign'],
         'energy': lambda energy: energy >= 0.0,
         'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
         'memory': lambda memory: memory >= 0,

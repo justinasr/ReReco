@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Campaign Tickets</h1>
+    <h1>Subcampaign Tickets</h1>
     <ColumnSelector :columns="columns"
                     v-on:updateColumns="updateTableColumns"/>
     <v-data-table :headers="headers"
@@ -11,7 +11,7 @@
                   hide-default-footer
                   class="elevation-1">
       <template v-slot:item._actions="{ item }">
-        <a :href="'campaign_tickets/edit?prepid=' + item.prepid">Edit</a>
+        <a :href="'subcampaign_tickets/edit?prepid=' + item.prepid">Edit</a>
         &nbsp;
         <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
         &nbsp;
@@ -73,7 +73,7 @@
     </v-dialog>
 
     <footer>
-      <a :href="'campaign_tickets/edit'" style="float: left; margin: 16px;">Create new campaign ticket</a>
+      <a :href="'subcampaign_tickets/edit'" style="float: left; margin: 16px;">Create new subcampaign ticket</a>
       <Paginator style="float: right;"
                  :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
@@ -101,7 +101,7 @@ export default {
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'status', 'displayName': 'Status', 'visible': 1},
-        {'dbName': 'campaign', 'displayName': 'Campaign', 'visible': 1},
+        {'dbName': 'subcampaign', 'displayName': 'Subcampaign', 'visible': 1},
         {'dbName': 'input_datasets', 'displayName': 'Input Datasets', 'visible': 1},
         {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
@@ -146,7 +146,7 @@ export default {
           queryParams += '&' + k + '=' + query[k];
         }
       });
-      axios.get('api/search?db_name=campaign_tickets' + queryParams).then(response => {
+      axios.get('api/search?db_name=subcampaign_tickets' + queryParams).then(response => {
         component.dataItems = response.data.response.results.map(function (x) { x._actions = undefined; return x});
         component.totalItems = response.data.response.total_rows;
         component.loading = false;
@@ -178,18 +178,18 @@ export default {
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
     },
-    showDeleteDialog: function(campaign_ticket) {
+    showDeleteDialog: function(subcampaign_ticket) {
       let component = this;
-      this.dialog.title = "Delete " + campaign_ticket.prepid + "?";
-      this.dialog.description = "Are you sure you want to delete " + campaign_ticket.prepid + " campaign ticket?";
+      this.dialog.title = "Delete " + subcampaign_ticket.prepid + "?";
+      this.dialog.description = "Are you sure you want to delete " + subcampaign_ticket.prepid + " subcampaign ticket?";
       this.dialog.ok = function() {
-        axios.delete('api/campaign_tickets/delete', {data: {'prepid': campaign_ticket.prepid, '_rev': campaign_ticket._rev}}).then(() => {
+        axios.delete('api/subcampaign_tickets/delete', {data: {'prepid': subcampaign_ticket.prepid, '_rev': subcampaign_ticket._rev}}).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
           console.log(error.response.data);
           component.clearDialog();
-          component.showError("Error deleting campaign ticket", error.response.data.message);
+          component.showError("Error deleting subcampaign ticket", error.response.data.message);
         });
       }
       this.dialog.cancel = function() {
@@ -197,12 +197,12 @@ export default {
       }
       this.dialog.visible = true;
     },
-    showCreateRequestsDialog: function(campaign_ticket) {
+    showCreateRequestsDialog: function(subcampaign_ticket) {
       let component = this;
-      this.dialog.title = "Create requests for " + campaign_ticket.prepid + "?";
-      this.dialog.description = "Are you sure you want to generate requests for " + campaign_ticket.prepid + " campaign ticket?";
+      this.dialog.title = "Create requests for " + subcampaign_ticket.prepid + "?";
+      this.dialog.description = "Are you sure you want to generate requests for " + subcampaign_ticket.prepid + " subcampaign ticket?";
       this.dialog.ok = function() {
-        axios.post('api/campaign_tickets/create_requests', {'prepid': campaign_ticket.prepid}).then(() => {
+        axios.post('api/subcampaign_tickets/create_requests', {'prepid': subcampaign_ticket.prepid}).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {

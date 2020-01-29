@@ -16,8 +16,8 @@
           <td><input type="text" v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
         </tr>
         <tr>
-          <td>Campaign</td>
-          <td><input type="text" v-model="editableObject.member_of_campaign" :disabled="!editingInfo.member_of_campaign"></td>
+          <td>Subcampaign</td>
+          <td><input type="text" v-model="editableObject.subcampaign" :disabled="!editingInfo.subcampaign"></td>
         </tr>
         <tr>
           <td>Notes</td>
@@ -162,7 +162,7 @@ export default {
     showSequenceDialog: function(index) {
       if (index < 0) {
         let component = this;
-        axios.get('api/campaigns/get_default_sequence' + (this.creatingNew ? '' : ('/' + this.editableObject.member_of_campaign))).then(response => {
+        axios.get('api/subcampaigns/get_default_sequence' + (this.creatingNew ? '' : ('/' + this.editableObject.member_of_subcampaign))).then(response => {
           component.sequenceEditDialog.visible = true;
           component.sequenceEditDialog.index = index;
           component.sequenceEditDialog.sequence = response.data.response;

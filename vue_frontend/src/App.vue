@@ -10,13 +10,13 @@
       <v-spacer></v-spacer>
       <v-btn
         text
-        href="campaigns">
-        <span class="mr-2">Campaigns</span>
+        href="subcampaigns">
+        <span class="mr-2">Subcampaigns</span>
       </v-btn>
       <v-btn
         text
-        href="campaign_tickets">
-        <span class="mr-2">Campaign Tickets</span>
+        href="subcampaign_tickets">
+        <span class="mr-2">Subcampaign Tickets</span>
       </v-btn>
 <!--       <v-btn
         text
@@ -25,8 +25,8 @@
       </v-btn>
       <v-btn
         text
-        href="chained_campaigns">
-        <span class="mr-2">Chained Campaigns</span>
+        href="chained_subcampaigns">
+        <span class="mr-2">Chained Subcampaigns</span>
       </v-btn>
       <v-btn
         text

@@ -122,7 +122,7 @@ export default {
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
         {'dbName': 'input_dataset', 'displayName': 'Input dataset', 'visible': 0},
-        {'dbName': 'member_of_campaign', 'displayName': 'Member of Campaign', 'visible': 0},
+        {'dbName': 'subcampaign', 'displayName': 'Subcampaign', 'visible': 0},
         {'dbName': 'output_datasets', 'displayName': 'Output datasets', 'visible': 0},
         {'dbName': 'priority', 'displayName': 'Priority', 'visible': 0},
         {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 0},

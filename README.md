@@ -3,7 +3,7 @@ Web based tool for Data ReReco bookkeeping and submission
 
 # ReReco objects
 
-### Campaigns
+### Subcampaigns
 
 Structure in database:
 * `_id` - unique document identifier in database (required by CouchDB)
@@ -26,7 +26,7 @@ Structure in database:
 * `energy` - energy in TeV. Unused, but nice to have
 * `history` - action history of this object
 * `input_dataset` - dataset name that is used as an input
-* `member_of_campaign` - name of campaign (see Campaigns) that was used as a template for this request
+* `subcampaign` - name of subcampaign (see Subcampaigns) that was used as a template for this request
 * `memory` - memory in magabytes
 * `notes` - user notes
 * `output_datasets` - list of dataset names that are produced and saved by this request. This information is received after request is submitted to computing
@@ -41,12 +41,12 @@ Structure in database:
 * `time_per_event` - required time for one event in seconds
 * `workflows` - TO BE FILLED
 
-### Campaign tickets
+### Subcampaign tickets
 
 Structure in database:
 * `_id` - unique document identifier in database (required by CouchDB)
 * `_rev` - document revision (required by CouchDB)
-* `campaign` - name of campaign that is used as template for requests
+* `subcampaign` - name of subcampaign that is used as template for requests
 * `created_requests` - list of prepids of requests that were created from this ticket
 * `history` - action history of this object
 * `input_datasets` - list of datasets that will be used as inputs. Each input dataset will result in a new request
@@ -73,9 +73,9 @@ Structure in database:
 
 ## CouchDB Views
 
-### Campaigns
+### Subcampaigns
 
-##### campaigns
+##### subcampaigns
 
 all:
 ```
@@ -110,7 +110,7 @@ function(doc) {
 map:
 ```
 function(doc) {
-  if (doc.member_of_campaign) {
+  if (doc.subcampaign) {
     var parts = doc._id.split('-');
     var number = parseInt(parts[parts.length - 1], 10);
     parts.shift();
@@ -128,7 +128,7 @@ function(keys, values, rereduce) {
 
 ## couchdb-lucence Views
 
-### Campaigns
+### Subcampaigns
 
 ```
 function(doc) {
@@ -147,7 +147,7 @@ function(doc) {
 }
 ```
 
-### Campaign tickets
+### Subcampaign tickets
 
 ```
 function(doc) {
@@ -159,7 +159,7 @@ function(doc) {
   res.add(doc._id, {field:'_id', store:'yes', type:'string'});
   res.add(doc.prepid, {field:'prepid', store:'yes', type:'string'});
   res.add(doc.status, {field:'status', store:'yes', type:'string'});
-  res.add(doc.campaign, {field:'campaign', store:'yes', type:'string'});
+  res.add(doc.subcampaign, {field:'subcampaign', store:'yes', type:'string'});
   res.add(doc.processing_string, {field:'processing_string', store:'yes', type:'string'});
   for (var i = 0; i < doc.input_datasets.length; i++) {
     res.add(doc.input_datasets[i], {field:'input_datasets', store:'yes'});
@@ -185,7 +185,7 @@ function(doc) {
   res.add(doc.prepid, {field:'prepid', store:'yes', type:'string'});
   res.add(doc.step, {field:'step', store:'yes', type:'string'});
   res.add(doc.input_dataset, {field:'input_dataset', store:'yes', type:'string'});
-  res.add(doc.member_of_campaign, {field:'member_of_campaign', store:'yes', type:'string'});
+  res.add(doc.subcampaign, {field:'subcampaign', store:'yes', type:'string'});
   res.add(doc.status, {field:'status', store:'yes', type:'string'});
   res.add(doc.cmssw_release, {field:'cmssw_release', store:'yes', type:'string'});
   res.add(doc.memory, {field:'memory', store:'yes', type:'int'});

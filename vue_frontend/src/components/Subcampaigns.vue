@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Campaigns</h1>
+    <h1>Subcampaigns</h1>
     <ColumnSelector :columns="columns"
                     v-on:updateColumns="updateTableColumns"/>
     <v-data-table :headers="headers"
@@ -11,7 +11,7 @@
                   hide-default-footer
                   class="elevation-1">
       <template v-slot:item._actions="{ item }">
-        <a :href="'campaigns/edit?prepid=' + item.prepid">Edit</a>
+        <a :href="'subcampaigns/edit?prepid=' + item.prepid">Edit</a>
         &nbsp;
         <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
       </template>
@@ -32,6 +32,9 @@
       </template>
       <template v-slot:item.notes="{ item }">
         <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
+      </template>
+      <template v-slot:item.campaign="{ item }">
+        {{item.prepid.split('-').filter(Boolean)[0]}}
       </template>
     </v-data-table>
 
@@ -75,7 +78,7 @@
     </v-dialog>
 
     <footer>
-      <a :href="'campaigns/edit'" style="float: left; margin: 16px;">Create new campaign</a>
+      <a :href="'subcampaigns/edit'" style="float: left; margin: 16px;">Create new subcampaign</a>
       <Paginator style="float: right;"
                  :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
@@ -109,6 +112,7 @@ export default {
         {'dbName': 'step', 'displayName': 'Step', 'visible': 0},
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
+        {'dbName': 'campaign', 'displayName': 'Campaign', 'visible': 0},
       ],
       headers: [],
       dataItems: [],
@@ -148,7 +152,7 @@ export default {
           queryParams += '&' + k + '=' + query[k];
         }
       });
-      axios.get('api/search?db_name=campaigns' + queryParams).then(response => {
+      axios.get('api/search?db_name=subcampaigns' + queryParams).then(response => {
         component.dataItems = response.data.response.results.map(function (x) { x._actions = undefined; return x});
         component.totalItems = response.data.response.total_rows;
         component.loading = false;
@@ -180,18 +184,18 @@ export default {
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
     },
-    showDeleteDialog: function(campaign) {
+    showDeleteDialog: function(subcampaign) {
       let component = this;
-      this.dialog.title = "Delete " + campaign.prepid + "?";
-      this.dialog.description = "Are you sure you want to delete " + campaign.prepid + " campaign?";
+      this.dialog.title = "Delete " + subcampaign.prepid + "?";
+      this.dialog.description = "Are you sure you want to delete " + subcampaign.prepid + " subcampaign?";
       this.dialog.ok = function() {
-        axios.delete('api/campaigns/delete', {data: {'prepid': campaign.prepid, '_rev': campaign._rev}}).then(() => {
+        axios.delete('api/subcampaigns/delete', {data: {'prepid': subcampaign.prepid, '_rev': subcampaign._rev}}).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
           console.log(error.response.data);
           component.clearDialog();
-          component.showError("Error deleting campaign", error.response.data.message);
+          component.showError("Error deleting subcampaign", error.response.data.message);
         });
       }
       this.dialog.cancel = function() {

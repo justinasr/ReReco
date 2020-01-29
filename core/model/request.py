@@ -9,7 +9,7 @@ class Request(ModelBase):
     """
     Request represents a single step in processing pipeline
     Request contains one or a few cmsDriver commands
-    It is created based on a campaign that it is a member of
+    It is created based on a subcampaign that it is a member of
     """
 
     _ModelBase__schema = {
@@ -25,8 +25,6 @@ class Request(ModelBase):
         'history': [],
         # Input dataset name
         'input_dataset': '',
-        # Campaign name
-        'member_of_campaign': '',
         # Memory in MB
         'memory': 2300,
         # User notes
@@ -49,6 +47,8 @@ class Request(ModelBase):
         'status': 'new',
         # Step type: DR, MiniAOD, NanoAOD, etc.
         'step': 'DR',
+        # Subcampaign name
+        'subcampaign': '',
         # Time per event in seconds
         'time_per_event': 1.0,
         # List of workflows in computing
@@ -67,6 +67,7 @@ class Request(ModelBase):
         'size_per_event': lambda spe: spe > 0.0,
         'status': lambda status: status in ('new', 'approved', 'submitted', 'done'),
         'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
+        'subcampaign': lambda subcampaign: ModelBase._lambda_checks['subcampaign'],
         'time_per_event': lambda tpe: tpe > 0.0,
         'type': lambda step: step in ['Prod', 'MCReproc', 'LHE']
     }

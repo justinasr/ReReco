@@ -1,20 +1,20 @@
 """
-Module that contains CampaignController class
+Module that contains SubcampaignController class
 """
 from core.controller.controller_base import ControllerBase
-from core.model.campaign import Campaign
+from core.model.subcampaign import Subcampaign
 from core.model.sequence import Sequence
 
 
-class CampaignController(ControllerBase):
+class SubcampaignController(ControllerBase):
     """
-    Controller that has all actions related to a campaign
+    Controller that has all actions related to a subcampaign
     """
 
     def __init__(self):
         ControllerBase.__init__(self)
-        self.database_name = 'campaigns'
-        self.model_class = Campaign
+        self.database_name = 'subcampaigns'
+        self.model_class = Subcampaign
 
     def get(self, prepid):
         obj = super().get(prepid)
@@ -55,10 +55,10 @@ class CampaignController(ControllerBase):
         editing_info['history'] = False
         return editing_info
 
-    def get_default_sequence(self, campaign):
+    def get_default_sequence(self, subcampaign):
         """
-        Return a default sequence for a campaign
+        Return a default sequence for a subcampaign
         """
-        self.logger.debug('Creating a default sequence for %s', campaign.get_prepid())
+        self.logger.debug('Creating a default sequence for %s', subcampaign.get_prepid())
         sequence = Sequence()
         return sequence

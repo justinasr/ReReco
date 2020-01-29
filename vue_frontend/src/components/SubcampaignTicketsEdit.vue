@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Campaign Tickets Edit</h1>
+    <h1>Subcampaign Tickets Edit</h1>
     <v-card raised style="margin: auto; padding: 16px; max-width: 750px;">
       <table v-if="editableObject">
         <tr>
@@ -8,8 +8,8 @@
           <td><input type="text" v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
         </tr>
         <tr>
-          <td>Campaign</td>
-          <td><input type="text" v-model="editableObject.campaign" :disabled="!editingInfo.campaign"></td>
+          <td>Subcampaign</td>
+          <td><input type="text" v-model="editableObject.subcampaign" :disabled="!editingInfo.subcampaign"></td>
         </tr>
         <tr>
           <td>Processing String</td>
@@ -74,7 +74,7 @@ export default {
     this.creatingNew = this.prepid === undefined;
     this.loading = true;
     let component = this;
-    axios.get('api/campaign_tickets/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
+    axios.get('api/subcampaign_tickets/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
       console.log(response.data);
       component.editableObject = response.data.response.object;
       component.editableObject.sequences = JSON.stringify(component.editableObject.sequences, null, 4);
@@ -94,14 +94,14 @@ export default {
       console.log(editableObject);
       let httpRequest;
       if (this.creatingNew) {
-        httpRequest = axios.put('api/campaign_tickets/create', editableObject)
+        httpRequest = axios.put('api/subcampaign_tickets/create', editableObject)
       } else {
-        httpRequest = axios.post('api/campaign_tickets/update', editableObject)
+        httpRequest = axios.post('api/subcampaign_tickets/update', editableObject)
       }
       httpRequest.then(response => {
         console.log(response.data.response.prepid);
         component.loading = false;
-        window.location = 'campaign_tickets?prepid=' + response.data.response.prepid;
+        window.location = 'subcampaign_tickets?prepid=' + response.data.response.prepid;
       }).catch(error => {
         console.log('Error!');
         alert(error.response.data.message);
@@ -111,7 +111,7 @@ export default {
     getDatasets: function() {
       let component = this;
       console.log(this.getDatasetsDialogInput);
-      let httpRequest = axios.get('api/campaign_tickets/get_datasets?q=' + this.getDatasetsDialogInput)
+      let httpRequest = axios.get('api/subcampaign_tickets/get_datasets?q=' + this.getDatasetsDialogInput)
       httpRequest.then(response => {
         console.log(response.data.response.prepid);
         component.editableObject['input_datasets'] = response.data.response.filter(Boolean).join('\n');

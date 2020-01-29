@@ -18,15 +18,15 @@ class FlowController(ControllerBase):
 
     def check_for_create(self, obj):
         self.logger.debug('Checking flow %s', obj.get_prepid())
-        campaign_db = Database('campaigns')
-        for source_campaign_prepid in obj.get('source_campaigns'):
-            if not campaign_db.document_exists(source_campaign_prepid):
-                raise Exception('"%s" does not exist' % (source_campaign_prepid))
+        subcampaign_db = Database('subcampaigns')
+        for source_subcampaign_prepid in obj.get('source_subcampaigns'):
+            if not subcampaign_db.document_exists(source_subcampaign_prepid):
+                raise Exception('"%s" does not exist' % (source_subcampaign_prepid))
 
-        target_campaign_prepid = obj.get('target_campaign')
-        if target_campaign_prepid:
-            if not campaign_db.document_exists(target_campaign_prepid):
-                raise Exception('"%s" does not exist' % (target_campaign_prepid))
+        target_subcampaign_prepid = obj.get('target_subcampaign')
+        if target_subcampaign_prepid:
+            if not subcampaign_db.document_exists(target_subcampaign_prepid):
+                raise Exception('"%s" does not exist' % (target_subcampaign_prepid))
 
         return True
 
