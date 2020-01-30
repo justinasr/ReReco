@@ -191,6 +191,7 @@ class Database():
         skip_documents = page * limit
         if query_string:
             query_string = query_string.replace(' ', '')
+            query_string = query_string.replace('/', '\\/')
 
         common_parameters = f'limit={limit}&skip={skip_documents}&include_docs=True'
         if not query_string:
