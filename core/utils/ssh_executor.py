@@ -3,7 +3,6 @@ Module that handles all SSH operations - both ssh and ftp
 """
 import json
 import logging
-import time
 import paramiko
 
 
@@ -18,6 +17,7 @@ class SSHExecutor():
         self.logger = logging.getLogger()
         self.remote_host = host
         self.credentials_file_path = credentials_path
+        self.timeout = 3600
 
     def setup_ssh(self):
         """
@@ -64,28 +64,20 @@ class SSHExecutor():
         if isinstance(command, list):
             command = '; '.join(command)
 
-        self.logger.info('Executing %s', command)
-        (_, stdout, stderr) = self.ssh_client.exec_command(command)
-        self.logger.info('Executed %s. Reading response', command)
-        # Close channel after minute of waiting for EOF
-        # This timeouts and closes channel if nothing was received
-        stdout_timeout = time.time() + 3600
-        while not stdout.channel.eof_received:
-            time.sleep(1)
-            if time.time() > stdout_timeout:
-                stdout.channel.close()
-                break
+        self.logger.debug('Executing %s', command)
+        (_, stdout, stderr) = self.ssh_client.exec_command(command, timeout=self.timeout)
+        self.logger.debug('Executed %s. Reading response', command)
+        stdout_list = []
+        stderr_list = []
+        for line in stdout.readlines():
+            stdout_list.append(line[0:256])
 
-        stdout = stdout.read().decode('utf-8').strip()
-        # Same thing for stderr
-        stderr_timeout = time.time() + 3600
-        while not stderr.channel.eof_received:
-            time.sleep(1)
-            if time.time() > stderr_timeout:
-                stderr.channel.close()
-                break
+        for line in stderr.readlines():
+            stderr_list.append(line[0:256])
 
-        stderr = stderr.read().decode('utf-8').strip()
+        stdout = ''.join(stdout_list)
+        stderr = ''.join(stderr_list)
+
         # Read output from stdout and stderr streams
         if stdout:
             self.logger.debug('STDOUT (%s): %s', command, stdout)

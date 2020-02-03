@@ -4,6 +4,7 @@ from threading import Thread
 from queue import Queue
 from core.utils.ssh_executor import SSHExecutor
 from core.utils.locker import Locker
+from core.database.database import Database
 
 
 class Worker(Thread):
@@ -61,7 +62,7 @@ class RequestSubmitter:
     # limit on the number of items that can be placed in the queue.
     # If maxsize is less than or equal to zero, the queue size is infinite.
     __task_queue = Queue(maxsize=0)
-    __worker_pool = WorkerPool(workers_count=5, task_queue=__task_queue)
+    __worker_pool = WorkerPool(workers_count=2, task_queue=__task_queue)
 
     def __init__(self):
         self.logger = logging.getLogger()
@@ -89,6 +90,13 @@ class RequestSubmitter:
         ssh_executor = SSHExecutor('lxplus.cern.ch', '/home/jrumsevi/auth.txt')
         prepid = request.get_prepid()
         with Locker().get_lock(prepid):
+            request_db = Database('requests')
+            request = controller.get(prepid)
+            if request.get('status') != 'approved':
+                raise Exception(f'Cannot submit a request with status {request.get("status")}')
+
+            request.set('status', 'submitting')
+            request_db.save(request.get_json())
             request = controller.get(prepid)
             self.logger.info('Locked %s for submission', prepid)
             ssh_executor.execute_command([f'rm -rf rereco_submission/{prepid}',
@@ -97,9 +105,13 @@ class RequestSubmitter:
                 f.write(controller.get_cmsdriver(request))
 
             ssh_executor.upload_file(f'/tmp/{prepid}.sh', f'rereco_submission/{prepid}/{prepid}.sh')
+            ssh_executor.execute_command([f'echo $HOSTNAME'])
             ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
                                           f'chmod +x {prepid}.sh',
-                                          f'export X509_USER_PROXY=~/private/proxy.txt',
+                                          f'export X509_USER_PROXY=$HOME/private/proxy.txt',
                                           f'./{prepid}.sh'])
+
+            request.set('status', 'submitted')
+            request_db.save(request.get_json())
 
         self.logger.info('Unlocked %s after submission', prepid)

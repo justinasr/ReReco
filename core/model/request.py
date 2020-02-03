@@ -65,7 +65,7 @@ class Request(ModelBase):
         'processing_string': ModelBase._lambda_checks['processing_string'],
         '__runs': lambda r: isinstance(r, int) and r > 0,
         'size_per_event': lambda spe: spe > 0.0,
-        'status': lambda status: status in ('new', 'approved', 'submitted', 'done'),
+        'status': lambda status: status in ('new', 'approved', 'submitting', 'submitted', 'done'),
         'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
         'subcampaign': lambda subcampaign: ModelBase._lambda_checks['subcampaign'],
         'time_per_event': lambda tpe: tpe > 0.0,
@@ -172,7 +172,7 @@ class Request(ModelBase):
         arguments_dict['no_exec'] = True
         arguments_dict['runUnscheduled'] = True
 
-        cms_driver_command = self.build_cmsdriver('RECO', arguments_dict) + f' | tee {sequence_name}.txt'
+        cms_driver_command = self.build_cmsdriver('RECO', arguments_dict)
 
         # Add harvesting if needed
         needs_harvest = sequence.needs_harvesting()
@@ -193,6 +193,6 @@ class Request(ModelBase):
                                'no_exec': True,
                                'filein': f'"file:{sequence_name}_inDQM.root"',
                                'python_filename': f'"{sequence_name}_harvest_cfg.py"'}
-            cms_driver_command += '\n\n' + self.build_cmsdriver('HARVESTING', harvesting_dict) + f' | tee harvesting_{sequence_name}.txt'
+            cms_driver_command += '\n\n' + self.build_cmsdriver('HARVESTING', harvesting_dict)
 
         return cms_driver_command

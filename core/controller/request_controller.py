@@ -196,6 +196,9 @@ class RequestController(ControllerBase):
             RequestSubmitter().add_request(request, self)
             return request
 
+        if request.get('status') == 'submitting':
+            raise Exception('You are not allowed to set next status while request is being submitted')
+
         if request.get('status') == 'submitted':
             raise Exception('You are not allowed to set next status while request is submitted')
 
