@@ -92,13 +92,15 @@ class Request(ModelBase):
         Basically, cmsenv command
         """
         cmssw_release = self.get('cmssw_release')
-        commands = ['if [ -r %s/src ] ; then' % (cmssw_release),
+        commands = ['source /cvmfs/cms.cern.ch/cmsset_default.sh',
+                    'if [ -r %s/src ] ; then' % (cmssw_release),
                     '  echo %s already exist' % (cmssw_release),
                     'else',
                     '  scram p CMSSW %s' % (cmssw_release),
                     'fi',
                     'cd %s/src' % (cmssw_release),
-                    'eval `scram runtime -sh`']
+                    'eval `scram runtime -sh`',
+                    'cd ../..']
 
         return '\n'.join(commands)
 
@@ -170,7 +172,7 @@ class Request(ModelBase):
         arguments_dict['no_exec'] = True
         arguments_dict['runUnscheduled'] = True
 
-        cms_driver_command = self.build_cmsdriver('RECO', arguments_dict)
+        cms_driver_command = self.build_cmsdriver('RECO', arguments_dict) + f' | tee {sequence_name}.txt'
 
         # Add harvesting if needed
         needs_harvest = sequence.needs_harvesting()
@@ -191,6 +193,6 @@ class Request(ModelBase):
                                'no_exec': True,
                                'filein': f'"file:{sequence_name}_inDQM.root"',
                                'python_filename': f'"{sequence_name}_harvest_cfg.py"'}
-            cms_driver_command += '\n\n' + self.build_cmsdriver('HARVESTING', harvesting_dict)
+            cms_driver_command += '\n\n' + self.build_cmsdriver('HARVESTING', harvesting_dict) + f' | tee harvesting_{sequence_name}.txt'
 
         return cms_driver_command

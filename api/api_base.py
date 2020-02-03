@@ -60,7 +60,6 @@ class APIBase(Resource):
             Wrapper around actual function
             """
             try:
-                logging.getLogger().info('Wrapping call in try except...')
                 return func(*args, **kwargs)
             except Exception as ex:  # pylint: disable=broad-except
                 logging.getLogger().error(traceback.format_exc())

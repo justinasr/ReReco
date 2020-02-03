@@ -16,6 +16,13 @@ class Locker():
     def __init__(self):
         self.logger = logging.getLogger()
 
+    def get_nonblocking_lock(self, prepid):
+        lock = self.get_lock(prepid)
+        if not lock.acquire(blocking=False):
+            raise LockedException()
+
+        return lock
+
     def get_lock(self, prepid):
         """
         Return a lock for a given prepid
@@ -29,3 +36,7 @@ class Locker():
                           prepid,
                           str(current_thread()))
         return lock
+
+
+class LockedException(Exception):
+    pass

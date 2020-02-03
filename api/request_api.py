@@ -113,7 +113,7 @@ class GetEditableRequestAPI(APIBase):
                                  'message': ''})
 
 
-class GetCMSDriverCommands(APIBase):
+class GetCMSDriverAPI(APIBase):
     """
     Endpoint for getting a bash script with cmsDriver.py commands of request
     """
@@ -129,3 +129,41 @@ class GetCMSDriverCommands(APIBase):
         request = request_controller.get(prepid)
         commands = request_controller.get_cmsdriver(request)
         return self.output_text(commands, content_type='text/plain')
+
+
+class GetRequestJobDictAPI(APIBase):
+    """
+    Endpoint for getting a dictionary with job information for ReqMgr2
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    def get(self, prepid=None):
+        """
+        Get a text file with ReqMgr2's dicitonary
+        """
+        request = request_controller.get(prepid)
+        dict_string = json.dumps(request_controller.get_job_dict(request),
+                                 indent=2,
+                                 sort_keys=True)
+        return self.output_text(dict_string, content_type='text/plain')
+
+
+class RequestNextStatus(APIBase):
+    """
+    Endpoint for moving request to next status
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    def get(self, prepid=None):
+        """
+        Get a text file with ReqMgr2's dicitonary
+        """
+        request = request_controller.get(prepid)
+        result = request_controller.next_status(request)
+        return self.output_text({'response': result.get_json(), 'success': True, 'message': ''})

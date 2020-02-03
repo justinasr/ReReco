@@ -3,7 +3,7 @@ Module that contains ControllerBase class
 """
 from core.database.database import Database
 from core.model.model_base import ModelBase
-from core.utils.locker import Locker
+from core.utils.locker import Locker, LockedException
 
 
 class ControllerBase():
@@ -60,32 +60,35 @@ class ControllerBase():
         """
         new_object = self.model_class(json_input=json_data)
         prepid = new_object.get_prepid()
-        with self.locker.get_lock(prepid):
-            self.logger.info('Will edit %s', prepid)
-            database = Database(self.database_name)
-            old_object_json = database.get(prepid)
-            if not old_object_json:
-                raise Exception(f'Object with prepid "{prepid}" does not '
-                                f'exist in {self.database_name} database')
+        try:
+            with self.locker.get_nonblocking_lock(prepid):
+                self.logger.info('Will edit %s', prepid)
+                database = Database(self.database_name)
+                old_object_json = database.get(prepid)
+                if not old_object_json:
+                    raise Exception(f'Object with prepid "{prepid}" does not '
+                                    f'exist in {self.database_name} database')
 
-            old_object = self.model_class(json_input=old_object_json)
-            # Move over history, so it could not be overwritten
-            new_object.set('history', old_object.get('history'))
-            self.before_update(new_object)
-            changed_values = self.get_changes(old_object_json, new_object.get_json())
-            if not changed_values:
-                # Nothing was updated
-                self.logger.info('Nothing was updated for %s', prepid)
-                return old_object.get_json()
+                old_object = self.model_class(json_input=old_object_json)
+                # Move over history, so it could not be overwritten
+                new_object.set('history', old_object.get('history'))
+                self.before_update(new_object)
+                changed_values = self.get_changes(old_object_json, new_object.get_json())
+                if not changed_values:
+                    # Nothing was updated
+                    self.logger.info('Nothing was updated for %s', prepid)
+                    return old_object.get_json()
 
-            self.edit_allowed(old_object, changed_values)
-            new_object.add_history('update', changed_values, None)
-            if not self.check_for_update(old_object, new_object, changed_values):
-                self.logger.error('Error while updating %s', prepid)
-                return None
+                self.edit_allowed(old_object, changed_values)
+                new_object.add_history('update', changed_values, None)
+                if not self.check_for_update(old_object, new_object, changed_values):
+                    self.logger.error('Error while updating %s', prepid)
+                    return None
 
-            database.save(new_object.get_json())
-            return new_object.get_json()
+                database.save(new_object.get_json())
+                return new_object.get_json()
+        except LockedException:
+            raise Exception('Request cannot be updated because it is being worked on')
 
     def delete(self, json_data):
         """
@@ -99,15 +102,18 @@ class ControllerBase():
                             f'exist in {self.database_name} database')
 
         obj = self.model_class(json_input=json_data)
-        with self.locker.get_lock(prepid):
-            self.logger.info('Will delete %s', (prepid))
-            self.before_delete(obj)
-            if not self.check_for_delete(obj):
-                self.logger.error('Error while deleting %s', prepid)
-                return None
+        try:
+            with self.locker.get_nonblocking_lock(prepid):
+                self.logger.info('Will delete %s', (prepid))
+                self.before_delete(obj)
+                if not self.check_for_delete(obj):
+                    self.logger.error('Error while deleting %s', prepid)
+                    return None
 
-            database.delete_document(obj.get_json())
-            return {'prepid': prepid}
+                database.delete_document(obj.get_json())
+                return {'prepid': prepid}
+        except LockedException:
+            raise Exception('Request cannot be updated because it is being worked on')
 
     def check_for_create(self, obj):
         """

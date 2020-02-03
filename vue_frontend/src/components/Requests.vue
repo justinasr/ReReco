@@ -12,10 +12,14 @@
                   class="elevation-1">
       <template v-slot:item._actions="{ item }">
         <a :href="'requests/edit?prepid=' + item.prepid">Edit</a>
-        &nbsp;
+        &nbsp;|&nbsp;
         <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
-        &nbsp;
-        <a :href="'api/requests/get_cmsdrivers/' + item.prepid">cmsDriver</a>
+        &nbsp;|&nbsp;
+        <a :href="'api/requests/get_cmsdriver/' + item.prepid">cmsDriver</a>
+        &nbsp;|&nbsp;
+        <a :href="'api/requests/get_dict/' + item.prepid">Job dict</a>
+        &nbsp;|&nbsp;
+        <a style="text-decoration: underline;" @click="nextStatus(item)">Next</a>
       </template>
       <template v-slot:item.history="{ item }">
         <HistoryCell :data="item.history"/>
@@ -220,7 +224,17 @@ export default {
         component.clearDialog();
       }
       this.dialog.visible = true;
-    }
+    },
+    nextStatus: function (request) {
+      let component = this;
+      axios.get('api/requests/next_status/' + request.prepid).then(response => {
+        component.showError("Success", "Successfully moved " + request.prepid + " to next status");
+        component.fetchObjects();
+      }).catch(error => {
+        console.log(error.response.data);
+        component.showError("Error moving request to next status", error.response.data.message);
+      });
+    },
   }
 }
 </script>

@@ -10,6 +10,7 @@ import ChainedCampaigns from '@/components/ChainedCampaigns'
 import ChainedRequests from '@/components/ChainedRequests'
 import Requests from '@/components/Requests'
 import RequestsEdit from '@/components/RequestsEdit'
+import Dashboard from '@/components/Dashboard'
 import qs from 'qs';
 
 
@@ -65,6 +66,11 @@ const routes = [
     path: '/requests',
     name: 'requests',
     component: Requests
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: Dashboard
   }
 ]
 

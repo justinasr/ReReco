@@ -8,6 +8,7 @@ from core.model.subcampaign import Subcampaign
 from core.database.database import Database
 from core.model.sequence import Sequence
 from core.model.subcampaign_ticket import SubcampaignTicket
+from core.utils.request_submitter import RequestSubmitter
 
 
 class RequestController(ControllerBase):
@@ -153,3 +154,52 @@ class RequestController(ControllerBase):
             cms_driver += '\n\n'
 
         return cms_driver
+
+    def get_job_dict(self, request):
+        """
+        Return a dictionary for ReqMgr2
+        """
+        seq = request.get('sequences')[0]
+        job_dict = {}
+        job_dict['CMSSWVersion'] = request.get('cmssw_release')
+        job_dict['ScramArch'] = '???'
+        job_dict['RequestPriority'] = request.get('priority')
+        job_dict['RunWhitelist'] = []
+        job_dict['InputDataset'] = request.get('input_dataset')
+        job_dict['RunBlacklist'] = []
+        job_dict['BlockWhitelist'] = []
+        job_dict['BlockBlacklist'] = []
+        job_dict['RequestType'] = 'ReReco'
+        job_dict['GlobalTag'] = seq.get('conditions')
+        job_dict['Group'] = 'PPD'
+        job_dict['Requestor'] = 'pdmvserv'
+        job_dict['Campaign'] = request.get('subcampaign').split('-')[0]
+        job_dict['Memory'] = request.get('memory')
+        job_dict['SizePerEvent'] = request.get('size_per_event')
+        job_dict['TimePerEvent'] = request.get('time_per_event')
+        job_dict['EnableHarvesting'] = False
+        job_dict['ProcessingString'] = request.get('processing_string')
+        job_dict['Multicore'] = seq.get('nThreads')
+        job_dict['PrepID'] = request.get_prepid()
+        job_dict['ConfigCacheID'] = seq.get('config_id')
+        job_dict['DQMConfigCacheID'] = seq.get('harvesting_config_id')
+
+        return job_dict
+
+    def next_status(self, request):
+        if request.get('status') == 'new':
+            request.set('status', 'approved')
+            self.update(request.get_json())
+            return request
+
+        if request.get('status') == 'approved':
+            RequestSubmitter().add_request(request, self)
+            return request
+
+        if request.get('status') == 'submitted':
+            raise Exception('You are not allowed to set next status while request is submitted')
+
+        if request.get('status') == 'done':
+            raise Exception('Request is already done')
+
+        return request

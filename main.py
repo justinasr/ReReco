@@ -1,12 +1,14 @@
 from api.subcampaign_api import CreateSubcampaignAPI, DeleteSubcampaignAPI, UpdateSubcampaignAPI, GetSubcampaignAPI, GetEditableSubcampaignAPI, GetDefaultSubcampaignSequenceAPI
 from api.subcampaign_ticket_api import CreateSubcampaignTicketAPI, DeleteSubcampaignTicketAPI, UpdateSubcampaignTicketAPI, GetSubcampaignTicketAPI, GetSubcampaignTicketDatasetsAPI, GetEditableSubcampaignTicketAPI, CreateRequestsForSubcampaignTicketAPI
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
-from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverCommands
+from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus
 from api.search_api import SearchAPI
+from api.system_api import SubmissionWorkerStatusAPI
 import logging
 from flask_restful import Api
 from flask import Flask, render_template, redirect
 from flask_cors import CORS
+from core.utils.request_submitter import RequestSubmitter
 
 
 __LOG_FORMAT = '[%(asctime)s][%(levelname)s] %(message)s'
@@ -56,6 +58,8 @@ def api_documentation(path):
 
 api.add_resource(SearchAPI, '/api/search')
 
+api.add_resource(SubmissionWorkerStatusAPI, '/api/system/workers')
+
 api.add_resource(CreateSubcampaignAPI, '/api/subcampaigns/create')
 api.add_resource(DeleteSubcampaignAPI, '/api/subcampaigns/delete')
 api.add_resource(UpdateSubcampaignAPI, '/api/subcampaigns/update')
@@ -89,7 +93,11 @@ api.add_resource(GetRequestAPI, '/api/requests/get/<string:prepid>')
 api.add_resource(GetEditableRequestAPI,
                  '/api/requests/get_editable',
                  '/api/requests/get_editable/<string:prepid>')
-api.add_resource(GetCMSDriverCommands, '/api/requests/get_cmsdrivers/<string:prepid>')
+api.add_resource(GetCMSDriverAPI, '/api/requests/get_cmsdriver/<string:prepid>')
+api.add_resource(GetRequestJobDictAPI, '/api/requests/get_dict/<string:prepid>')
+api.add_resource(RequestNextStatus, '/api/requests/next_status/<string:prepid>')
+
+rs = RequestSubmitter()
 
 app.run(host='0.0.0.0',
         port=8005,
