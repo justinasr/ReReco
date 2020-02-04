@@ -1,7 +1,7 @@
 import logging
 import time
 from threading import Thread
-from queue import Queue
+from queue import Queue, Empty
 from core.utils.ssh_executor import SSHExecutor
 from core.utils.locker import Locker
 from core.database.database import Database
@@ -17,23 +17,33 @@ class Worker(Thread):
         self.logger.debug('Worker "%s" is being created', self.name)
         self.job_name = None
         self.jon_start_time = None
+        self.running = True
         self.start()
 
     def run(self):
-        while True:
-            self.logger.debug('Worker "%s" is waiting for tasks', self.name)
-            func, job_name, args, kargs = self.queue.get()
-            self.job_name = job_name
-            self.job_start_time = time.time()
-            self.logger.debug('Worker "%s" got a task. Queue size %s', self.name, self.queue.qsize())
+        while self.running:
             try:
-                func(*args, **kargs)
-            except Exception as e:
-                self.logger.error(e)
-            finally:
-                self.logger.debug('Worker "%s" has finished a task. Queue size %s', self.name, self.queue.qsize())
-                self.job_name = None
-                self.job_start_time = 0
+                self.logger.debug('Worker "%s" is waiting for tasks', self.name)
+                func, job_name, args, kargs = self.queue.get(timeout=5)
+                self.job_name = job_name
+                self.job_start_time = time.time()
+                self.logger.debug('Worker "%s" got a task. Queue size %s', self.name, self.queue.qsize())
+                try:
+                    func(*args, **kargs)
+                except Exception as e:
+                    self.logger.error(e)
+                finally:
+                    self.logger.debug('Worker "%s" has finished a task. Queue size %s', self.name, self.queue.qsize())
+                    self.job_name = None
+                    self.job_start_time = 0
+            except Empty:
+                self.logger.debug('Worker "%s" did not get a task and is sad', self.name)
+                pass
+
+    def join(self, timeout=None):
+        self.running = False
+        self.logger.debug('Joining the "%s" thread', self.name)
+        Thread.join(self, timeout)
 
 
 class WorkerPool:
@@ -62,7 +72,7 @@ class RequestSubmitter:
     # limit on the number of items that can be placed in the queue.
     # If maxsize is less than or equal to zero, the queue size is infinite.
     __task_queue = Queue(maxsize=0)
-    __worker_pool = WorkerPool(workers_count=2, task_queue=__task_queue)
+    __worker_pool = WorkerPool(workers_count=5, task_queue=__task_queue)
 
     def __init__(self):
         self.logger = logging.getLogger()

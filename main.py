@@ -4,11 +4,12 @@ from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus
 from api.search_api import SearchAPI
 from api.system_api import SubmissionWorkerStatusAPI
-import logging
 from flask_restful import Api
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template
 from flask_cors import CORS
 from core.utils.request_submitter import RequestSubmitter
+import logging
+import argparse
 
 
 __LOG_FORMAT = '[%(asctime)s][%(levelname)s] %(message)s'
@@ -97,9 +98,15 @@ api.add_resource(GetCMSDriverAPI, '/api/requests/get_cmsdriver/<string:prepid>')
 api.add_resource(GetRequestJobDictAPI, '/api/requests/get_dict/<string:prepid>')
 api.add_resource(RequestNextStatus, '/api/requests/next_status/<string:prepid>')
 
-rs = RequestSubmitter()
+parser = argparse.ArgumentParser(description='Stats2')
+parser.add_argument('--debug',
+                    help='Run Flask in debug mode',
+                    action='store_true')
 
+args = vars(parser.parse_args())
+debug = args.get('debug', False)
+# rs = RequestSubmitter()
 app.run(host='0.0.0.0',
         port=8005,
         threaded=True,
-        debug=True)
+        debug=debug)

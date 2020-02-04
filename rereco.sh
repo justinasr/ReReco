@@ -6,7 +6,7 @@ if [ "$CMD" = "dev" ]; then
   trap "exit" INT TERM ERR
   trap "kill 0" EXIT
   echo "Starting DEV python server"
-  python3 main.py &
+  python3 main.py --debug &
   python_pid=$!
   echo "Starting DEV node server"
   cd vue_frontend/
