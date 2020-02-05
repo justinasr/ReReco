@@ -246,7 +246,9 @@ export default {
       this.dialog.description = "Are you sure you want to delete " + this.selectedItems.length + " requests?";
       this.dialog.ok = function() {
         component.clearDialog();
-        for (let request of component.selectedItems) {
+        let selected = component.selectedItems.slice();
+        component.selectedItems = [];
+        for (let request of selected) {
           console.log('Delete ' + request.prepid)
           axios.delete('api/requests/delete', {data: {'prepid': request.prepid, '_rev': request._rev}}).then(() => {
             component.fetchObjects();

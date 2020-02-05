@@ -84,9 +84,12 @@ class SubcampaignTicketController(ControllerBase):
         """
         Create requests from given subcampaign ticket. Return list of request prepids
         """
+        database = Database('subcampaign_tickets')
         ticket_prepid = subcampaign_ticket.get_prepid()
         with self.locker.get_lock(ticket_prepid):
+            subcampaign_ticket = SubcampaignTicket(json_input=database.get(ticket_prepid))
             created_requests = subcampaign_ticket.get('created_requests')
+            newly_created_request_jsons = []
             status = subcampaign_ticket.get('status')
             if status != 'new':
                 raise Exception(f'Ticket is not new, it already has '
@@ -95,17 +98,25 @@ class SubcampaignTicketController(ControllerBase):
             request_controller = RequestController()
             subcampaign_name = subcampaign_ticket.get('subcampaign')
             processing_string = subcampaign_ticket.get('processing_string')
-            for input_dataset in subcampaign_ticket.get('input_datasets'):
-                new_request_json = {'subcampaign': subcampaign_name,
-                                    'input_dataset': input_dataset,
-                                    'processing_string': processing_string}
-                created_request_json = request_controller.create(new_request_json)
-                created_requests.append(created_request_json.get('prepid'))
+            try:
+                for input_dataset in subcampaign_ticket.get('input_datasets'):
+                    new_request_json = {'subcampaign': subcampaign_name,
+                                        'input_dataset': input_dataset,
+                                        'processing_string': processing_string}
+                    created_request_json = request_controller.create(new_request_json)
+                    newly_created_request_jsons.append(created_request_json)
 
-            subcampaign_ticket.set('created_requests', created_requests)
-            subcampaign_ticket.set('status', 'done')
-            subcampaign_ticket.add_history('create_requests', created_requests, None)
-            database = Database('subcampaign_tickets')
-            database.save(subcampaign_ticket.get_json())
+                created_requests.extend(r.get('prepid') for r in newly_created_request_jsons)
+                subcampaign_ticket.set('created_requests', created_requests)
+                subcampaign_ticket.set('status', 'done')
+                subcampaign_ticket.add_history('create_requests', created_requests, None)
+                database.save(subcampaign_ticket.get_json())
+            except Exception as ex:
+                # Delete created requests if there was an Exception
+                for newly_created_request_json in newly_created_request_jsons:
+                    request_controller.delete(newly_created_request_json)
+
+                # And reraise the exception
+                raise ex
 
         return created_requests

@@ -13,6 +13,7 @@ class Locker():
 
     __locks = {}
     __infos = {}
+    __locker_lock = RLock()
 
     def __init__(self):
         self.logger = logging.getLogger()
@@ -32,15 +33,15 @@ class Locker():
         Return a lock for a given prepid
         It can be either existing one or a new one will be created
         """
-        if prepid not in self.__locks:
-            self.__locks[prepid] = RLock()
+        with Locker.__locker_lock:
+            lock = self.__locks.get(prepid, RLock())
+            self.__locks[prepid] = lock
+            self.__infos[prepid] = info
 
-        self.__infos[prepid] = info
-        lock = self.__locks[prepid]
         self.logger.debug('Returning a lock for %s. Thread %s',
                           prepid,
                           str(current_thread()))
-        lock.release = self.release
+
         return lock
 
     def get_status(self):
