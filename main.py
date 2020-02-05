@@ -3,7 +3,7 @@ from api.subcampaign_ticket_api import CreateSubcampaignTicketAPI, DeleteSubcamp
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus
 from api.search_api import SearchAPI
-from api.system_api import SubmissionWorkerStatusAPI
+from api.system_api import SubmissionWorkerStatusAPI, LockerStatusAPI
 from flask_restful import Api
 from flask import Flask, render_template
 from flask_cors import CORS
@@ -60,6 +60,7 @@ def api_documentation(path):
 api.add_resource(SearchAPI, '/api/search')
 
 api.add_resource(SubmissionWorkerStatusAPI, '/api/system/workers')
+api.add_resource(LockerStatusAPI, '/api/system/locks')
 
 api.add_resource(CreateSubcampaignAPI, '/api/subcampaigns/create')
 api.add_resource(DeleteSubcampaignAPI, '/api/subcampaigns/delete')

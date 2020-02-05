@@ -1,37 +1,45 @@
 <template>
-  <div>
-    <h1>Subcampaign Tickets</h1>
-    <ColumnSelector :columns="columns"
-                    v-on:updateColumns="updateTableColumns"/>
-    <v-data-table :headers="headers"
-                  :items="dataItems"
-                  :items-per-page="itemsPerPage"
-                  :mobile-breakpoint=NaN
-                  disable-sort
-                  hide-default-footer
-                  class="elevation-1">
-      <template v-slot:item._actions="{ item }">
-        <a :href="'subcampaign_tickets/edit?prepid=' + item.prepid">Edit</a>
-        &nbsp;
-        <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
-        &nbsp;
-        <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="item.status == 'new'">Create requests</a>
-      </template>
-      <template v-slot:item.history="{ item }">
-        <HistoryCell :data="item.history"/>
-      </template>
-      <template v-slot:item.input_datasets="{ item }">
-        {{item.input_datasets.length}} input datasets
-      </template>
-      <template v-slot:item.created_requests="{ item }">
-        <ul>
-          <li v-for="prepid in item.created_requests" :key="prepid"><a :href="'requests?prepid=' + prepid">{{prepid}}</a></li>
-        </ul>
-      </template>
-      <template v-slot:item.notes="{ item }">
-        <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
-      </template>
-    </v-data-table>
+  <div style="height: calc(100vh - 128px); overflow: auto;">
+    <div style="display: flex;">
+      <div style="flex: 1 1 auto;">
+        <div>
+          <div style="width: calc(100vw - 32px); position: sticky; left: 16px;">
+            <h1>Subcampaign Tickets</h1>
+            <ColumnSelector :columns="columns"
+                            v-on:updateColumns="updateTableColumns"/>
+          </div>
+        </div>
+        <v-data-table :headers="headers"
+                      :items="dataItems"
+                      :items-per-page="itemsPerPage"
+                      :mobile-breakpoint=NaN
+                      disable-sort
+                      hide-default-footer
+                      class="elevation-1">
+          <template v-slot:item._actions="{ item }">
+            <a :href="'subcampaign_tickets/edit?prepid=' + item.prepid">Edit</a>
+            &nbsp;
+            <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
+            &nbsp;
+            <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="item.status == 'new'">Create requests</a>
+          </template>
+          <template v-slot:item.history="{ item }">
+            <HistoryCell :data="item.history"/>
+          </template>
+          <template v-slot:item.input_datasets="{ item }">
+            {{item.input_datasets.length}} input datasets
+          </template>
+          <template v-slot:item.created_requests="{ item }">
+            <ul>
+              <li v-for="prepid in item.created_requests" :key="prepid"><a :href="'requests?prepid=' + prepid">{{prepid}}</a></li>
+            </ul>
+          </template>
+          <template v-slot:item.notes="{ item }">
+            <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
+          </template>
+        </v-data-table>
+      </div>
+    </div>
 
     <v-dialog v-model="dialog.visible"
               max-width="50%">

@@ -21,10 +21,10 @@ class Worker(Thread):
         self.start()
 
     def run(self):
+        self.logger.debug('Worker "%s" is waiting for tasks', self.name)
         while self.running:
             try:
-                self.logger.debug('Worker "%s" is waiting for tasks', self.name)
-                func, job_name, args, kargs = self.queue.get(timeout=5)
+                func, job_name, args, kargs = self.queue.get(timeout=2)
                 self.job_name = job_name
                 self.job_start_time = time.time()
                 self.logger.debug('Worker "%s" got a task. Queue size %s', self.name, self.queue.qsize())
@@ -37,7 +37,7 @@ class Worker(Thread):
                     self.job_name = None
                     self.job_start_time = 0
             except Empty:
-                self.logger.debug('Worker "%s" did not get a task and is sad', self.name)
+                # self.logger.debug('Worker "%s" did not get a task and is sad', self.name)
                 pass
 
     def join(self, timeout=None):
@@ -72,7 +72,7 @@ class RequestSubmitter:
     # limit on the number of items that can be placed in the queue.
     # If maxsize is less than or equal to zero, the queue size is infinite.
     __task_queue = Queue(maxsize=0)
-    __worker_pool = WorkerPool(workers_count=5, task_queue=__task_queue)
+    __worker_pool = WorkerPool(workers_count=2, task_queue=__task_queue)
 
     def __init__(self):
         self.logger = logging.getLogger()

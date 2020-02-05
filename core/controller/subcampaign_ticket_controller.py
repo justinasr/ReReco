@@ -96,7 +96,7 @@ class SubcampaignTicketController(ControllerBase):
             subcampaign_name = subcampaign_ticket.get('subcampaign')
             processing_string = subcampaign_ticket.get('processing_string')
             for input_dataset in subcampaign_ticket.get('input_datasets'):
-                new_request_json = {'member_of_subcampaign': subcampaign_name,
+                new_request_json = {'subcampaign': subcampaign_name,
                                     'input_dataset': input_dataset,
                                     'processing_string': processing_string}
                 created_request_json = request_controller.create(new_request_json)

@@ -52,7 +52,7 @@ class RequestController(ControllerBase):
         era = input_dataset_parts[1].split('-')[0]
         processing_string = new_request.get('processing_string')
         prepid_middle_part = f'{era}-{input_dataset_parts[0]}-{processing_string}'
-        with self.locker.get_lock(f'generate-prepid-{subcampaign_name}'):
+        with self.locker.get_lock(f'generate-prepid-{prepid_middle_part}'):
             # Get a new serial number
             serial_numbers = request_db.query_view('serial_number',
                                                    f'key="{prepid_middle_part}"&group=true')
@@ -120,10 +120,13 @@ class RequestController(ControllerBase):
         subcampaign_tickets = subcampaign_tickets_db.query(f'created_requests={prepid}')
         self.logger.debug(json.dumps(subcampaign_tickets, indent=4))
         for subcampaign_ticket_json in subcampaign_tickets:
-            subcampaign_ticket = SubcampaignTicket(json_input=subcampaign_ticket_json)
-            subcampaign_ticket.set('created_requests', [x for x in subcampaign_ticket.get('created_requests') if x != prepid])
-            subcampaign_ticket.add_history('remove_request', prepid, None)
-            subcampaign_tickets_db.save(subcampaign_ticket.get_json())
+            ticket_prepid = subcampaign_ticket_json['prepid']
+            with self.locker.get_lock(ticket_prepid):
+                subcampaign_ticket_json = subcampaign_tickets_db.get(ticket_prepid)
+                subcampaign_ticket = SubcampaignTicket(json_input=subcampaign_ticket_json)
+                subcampaign_ticket.set('created_requests', [x for x in subcampaign_ticket.get('created_requests') if x != prepid])
+                subcampaign_ticket.add_history('remove_request', prepid, None)
+                subcampaign_tickets_db.save(subcampaign_ticket.get_json())
 
         return True
 

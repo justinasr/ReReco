@@ -41,7 +41,8 @@ class ControllerBase():
                 return None
 
             database.save(new_object.get_json())
-            return new_object.get_json()
+
+        return new_object.get_json()
 
     def get(self, prepid):
         """
@@ -103,7 +104,7 @@ class ControllerBase():
 
         obj = self.model_class(json_input=json_data)
         try:
-            with self.locker.get_nonblocking_lock(prepid):
+            with self.locker.get_nonblocking_lock(prepid, f'Deleting {prepid}'):
                 self.logger.info('Will delete %s', (prepid))
                 self.before_delete(obj)
                 if not self.check_for_delete(obj):
@@ -111,7 +112,8 @@ class ControllerBase():
                     return None
 
                 database.delete_document(obj.get_json())
-                return {'prepid': prepid}
+
+            return {'prepid': prepid}
         except LockedException:
             raise Exception('Request cannot be updated because it is being worked on')
 

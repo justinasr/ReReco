@@ -60,7 +60,7 @@ class Request(ModelBase):
         'energy': lambda energy: energy >= 0.0,
         'input_dataset': ModelBase._lambda_checks['dataset'],
         'memory': lambda memory: memory >= 0,
-        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-_]{1,75}'),
+        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-_]{1,100}'),
         'priority': lambda priority: 1000 <= priority <= 1000000,
         'processing_string': ModelBase._lambda_checks['processing_string'],
         '__runs': lambda r: isinstance(r, int) and r > 0,

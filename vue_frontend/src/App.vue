@@ -38,6 +38,11 @@
         href="requests">
         <span class="mr-2">Requests</span>
       </v-btn>
+      <v-btn
+        text
+        href="dashboard">
+        <span class="mr-2">Dashboard</span>
+      </v-btn>
     </v-app-bar>
     <v-content>
        <router-view/>
@@ -61,6 +66,9 @@ export default {
 
 <style>
 
+html {
+  overflow: auto !important;
+}
 
 select, textarea {
   border-style: inset !important;
@@ -105,8 +113,8 @@ footer {
   box-shadow: 0px -2px 4px -1px rgba(0, 0, 0, 0.2), 0px -4px 5px 0px rgba(0, 0, 0, 0.14), 0px -1px 10px 0px rgba(0, 0, 0, 0.12);
 }
 
-.v-content__wrap > div {
-  padding-bottom: 72px;
+table {
+  white-space: nowrap;
 }
 
 .notes {
@@ -121,5 +129,13 @@ input:disabled, select:disabled, textarea:disabled {
   cursor: not-allowed;
 }
 
+.v-data-table__wrapper {
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+}
+
+.mdi-checkbox-marked::before {
+  color: var(--v-accent-base) !important
+}
 
 </style>

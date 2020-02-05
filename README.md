@@ -110,7 +110,7 @@ function(doc) {
 map:
 ```
 function(doc) {
-  if (doc.subcampaign) {
+  if (doc.prepid) {
     var parts = doc._id.split('-');
     var number = parseInt(parts[parts.length - 1], 10);
     parts.shift();

@@ -1,42 +1,50 @@
 <template>
-  <div>
-    <h1>Subcampaigns</h1>
-    <ColumnSelector :columns="columns"
-                    v-on:updateColumns="updateTableColumns"/>
-    <v-data-table :headers="headers"
-                  :items="dataItems"
-                  :items-per-page="itemsPerPage"
-                  :mobile-breakpoint=NaN
-                  disable-sort
-                  hide-default-footer
-                  class="elevation-1">
-      <template v-slot:item._actions="{ item }">
-        <a :href="'subcampaigns/edit?prepid=' + item.prepid">Edit</a>
-        &nbsp;
-        <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
-      </template>
-      <template v-slot:item.history="{ item }">
-        <HistoryCell :data="item.history"/>
-      </template>
-      <template v-slot:item.sequences="{ item }">
-        <pre>{{JSON.stringify(item.sequences, null, 2)}}</pre>
-      </template>
-      <template v-slot:item.memory="{ item }">
-        {{item.memory}} MB
-      </template>
-      <template v-slot:item.energy="{ item }">
-        {{item.energy}} TeV
-      </template>
-      <template v-slot:item.cmssw_release="{ item }">
-        {{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}
-      </template>
-      <template v-slot:item.notes="{ item }">
-        <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
-      </template>
-      <template v-slot:item.campaign="{ item }">
-        {{item.prepid.split('-').filter(Boolean)[0]}}
-      </template>
-    </v-data-table>
+  <div style="height: calc(100vh - 128px); overflow: auto;">
+    <div style="display: flex;">
+      <div style="flex: 1 1 auto;">
+        <div>
+          <div style="width: calc(100vw - 32px); position: sticky; left: 16px;">
+            <h1>Subcampaigns</h1>
+            <ColumnSelector :columns="columns"
+                            v-on:updateColumns="updateTableColumns"/>
+          </div>
+        </div>
+        <v-data-table :headers="headers"
+                      :items="dataItems"
+                      :items-per-page="itemsPerPage"
+                      :mobile-breakpoint=NaN
+                      disable-sort
+                      hide-default-footer
+                      class="elevation-1">
+          <template v-slot:item._actions="{ item }">
+            <a :href="'subcampaigns/edit?prepid=' + item.prepid">Edit</a>
+            &nbsp;|&nbsp;
+            <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
+          </template>
+          <template v-slot:item.history="{ item }">
+            <HistoryCell :data="item.history"/>
+          </template>
+          <template v-slot:item.sequences="{ item }">
+            <pre>{{JSON.stringify(item.sequences, null, 2)}}</pre>
+          </template>
+          <template v-slot:item.memory="{ item }">
+            {{item.memory}} MB
+          </template>
+          <template v-slot:item.energy="{ item }">
+            {{item.energy}} TeV
+          </template>
+          <template v-slot:item.cmssw_release="{ item }">
+            {{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}
+          </template>
+          <template v-slot:item.notes="{ item }">
+            <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
+          </template>
+          <template v-slot:item.campaign="{ item }">
+            {{item.prepid.split('-').filter(Boolean)[0]}}
+          </template>
+        </v-data-table>
+      </div>
+    </div>
 
     <v-dialog v-model="dialog.visible"
               max-width="50%">
