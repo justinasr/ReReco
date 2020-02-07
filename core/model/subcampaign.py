@@ -30,7 +30,9 @@ class Subcampaign(ModelBase):
         # Action history
         'history': [],
         # Default memory
-        'memory': 2300
+        'memory': 2300,
+        # Path to json that contains all runs
+        'runs_json_path': ''
     }
 
     _lambda_checks = {
@@ -43,3 +45,10 @@ class Subcampaign(ModelBase):
 
     def __init__(self, json_input=None):
         ModelBase.__init__(self, json_input)
+
+    def before_attribute_check(self, attribute_name, attribute_value):
+        if attribute_name == 'runs_json_path':
+            while attribute_value.startswith('/'):
+                attribute_value = attribute_value[1:]
+
+        return attribute_value

@@ -85,11 +85,12 @@ class ModelBase():
         Set attribute of the object
         """
         prepid = self.get_prepid()
-        self.logger.debug('Setting %s and value %s for %s of type %s',
-                          attribute,
-                          value,
-                          prepid,
-                          self.__class_name)
+        if attribute not in ('history'):
+            self.logger.debug('Setting %s and value %s for %s of type %s',
+                              attribute,
+                              value,
+                              prepid,
+                              self.__class_name)
 
         if not attribute:
             raise Exception('Attribute name not specified')
@@ -236,5 +237,4 @@ class ModelBase():
         Preprocess value if needed before performing checks setting it
         This should include sanitization and whitespace removal (stripping)
         """
-        self.logger.debug('Returning default %s value %s', attribute_name, attribute_value)
         return attribute_value

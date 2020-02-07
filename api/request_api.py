@@ -190,3 +190,21 @@ class RequestNextStatus(APIBase):
         request = request_controller.get(prepid)
         result = request_controller.next_status(request)
         return self.output_text({'response': result.get_json(), 'success': True, 'message': ''})
+
+
+class GetRequestRunsAPI(APIBase):
+    """
+    Endpoint for getting intersection of input dataset runs and runs from certification JSON
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    def get(self, prepid=None):
+        """
+        Get a list of run numbers
+        """
+        request = request_controller.get(prepid)
+        result = request_controller.get_runs_for_request(request)
+        return self.output_text({'response': result, 'success': True, 'message': ''})

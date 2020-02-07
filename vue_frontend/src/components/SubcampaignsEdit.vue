@@ -50,6 +50,10 @@
           <td>Memory</td>
           <td><input type="number" v-model="editableObject.memory" :disabled="!editingInfo.memory">MB</td>
         </tr>
+        <tr>
+          <td>Runs JSON</td>
+          <td><input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path"></td>
+        </tr>
       </table>
       <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
     </v-card>

@@ -42,6 +42,9 @@
           <template v-slot:item.campaign="{ item }">
             {{item.prepid.split('-').filter(Boolean)[0]}}
           </template>
+          <template v-slot:item.runs_json_path="{ item }">
+            <a target="_blank" :href="'https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/' + item.runs_json_path">{{item.runs_json_path}}</a>
+          </template>
         </v-data-table>
       </div>
     </div>
@@ -121,6 +124,7 @@ export default {
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
         {'dbName': 'campaign', 'displayName': 'Campaign', 'visible': 0},
+        {'dbName': 'runs_json_path', 'displayName': 'Runs JSON', 'visible': 0},
       ],
       headers: [],
       dataItems: [],

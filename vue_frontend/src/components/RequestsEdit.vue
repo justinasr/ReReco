@@ -80,6 +80,7 @@
         </tr>
       </table>
       <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
+      <v-btn v-if="editingInfo.runs && !creatingNew" small class="mr-1 mb-1" color="primary" @click="getRuns()">Get runs from DBS and certification</v-btn>
     </v-card>
     <v-dialog v-model="sequenceEditDialog.visible"
               max-width="50%">
@@ -143,7 +144,7 @@ export default {
       let editableObject = JSON.parse(JSON.stringify(this.editableObject))
       let component = this;
       editableObject['notes'] = editableObject['notes'].trim();
-      editableObject['runs'] = editableObject['runs'].replace(/,/g, '\n').split('\n').filter(Boolean);
+      editableObject['runs'] = editableObject['runs'].replace(/,/g, '\n').split('\n').map(function(s) { return s.trim() }).filter(Boolean);
       console.log(this.editableObject);
       // editableObject['sequences'] = JSON.parse(editableObject['sequences']);
       let httpRequest;
@@ -192,6 +193,12 @@ export default {
     deleteSequence: function(index) {
       console.log('Deleting ' + index + ' sequence');
       this.editableObject['sequences'].splice(index, 1);
+    },
+    getRuns: function() {
+      let component = this;
+      axios.get('api/requests/get_runs/' + this.prepid).then(response => {
+        component.editableObject.runs = response.data.response.filter(Boolean).join('\n');
+      });
     }
   }
 }

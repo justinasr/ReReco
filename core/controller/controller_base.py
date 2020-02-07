@@ -193,7 +193,7 @@ class ControllerBase():
 
         if isinstance(reference, dict) and isinstance(target, dict):
             # Comparing two dictionaries
-            keys = reference.keys()
+            keys = set(reference.keys()).union(set(target.keys()))
             for key in keys:
                 self.get_changes(reference.get(key),
                                  target.get(key),

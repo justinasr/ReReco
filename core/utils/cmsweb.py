@@ -46,7 +46,7 @@ class ConnectionWrapper():
         self.logger.debug('Refreshing connection')
         self.connection = self.init_connection(url)
 
-    def api(self, method, url, data):
+    def api(self, method, url, data=None):
         """
         Make a HTTP request to given url
         """

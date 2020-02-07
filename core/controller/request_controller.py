@@ -2,6 +2,7 @@
 Module that contains RequestController class
 """
 import json
+import time
 from core.controller.controller_base import ControllerBase
 from core.model.request import Request
 from core.model.subcampaign import Subcampaign
@@ -9,6 +10,7 @@ from core.database.database import Database
 from core.model.sequence import Sequence
 from core.model.subcampaign_ticket import SubcampaignTicket
 from core.utils.request_submitter import RequestSubmitter
+from core.utils.cmsweb import ConnectionWrapper
 
 
 class RequestController(ControllerBase):
@@ -221,3 +223,47 @@ class RequestController(ControllerBase):
             raise Exception('Request is already done')
 
         return request
+
+    def get_runs_for_request(self, request):
+        """
+        Return a list of runs for given request
+        """
+        subcampaign_db = Database('subcampaigns')
+        subcampaign = subcampaign_db.get(request.get('subcampaign'))
+        runs_json_path = subcampaign.get('runs_json_path')
+        input_dataset = request.get('input_dataset')
+        if not runs_json_path:
+            return []
+
+        if not input_dataset:
+            return []
+
+        start_time = time.time()
+        dbs_conn = ConnectionWrapper()
+        dbs_response = dbs_conn.api('GET',
+                                    f'/dbs/prod/global/DBSReader/runs?dataset={input_dataset}')
+        dbs_response = json.loads(dbs_response.decode('utf-8'))
+        if not dbs_response:
+            return []
+
+        dbs_runs = dbs_response[0].get('run_num', [])
+
+        cert_conn = ConnectionWrapper(host='cms-service-dqm.web.cern.ch')
+        cert_response = cert_conn.api('GET',
+                                      f'/cms-service-dqm/CAF/certification/{runs_json_path}')
+
+        cert_response = json.loads(cert_response.decode('utf-8'))
+        certification_runs = [int(x) for x in list(cert_response.keys())]
+        all_runs = list(set(dbs_runs).intersection(set(certification_runs)))
+        end_time = time.time()
+        self.logger.debug('Sleeping for %.2fs', max(end_time - start_time, 10) * 0.1)
+        time.sleep(max(end_time - start_time, 10) * 0.1)
+        self.logger.info('Got %s runs from DBS for dataset %s and %s runs from '
+                         'certification JSON in %.2fs. Intersection yielded %s runs',
+                         len(dbs_runs),
+                         input_dataset,
+                         len(certification_runs),
+                         end_time - start_time,
+                         len(all_runs))
+
+        return all_runs
