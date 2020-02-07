@@ -197,7 +197,7 @@ export default {
     getRuns: function() {
       let component = this;
       axios.get('api/requests/get_runs/' + this.prepid).then(response => {
-        component.editableObject.runs = response.data.response.filter(Boolean).join('\n');
+        component.editableObject.runs = response.data.response.filter(Boolean).map(function(s) { return s.toString() }).join('\n');
       });
     }
   }
