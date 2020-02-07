@@ -1,6 +1,7 @@
 <template>
   <div>
-    <h1>Subcampaign Tickets Edit</h1>
+    <h1 v-if="creatingNew">Creating new Subcampaign Ticket</h1>
+    <h1 v-else>Editing {{editableObject.prepid}}</h1>
     <v-card raised style="margin: auto; padding: 16px; max-width: 750px;">
       <table v-if="editableObject">
         <tr>
@@ -25,7 +26,7 @@
         </tr>
       </table>
       <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
-      <v-btn small class="mr-1 mb-1" color="primary" @click="getDatasetsDialogVisible = true">Get dataset list from DBS</v-btn>
+      <v-btn v-if="editingInfo.input_datasets" small class="mr-1 mb-1" color="primary" @click="getDatasetsDialogVisible = true">Get dataset list from DBS</v-btn>
     </v-card>
     <v-dialog v-model="getDatasetsDialogVisible"
               max-width="50%">
@@ -56,8 +57,8 @@ export default {
   data () {
     return {
       prepid: undefined,
-      editableObject: undefined,
-      editingInfo: undefined,
+      editableObject: {},
+      editingInfo: {},
       loading: true,
       creatingNew: true,
       getDatasetsDialogVisible: false,

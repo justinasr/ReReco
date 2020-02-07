@@ -136,6 +136,7 @@ class Request(ModelBase):
             command += f' --{key} {arguments[key]}'.rstrip()
             comment += f'# --{key} {arguments[key]}'.rstrip() + '\n'
 
+        self.logger.debug(command)
         return comment + '\n' + command
 
     def get_cmsdriver(self, sequence_index, overwrite_input=None):

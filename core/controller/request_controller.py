@@ -47,6 +47,15 @@ class RequestController(ControllerBase):
         json_data['subcampaign'] = subcampaign.get_prepid()
         json_data['step'] = subcampaign.get('step')
         new_request = Request(json_input=json_data)
+        if not json_data.get('sequences'):
+            new_request.set('sequences', subcampaign.get('sequences'))
+
+        if not json_data.get('memory'):
+            new_request.set('memory', subcampaign.get('memory'))
+
+        if not json_data.get('energy'):
+            new_request.set('energy', subcampaign.get('energy'))
+
         input_dataset = new_request.get('input_dataset')
         input_dataset_parts = [x for x in input_dataset.split('/') if x]
         era = input_dataset_parts[1].split('-')[0]
@@ -67,14 +76,6 @@ class RequestController(ControllerBase):
             new_request.set('prepid', prepid)
             self.logger.info('Generated prepid %s', (prepid))
             new_request.add_history('create', prepid, None)
-            if not json_data.get('sequences'):
-                new_request.set('sequences', subcampaign.get('sequences'))
-            if not json_data.get('memory'):
-                new_request.set('memory', subcampaign.get('memory'))
-
-            if not json_data.get('energy'):
-                new_request.set('energy', subcampaign.get('energy'))
-
             if not self.check_for_create(new_request):
                 self.logger.error('Error while checking new item %s', prepid)
                 return None
@@ -132,15 +133,23 @@ class RequestController(ControllerBase):
 
     def get_editing_info(self, obj):
         editing_info = {k: not k.startswith('_') for k in obj.get_json().keys()}
-        is_new = not bool(editing_info.get('prepid'))
+        newly_created = not bool(editing_info.get('prepid'))
         editing_info['prepid'] = False
         editing_info['history'] = False
-        editing_info['step'] = False
         editing_info['cmssw_release'] = False
-        editing_info['input_dataset'] = is_new
-        editing_info['processing_string'] = is_new
-        editing_info['subcampaign'] = is_new
-        editing_info['sequences'] = not is_new
+        editing_info['step'] = False
+        editing_info['input_dataset'] = newly_created
+        editing_info['processing_string'] = newly_created
+        editing_info['subcampaign'] = newly_created
+        editing_info['energy'] = True
+        status = obj.get('status')
+        if status != 'new':
+            editing_info['memory'] = False
+            editing_info['runs'] = False
+            editing_info['sequences'] = False
+            editing_info['time_per_event'] = False
+            editing_info['size_per_event'] = False
+
         return editing_info
 
     def get_cmsdriver(self, request):
@@ -190,6 +199,9 @@ class RequestController(ControllerBase):
         return job_dict
 
     def next_status(self, request):
+        """
+        Trigger request to move to next status
+        """
         if request.get('status') == 'new':
             request.set('status', 'approved')
             self.update(request.get_json())

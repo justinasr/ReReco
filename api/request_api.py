@@ -51,6 +51,29 @@ class DeleteRequestAPI(APIBase):
         return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
+class DeleteRequestManyAPI(APIBase):
+    """
+    Endpoint for deleting a list of requests request
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.ensure_request_data
+    @APIBase.exceptions_to_errors
+    def delete(self):
+        """
+        Delete a request with the provided JSON content
+        """
+        data = flask.request.data
+        requests_json = json.loads(data.decode('utf-8'))
+        results = []
+        for request_json in requests_json:
+            results.append(request_controller.delete(request_json))
+
+        return self.output_text({'response': results, 'success': True, 'message': ''})
+
+
 class UpdateRequestAPI(APIBase):
     """
     Endpoint for updating a request

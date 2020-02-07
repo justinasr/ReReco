@@ -1,15 +1,14 @@
+import logging
+import argparse
+from flask_restful import Api
+from flask_cors import CORS
+from flask import Flask, render_template
 from api.subcampaign_api import CreateSubcampaignAPI, DeleteSubcampaignAPI, UpdateSubcampaignAPI, GetSubcampaignAPI, GetEditableSubcampaignAPI, GetDefaultSubcampaignSequenceAPI
 from api.subcampaign_ticket_api import CreateSubcampaignTicketAPI, DeleteSubcampaignTicketAPI, UpdateSubcampaignTicketAPI, GetSubcampaignTicketAPI, GetSubcampaignTicketDatasetsAPI, GetEditableSubcampaignTicketAPI, CreateRequestsForSubcampaignTicketAPI
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
-from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus
+from api.request_api import CreateRequestAPI, DeleteRequestAPI, DeleteRequestManyAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus
 from api.search_api import SearchAPI
 from api.system_api import SubmissionWorkerStatusAPI, LockerStatusAPI
-from flask_restful import Api
-from flask import Flask, render_template
-from flask_cors import CORS
-from core.utils.request_submitter import RequestSubmitter
-import logging
-import argparse
 
 
 __LOG_FORMAT = '[%(asctime)s][%(levelname)s] %(message)s'
@@ -90,6 +89,7 @@ api.add_resource(GetFlowAPI, '/api/flows/get/<string:prepid>')
 
 api.add_resource(CreateRequestAPI, '/api/requests/create')
 api.add_resource(DeleteRequestAPI, '/api/requests/delete')
+api.add_resource(DeleteRequestManyAPI, '/api/requests/delete_many')
 api.add_resource(UpdateRequestAPI, '/api/requests/update')
 api.add_resource(GetRequestAPI, '/api/requests/get/<string:prepid>')
 api.add_resource(GetEditableRequestAPI,
@@ -106,7 +106,6 @@ parser.add_argument('--debug',
 
 args = vars(parser.parse_args())
 debug = args.get('debug', False)
-# rs = RequestSubmitter()
 app.run(host='0.0.0.0',
         port=8005,
         threaded=True,

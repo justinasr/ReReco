@@ -246,17 +246,14 @@ export default {
       this.dialog.description = "Are you sure you want to delete " + this.selectedItems.length + " requests?";
       this.dialog.ok = function() {
         component.clearDialog();
-        let selected = component.selectedItems.slice();
-        component.selectedItems = [];
-        for (let request of selected) {
-          console.log('Delete ' + request.prepid)
-          axios.delete('api/requests/delete', {data: {'prepid': request.prepid, '_rev': request._rev}}).then(() => {
-            component.fetchObjects();
-          }).catch(error => {
-            console.log(error.response.data);
-            component.showError("Error deleting request", error.response.data.message);
-          });
-        }
+        console.log('Delete many')
+        axios.delete('api/requests/delete_many', {data: component.selectedItems.slice()}).then(() => {
+          component.fetchObjects();
+          component.selectedItems = [];
+        }).catch(error => {
+          console.log(error.response.data);
+          component.showError("Error deleting requests", error.response.data.message);
+        });
       }
       this.dialog.cancel = function() {
         component.clearDialog();

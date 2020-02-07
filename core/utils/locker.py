@@ -19,6 +19,9 @@ class Locker():
         self.logger = logging.getLogger()
 
     def get_nonblocking_lock(self, prepid, info=''):
+        """
+        Return a non blocking lock or throw LockedException
+        """
         lock = self.get_lock(prepid, info)
         # If we do a plus one
         if not lock.acquire(blocking=False):
@@ -45,8 +48,13 @@ class Locker():
         return lock
 
     def get_status(self):
+        """
+        Return dictionary of all locks and their statuses and infos
+        """
         return {k: {'l': str(v), 'i': self.__infos[k]} for k, v in self.__locks.items()}
 
 
 class LockedException(Exception):
-    pass
+    """
+    Exception that should be thrown if nonblocking lock could not be acquired
+    """

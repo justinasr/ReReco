@@ -71,13 +71,16 @@ class SubcampaignTicketController(ControllerBase):
 
     def get_editing_info(self, obj):
         editing_info = {k: not k.startswith('_') for k in obj.get_json().keys()}
-        editing_info['prepid'] = not bool(editing_info.get('prepid'))
+        newly_created = not bool(editing_info.get('prepid'))
+        status = obj.get('status')
+        editing_info['prepid'] = newly_created
         editing_info['history'] = False
-        is_new = obj.get('status') == 'new'
-        editing_info['subcampaign'] = is_new
-        editing_info['processing_string'] = is_new
-        editing_info['input_datasets'] = is_new
         editing_info['created_requests'] = False
+        if status == 'done':
+            editing_info['subcampaign'] = False
+            editing_info['processing_string'] = False
+            editing_info['input_datasets'] = False
+
         return editing_info
 
     def create_requests_for_ticket(self, subcampaign_ticket):

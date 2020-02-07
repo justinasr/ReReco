@@ -173,66 +173,45 @@ class ControllerBase():
         if not editing_info:
             return True
 
-        def recursive_edit_allowed(editing_info, changed_values):
-            if isinstance(editing_info, bool):
-                return editing_info
+        for changed_value in changed_values:
+            changed_value_trimmed = changed_value.split('.')[0].split('[')[0]
+            allowed = editing_info.get(changed_value_trimmed, False)
+            if not allowed:
+                raise Exception(f'It is not allowed to change value of "{changed_value_trimmed}"')
 
-            if isinstance(changed_values, dict):
-                for key, value in changed_values.items():
-                    allowed = recursive_edit_allowed(editing_info.get(key, False), value)
-                    if not allowed:
-                        raise Exception(f'It is not allowed to edit {key}')
-
-            elif isinstance(changed_values, list):
-                for i in range(len(changed_values)):
-                    allowed = recursive_edit_allowed(editing_info[i], value)
-                    if not allowed:
-                        return False
-
-            return True
-
-        self.logger.info(editing_info)
-        recursive_edit_allowed(editing_info, changed_values)
         return True
 
-    def get_changes(self, reference, target):
+    def get_changes(self, reference, target, prefix=None, changed_values=None):
         """
-        Get dictionary of changed attributes
+        Get dictionary of different values across two objects
         """
-        if isinstance(reference, dict) and isinstance(target, dict):
-            changed_values = {}
-            keys_reference = set(reference.keys())
-            keys_target = set(target.keys())
-            keys = list(keys_reference.union(keys_target))
-            if 'history' in keys:
-                keys.remove('history')
-
-            for key in keys:
-                reference_value = reference.get(key)
-                target_value = target.get(key)
-                changed = self.get_changes(reference_value, target_value)
-                if isinstance(changed, bool):
-                    if changed:
-                        changed_values[key] = changed
-                else:
-                    changed_values[key] = changed
-
-            if changed_values:
-                return changed_values
-
-        elif isinstance(reference, list) and isinstance(target, list):
-            if len(reference) != len(target):
-                return True
-
+        if changed_values is None:
             changed_values = []
-            for i in range(len(reference)):
-                changed_values.append(self.get_changes(reference[i], target[i]))
 
-            for changed in changed_values:
-                if changed:
-                    return changed_values
+        if prefix is None:
+            prefix = ''
 
+        if isinstance(reference, dict) and isinstance(target, dict):
+            # Comparing two dictionaries
+            keys = reference.keys()
+            for key in keys:
+                self.get_changes(reference.get(key),
+                                 target.get(key),
+                                 '%s.%s' % (prefix, key),
+                                 changed_values)
+        elif isinstance(reference, list) and isinstance(target, list):
+            # Comparing two lists
+            if len(reference) != len(target):
+                changed_values.append(prefix.lstrip('.').lstrip('_'))
+            else:
+                for i in range(min(len(reference), len(target))):
+                    self.get_changes(reference[i],
+                                     target[i],
+                                     '%s[%s]' % (prefix, i),
+                                     changed_values)
         else:
-            return reference != target
+            # Comparing two values
+            if reference != target:
+                changed_values.append(prefix.lstrip('.').lstrip('_'))
 
-        return False
+        return changed_values

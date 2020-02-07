@@ -1,6 +1,7 @@
 <template>
   <div>
-    <h1>Subcampaigns Edit</h1>
+    <h1 v-if="creatingNew">Creating new Subcampaign</h1>
+    <h1 v-else>Editing {{editableObject.prepid}}</h1>
     <v-card raised style="margin: auto; padding: 16px; max-width: 750px;">
       <table v-if="editableObject">
         <tr>
@@ -35,11 +36,12 @@
             <ul>
               <li v-for="(sequence, index) in editableObject.sequences" :key="index">
                 Sequence {{index + 1}}
-                <v-btn small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(index)">Edit</v-btn>
-                <v-btn small class="mr-1 mb-1" color="error" @click="deleteSequence(index)">Delete</v-btn>
+                <v-btn v-if="editingInfo.sequences" small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(index, true)">Edit</v-btn>
+                <v-btn v-if="editingInfo.sequences" small class="mr-1 mb-1" color="error" @click="deleteSequence(index)">Delete</v-btn>
+                <v-btn v-if="!editingInfo.sequences" small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(index, false)">View</v-btn>
               </li>
-              <li>
-                <v-btn small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(-1)">Add sequence</v-btn>
+              <li v-if="editingInfo.sequences">
+                <v-btn small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(-1, true)">Add sequence</v-btn>
               </li>
             </ul>
           </td>
@@ -56,6 +58,7 @@
       <v-card style="padding: 16px;">
         <SequencesEdit :sequenceObject="sequenceEditDialog.sequence"
                        :sequenceIndex="sequenceEditDialog.index"
+                       :editable="sequenceEditDialog.editable"
                        v-on:saveSequence="onSeqenceSave"/>
       </v-card>
     </v-dialog>
@@ -74,14 +77,15 @@ export default {
   data () {
     return {
       prepid: undefined,
-      editableObject: undefined,
-      editingInfo: undefined,
+      editableObject: {},
+      editingInfo: {},
       loading: true,
       creatingNew: true,
       sequenceEditDialog: {
         visible: false,
         index: -1,
-        sequence: undefined
+        sequence: undefined,
+        editable: false,
       }
     }
   },
@@ -129,18 +133,20 @@ export default {
         console.log(error.response.data);
       });
     },
-    showSequenceDialog: function(index) {
+    showSequenceDialog: function(index, editable) {
       if (index < 0) {
         let component = this;
         axios.get('api/subcampaigns/get_default_sequence' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
           component.sequenceEditDialog.visible = true;
           component.sequenceEditDialog.index = index;
           component.sequenceEditDialog.sequence = response.data.response;
+          component.sequenceEditDialog.editable = editable;
         });
       } else {
         this.sequenceEditDialog.visible = true;
         this.sequenceEditDialog.index = index;
         this.sequenceEditDialog.sequence = this.editableObject.sequences[index];
+        this.sequenceEditDialog.editable = editable;
       }
     },
     onSeqenceSave: function(index, sequence) {
