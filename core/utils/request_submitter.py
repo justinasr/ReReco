@@ -154,7 +154,8 @@ class RequestSubmitter:
             ssh_executor.execute_command([f'echo $HOSTNAME'])
             ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
                                           f'chmod +x {prepid}.sh',
-                                          f'export X509_USER_PROXY=$HOME/private/proxy.txt',
+                                          f'cat ~/private/grid_pw.txt | voms-proxy-init -voms cms --valid 4:00 -pwstdin',
+                                          f'export X509_USER_PROXY=$(voms-proxy-info --path)',
                                           f'./{prepid}.sh'])
 
             request.set('status', 'submitted')

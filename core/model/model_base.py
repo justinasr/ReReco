@@ -6,6 +6,7 @@ import logging
 import re
 import time
 from copy import deepcopy
+from core.utils.user_info import UserInfo
 
 
 class ModelBase():
@@ -225,6 +226,9 @@ class ModelBase():
         Add entry to object's history
         If no time is specified, use current time
         """
+        if user is None:
+            user = UserInfo().get_username()
+
         history = self.get('history')
         history.append({'action': action,
                         'time': int(timestamp if timestamp else time.time()),
