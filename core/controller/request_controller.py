@@ -65,12 +65,14 @@ class RequestController(ControllerBase):
         prepid_middle_part = f'{era}-{input_dataset_parts[0]}-{processing_string}'
         with self.locker.get_lock(f'generate-prepid-{prepid_middle_part}'):
             # Get a new serial number
-            serial_numbers = request_db.query_view('serial_number',
-                                                   f'key="{prepid_middle_part}"&group=true')
+            serial_numbers = request_db.query(f'prepid=ReReco-{prepid_middle_part}-*',
+                                              limit=1,
+                                              sort_asc=False)
             if not serial_numbers:
                 serial_number = 0
             else:
-                serial_number = serial_numbers[0]['value']
+                serial_number = serial_numbers[0]['prepid']
+                serial_number = int(serial_number.split('-')[-1])
 
             serial_number += 1
             # Form a new temporary prepid

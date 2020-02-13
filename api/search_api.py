@@ -4,6 +4,9 @@ Module that contains all search APIs
 import flask
 from api.api_base import APIBase
 from core.database.database import Database
+from core.model.subcampaign import Subcampaign
+from core.model.subcampaign_ticket import SubcampaignTicket
+from core.model.request import Request
 
 
 class SearchAPI(APIBase):
@@ -13,6 +16,9 @@ class SearchAPI(APIBase):
 
     def __init__(self):
         APIBase.__init__(self)
+        self.classes = {'subcampaigns': Subcampaign,
+                        'requests': Request,
+                        'subcampaign_tickets': SubcampaignTicket}
 
     @APIBase.exceptions_to_errors
     def get(self):
@@ -38,6 +44,7 @@ class SearchAPI(APIBase):
 
         query_string = '&&'.join(['%s=%s' % (pair) for pair in args.items()])
         database = Database(db_name)
+        query_string = database.build_query_with_types(query_string, self.classes[db_name])
         results, total_rows = database.query(query_string, page, limit, return_total_rows=True)
 
         return self.output_text({'response': {'results': results,
