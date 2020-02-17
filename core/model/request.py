@@ -64,6 +64,7 @@ class Request(ModelBase):
         'priority': lambda priority: 1000 <= priority <= 1000000,
         'processing_string': ModelBase._lambda_checks['processing_string'],
         '__runs': lambda r: isinstance(r, int) and r > 0,
+        '__sequences': lambda s: isinstance(s, Sequence),
         'size_per_event': lambda spe: spe > 0.0,
         'status': lambda status: status in ('new', 'approved', 'submitting', 'submitted', 'done'),
         'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
@@ -73,18 +74,9 @@ class Request(ModelBase):
     }
 
     def __init__(self, json_input=None):
+        json_input['runs'] = [int(r) for r in json_input.get('runs', [])]
+        json_input['sequences'] = [Sequence(json_input=s) for s in json_input.get('sequences', [])]
         ModelBase.__init__(self, json_input)
-
-    def before_attribute_check(self, attribute_name, attribute_value):
-        if attribute_name == 'runs':
-            runs = []
-            for run in attribute_value:
-                if run not in runs:
-                    runs.append(int(run))
-
-            return runs
-
-        return super().before_attribute_check(attribute_name, attribute_value)
 
     def get_cmssw_setup(self):
         """
@@ -92,15 +84,15 @@ class Request(ModelBase):
         Basically, cmsenv command
         """
         cmssw_release = self.get('cmssw_release')
-        commands = ['source /cvmfs/cms.cern.ch/cmsset_default.sh',
-                    'if [ -r %s/src ] ; then' % (cmssw_release),
-                    '  echo %s already exist' % (cmssw_release),
-                    'else',
-                    '  scram p CMSSW %s' % (cmssw_release),
-                    'fi',
-                    'cd %s/src' % (cmssw_release),
-                    'eval `scram runtime -sh`',
-                    'cd ../..']
+        commands = [f'source /cvmfs/cms.cern.ch/cmsset_default.sh',
+                    f'if [ -r {cmssw_release}/src ] ; then',
+                    f'  echo {cmssw_release} already exist',
+                    f'else',
+                    f'  scram p CMSSW {cmssw_release}',
+                    f'fi',
+                    f'cd {cmssw_release}/src',
+                    f'eval `scram runtime -sh`',
+                    f'cd ../..']
 
         return '\n'.join(commands)
 
@@ -108,6 +100,15 @@ class Request(ModelBase):
         """
         Return a sequence name which is based on request
         prepid and sequence number
+        Last sequence always has the same name as prepid
+        Other sequences have suffix with their index, e.g
+
+        PrepID_0
+        PrepID_1
+        PrepID
+
+        If there is only one sequence, it will be the last one
+        and have the same name as prepid
         """
         prepid = self.get_prepid()
         if sequence_index != len(self.get('sequences')) - 1:
@@ -121,7 +122,9 @@ class Request(ModelBase):
         """
         Build a cmsDriver command from given arguments
         """
+        # Actual command
         command = f'# Command for {cmsdriver_type}:\ncmsDriver.py {cmsdriver_type}'
+        # Comment in front of the command for better readability
         comment = f'# Arguments for {cmsdriver_type}:\n'
         for key in sorted(arguments.keys()):
             if not arguments[key]:
@@ -142,11 +145,14 @@ class Request(ModelBase):
     def get_cmsdriver(self, sequence_index, overwrite_input=None):
         """
         Return a cmsDriver command for sequence at given index
+        Config files are named like this
+        PrepID_0_cfg.py for normal config
+        PrepID_0_harvesting_cfg.py for harvesting
+        All python files have prepid and sequence number
         """
         prepid = self.get_prepid()
-        sequence_json = self.get('sequences')[sequence_index]
-        sequence = Sequence(json_input=sequence_json)
-        arguments_dict = dict(sequence_json)
+        sequence = self.get('sequences')[sequence_index]
+        arguments_dict = dict(sequence.get_json())
         # Delete sequence metadata
         if 'config_id' in arguments_dict:
             del arguments_dict['config_id']
@@ -167,8 +173,9 @@ class Request(ModelBase):
 
         # Build argument dictionary
         sequence_name = self.get_sequence_name(sequence_index)
+        python_filename = f'{prepid}_{sequence_index}'
         arguments_dict['fileout'] = f'"file:{sequence_name}.root"'
-        arguments_dict['python_filename'] = f'"{prepid}_{sequence_index}_cfg.py"'
+        arguments_dict['python_filename'] = f'"{python_filename}_cfg.py"'
         arguments_dict['data'] = True
         arguments_dict['no_exec'] = True
         arguments_dict['runUnscheduled'] = True
@@ -178,6 +185,8 @@ class Request(ModelBase):
         # Add harvesting if needed
         needs_harvest = sequence.needs_harvesting()
         if needs_harvest:
+            # Get correct configuration of DQM step, e.g.
+            # DQM:@rerecoCommon should be changed to HARVESTING:@rerecoCommon
             for one_step in sequence.get('step'):
                 if one_step == 'DQM':
                     step = 'HARVESTING'
@@ -193,7 +202,7 @@ class Request(ModelBase):
                                'data': True,
                                'no_exec': True,
                                'filein': f'"file:{sequence_name}_inDQM.root"',
-                               'python_filename': f'"{sequence_name}_harvest_cfg.py"'}
+                               'python_filename': f'"{python_filename}_harvest_cfg.py"'}
             cms_driver_command += '\n\n' + self.build_cmsdriver('HARVESTING', harvesting_dict)
 
         return cms_driver_command

@@ -125,6 +125,7 @@ export default {
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
         {'dbName': 'campaign', 'displayName': 'Campaign', 'visible': 0},
         {'dbName': 'runs_json_path', 'displayName': 'Runs JSON', 'visible': 0},
+        {'dbName': 'scram_arch', 'displayName': 'SCRAM Arch', 'visible': 0},
       ],
       headers: [],
       dataItems: [],

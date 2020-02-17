@@ -153,7 +153,7 @@ class CreateRequestsForSubcampaignTicketAPI(APIBase):
         request_data = json.loads(data.decode('utf-8'))
         prepid = request_data.get('prepid')
         if not prepid:
-            self.logger.error('No prepid in given data: %s', json.dumps(request_data, indent=4))
+            self.logger.error('No prepid in given data: %s', json.dumps(request_data, indent=2))
             raise Exception('No prepid in submitted data')
 
         ticket = subcampaign_ticket_controller.get(prepid)

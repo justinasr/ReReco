@@ -26,7 +26,7 @@ class Sequence(ModelBase):
         'era': '',
         # What event content to write out
         'eventcontent': [],
-        #
+        # Freeform attributes appended at the end
         'extra': '',
         # How many threads should CMSSW use
         'nThreads': 1,

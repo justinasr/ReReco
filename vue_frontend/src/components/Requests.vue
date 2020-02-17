@@ -28,6 +28,8 @@
             &nbsp;|&nbsp;
             <a :href="'api/requests/get_dict/' + item.prepid">Job dict</a>
             &nbsp;|&nbsp;
+            <a style="text-decoration: underline;" @click="previousStatus(item)">Previous</a>
+            &nbsp;|&nbsp;
             <a style="text-decoration: underline;" @click="nextStatus(item)">Next</a>
           </template>
           <template v-slot:item.history="{ item }">
@@ -268,6 +270,16 @@ export default {
       }).catch(error => {
         console.log(error.response.data);
         component.showError("Error moving request to next status", error.response.data.message);
+      });
+    },
+    previousStatus: function (request) {
+      let component = this;
+      axios.get('api/requests/previous_status/' + request.prepid).then(response => {
+        component.showError("Success", "Successfully moved " + request.prepid + " to previous status");
+        component.fetchObjects();
+      }).catch(error => {
+        console.log(error.response.data);
+        component.showError("Error moving request to previous status", error.response.data.message);
       });
     },
   }

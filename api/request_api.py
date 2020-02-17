@@ -192,6 +192,24 @@ class RequestNextStatus(APIBase):
         return self.output_text({'response': result.get_json(), 'success': True, 'message': ''})
 
 
+class RequestPreviousStatus(APIBase):
+    """
+    Endpoint for moving request to previous status
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    def get(self, prepid=None):
+        """
+        Get a text file with ReqMgr2's dicitonary
+        """
+        request = request_controller.get(prepid)
+        result = request_controller.previous_status(request)
+        return self.output_text({'response': result.get_json(), 'success': True, 'message': ''})
+
+
 class GetRequestRunsAPI(APIBase):
     """
     Endpoint for getting intersection of input dataset runs and runs from certification JSON

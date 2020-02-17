@@ -46,12 +46,16 @@ class ConnectionWrapper():
         self.logger.debug('Refreshing connection')
         self.connection = self.init_connection(url)
 
-    def api(self, method, url, data=None):
+    def api(self, method, url, data=None, headers=None):
         """
         Make a HTTP request to given url
         """
         if not self.connection:
             self.__refresh_connection(self.host_url)
+
+        all_headers = {"Accept": "application/json"}
+        if headers:
+            all_headers.update(headers)
 
         url = url.replace('#', '%23')
         # this way saves time for creating connection per every request
@@ -61,7 +65,7 @@ class ConnectionWrapper():
                 self.connection.request(method,
                                         url,
                                         json.dumps(data) if data else None,
-                                        headers={"Accept": "application/json"})
+                                        headers=all_headers)
                 response = self.connection.getresponse()
                 if response.status != 200:
                     self.logger.error('Error %d while doing a %s to %s: %s',

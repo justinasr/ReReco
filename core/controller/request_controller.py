@@ -7,10 +7,10 @@ from core.controller.controller_base import ControllerBase
 from core.model.request import Request
 from core.model.subcampaign import Subcampaign
 from core.database.database import Database
-from core.model.sequence import Sequence
 from core.model.subcampaign_ticket import SubcampaignTicket
 from core.utils.request_submitter import RequestSubmitter
 from core.utils.cmsweb import ConnectionWrapper
+from core.utils.settings import Settings
 
 
 class RequestController(ControllerBase):
@@ -89,41 +89,17 @@ class RequestController(ControllerBase):
 
             return new_request.get_json()
 
-    def get(self, prepid):
-        obj = super().get(prepid)
-        if obj:
-            new_sequences = []
-            for sequence in obj.get('sequences'):
-                new_sequences.append(Sequence(json_input=sequence).get_json())
-
-            obj.set('sequences', new_sequences)
-            return obj
-
-        return None
-
     def check_for_create(self, obj):
-        sequences = []
-        for sequence_json in obj.get('sequences'):
-            sequence = Sequence(json_input=sequence_json)
-            sequences.append(sequence.get_json())
-
-        obj.set('sequences', sequences)
         return True
 
     def check_for_update(self, old_obj, new_obj, changed_values):
-        sequences = []
-        for sequence_json in new_obj.get('sequences'):
-            sequence = Sequence(json_input=sequence_json)
-            sequences.append(sequence.get_json())
-
-        new_obj.set('sequences', sequences)
         return True
 
     def check_for_delete(self, obj):
         prepid = obj.get_prepid()
         subcampaign_tickets_db = Database('subcampaign_tickets')
         subcampaign_tickets = subcampaign_tickets_db.query(f'created_requests={prepid}')
-        self.logger.debug(json.dumps(subcampaign_tickets, indent=4))
+        self.logger.debug(json.dumps(subcampaign_tickets, indent=2))
         for subcampaign_ticket_json in subcampaign_tickets:
             ticket_prepid = subcampaign_ticket_json['prepid']
             with self.locker.get_lock(ticket_prepid):
@@ -156,7 +132,7 @@ class RequestController(ControllerBase):
 
         return editing_info
 
-    def get_cmsdriver(self, request):
+    def get_cmsdriver(self, request, for_submission=False):
         """
         Get bash script with cmsDriver commands for a given request
         """
@@ -166,19 +142,49 @@ class RequestController(ControllerBase):
         cms_driver += request.get_cmssw_setup()
         cms_driver += '\n\n'
         for i in range(number_of_sequences):
-            cms_driver += request.get_cmsdriver(i)
+            if i == 0 and for_submission:
+                cms_driver += request.get_cmsdriver(i, '_placeholder_.root')
+            else:
+                cms_driver += request.get_cmsdriver(i)
             cms_driver += '\n\n'
 
         return cms_driver
+
+    def get_config_upload_file(self, request):
+        self.logger.debug('Getting config upload script for %s', request.get_prepid())
+        prepid = request.get_prepid()
+        database_url = Settings().get('cmsweb_db_url')
+        command = '#!/bin/bash\n\n'
+        command += request.get_cmssw_setup()
+        command += '\n\n'
+        # Add path to WMCore
+        # This should be done in a smarter way
+        command += '\n'.join([f'git clone https://github.com/dmwm/WMCore.git',
+                              f'export PYTHONPATH=$(pwd)/WMCore/src/python/:$PYTHONPATH'])
+        number_of_sequences = len(request.get('sequences'))
+        for i in range(number_of_sequences):
+            # Run config uploader
+            command += f'\npython config_uploader.py --file {prepid}_{i}_cfg.py --label {prepid}_{i} --group ppd --user $(echo $USER) --db {database_url}'
+            sequence = request.get('sequences')[i]
+            if sequence.needs_harvesting():
+                command += f'\npython config_uploader.py --file {prepid}_{i}_harvest_cfg.py --label {prepid}_{i}_harvest --group ppd --user $(echo $USER) --db {database_url}'
+
+        return command
 
     def get_job_dict(self, request):
         """
         Return a dictionary for ReqMgr2
         """
+        subcampaigns_db = Database('subcampaigns')
+        subcampaign_json = subcampaigns_db.get(request.get('subcampaign'))
+        sequences = request.get('sequences')
+        if len(sequences) == 0:
+            return {}
+
         seq = request.get('sequences')[0]
         job_dict = {}
         job_dict['CMSSWVersion'] = request.get('cmssw_release')
-        job_dict['ScramArch'] = '???'
+        job_dict['ScramArch'] = subcampaign_json.get('scram_arch')
         job_dict['RequestPriority'] = request.get('priority')
         job_dict['RunWhitelist'] = []
         job_dict['InputDataset'] = request.get('input_dataset')
@@ -199,6 +205,14 @@ class RequestController(ControllerBase):
         job_dict['PrepID'] = request.get_prepid()
         job_dict['ConfigCacheID'] = seq.get('config_id')
         job_dict['DQMConfigCacheID'] = seq.get('harvesting_config_id')
+        input_dataset = request.get('input_dataset')
+        input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
+        processing_string = request.get('processing_string')
+        job_dict['RequestString'] = f'{input_dataset_parts[1]}_{input_dataset_parts[0]}_{processing_string}'
+        job_dict['AcquisitionEra'] = input_dataset_parts[1].split('-')[0]
+        database_url = Settings().get('cmsweb_db_url')
+        job_dict['ConfigCacheUrl'] = database_url
+        job_dict['CouchURL'] = database_url
 
         return job_dict
 
@@ -223,6 +237,32 @@ class RequestController(ControllerBase):
 
         if request.get('status') == 'done':
             raise Exception('Request is already done')
+
+        return request
+
+    def previous_status(self, request):
+        """
+        Trigger request to move to previous status
+        """
+        request_db = Database('requests')
+        if request.get('status') == 'approved':
+            request.set('status', 'new')
+            self.update(request.get_json())
+            return request
+
+        if request.get('status') == 'submitting':
+            request.set('status', 'approved')
+            self.update(request.get_json())
+            return request
+
+        if request.get('status') == 'submitted':
+            request.set('status', 'approved')
+            for sequence in request.get('sequences'):
+                sequence.set('config_id', '')
+                sequence.set('harvesting_config_id', '')
+
+            request_db.save(request.get_json())
+            return request
 
         return request
 

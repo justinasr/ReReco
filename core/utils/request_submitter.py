@@ -8,6 +8,8 @@ from queue import Queue, Empty
 from core.utils.ssh_executor import SSHExecutor
 from core.utils.locker import Locker
 from core.database.database import Database
+from core.utils.cmsweb import ConnectionWrapper
+from core.utils.settings import Settings
 
 
 class Worker(Thread):
@@ -147,18 +149,75 @@ class RequestSubmitter:
             ssh_executor.execute_command([f'rm -rf rereco_submission/{prepid}',
                                           f'mkdir -p rereco_submission/{prepid}'])
             with open(f'/tmp/{prepid}.sh', 'w') as temp_file:
-                temp_file.write(controller.get_cmsdriver(request))
+                config_file_content = controller.get_cmsdriver(request, for_submission=True)
+                temp_file.write(config_file_content)
 
+            with open(f'/tmp/{prepid}_upload.sh', 'w') as temp_file:
+                upload_file_content = controller.get_config_upload_file(request)
+                temp_file.write(upload_file_content)
+
+            # Upload config generation script - cmsDrivers
             ssh_executor.upload_file(f'/tmp/{prepid}.sh',
                                      f'rereco_submission/{prepid}/{prepid}.sh')
-            ssh_executor.execute_command([f'echo $HOSTNAME'])
+            # Upload config upload to ReqMgr2 script
+            ssh_executor.upload_file(f'/tmp/{prepid}_upload.sh',
+                                     f'rereco_submission/{prepid}/{prepid}_upload.sh')
+            # Upload python script used by upload script
+            ssh_executor.upload_file(f'./core/utils/config_uploader.py',
+                                     f'rereco_submission/{prepid}/config_uploader.py')
+            # Start executing commands
+            # Create configs
             ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
                                           f'chmod +x {prepid}.sh',
-                                          f'cat ~/private/grid_pw.txt | voms-proxy-init -voms cms --valid 4:00 -pwstdin',
+                                          f'voms-proxy-init -voms cms --valid 4:00',
                                           f'export X509_USER_PROXY=$(voms-proxy-info --path)',
                                           f'./{prepid}.sh'])
+            # Upload configs
+            upload_output, _ = ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
+                                                             f'chmod +x {prepid}_upload.sh',
+                                                             f'./{prepid}_upload.sh'])
+
+            upload_output = [x for x in upload_output.split('\n') if 'DocID' in x]
+            self.logger.info('IDS:\n    %s', '\n    '.join(upload_output))
+            for output_line in upload_output:
+                line_split = [x.strip().strip(':') for x in output_line.split(' ') if x.strip() and 'DocID' not in x]
+                if len(line_split) != 2:
+                    self.logger.error(line_split)
+                    request.set('status', 'new')
+                    request.add_history('submission', 'failed', 'automatic')
+                    request_db.save(request.get_json())
+                    raise Exception('Something went wrong')
+
+                object_id = line_split[0]
+                config_hash = line_split[1]
+                if object_id.endswith('harvest'):
+                    # Harvesting config
+                    sequence_number = int(object_id.split('_')[-2])
+                    sequence = request.get('sequences')[sequence_number]
+                    sequence.set('harvesting_config_id', config_hash)
+                    self.logger.debug('Set hash %s as harvesting config id for sequence %s',
+                                      config_hash,
+                                      sequence_number)
+                else:
+                    # Normal config
+                    sequence_number = int(object_id.split('_')[-1])
+                    sequence = request.get('sequences')[sequence_number]
+                    sequence.set('config_id', config_hash)
+                    self.logger.debug('Set hash %s as config id for sequence %s',
+                                      config_hash,
+                                      sequence_number)
+
+            job_dict = controller.get_job_dict(request)
+            headers = {"Content-type": "application/json",
+                       "Accept": "application/json"}
+
+            cmsweb_url = Settings().get('cmsweb_url')
+            connection = ConnectionWrapper(host=cmsweb_url)
+            reqmgr_response = connection.api('POST', '/reqmgr2/data/request', job_dict, headers)
+            self.logger.info(reqmgr_response)
 
             request.set('status', 'submitted')
+            request.add_history('submission', 'succeeded', 'automatic')
             request_db.save(request.get_json())
 
         self.logger.info('Unlocked %s after submission', prepid)

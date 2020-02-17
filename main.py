@@ -6,7 +6,7 @@ from flask import Flask, render_template
 from api.subcampaign_api import CreateSubcampaignAPI, DeleteSubcampaignAPI, UpdateSubcampaignAPI, GetSubcampaignAPI, GetEditableSubcampaignAPI, GetDefaultSubcampaignSequenceAPI
 from api.subcampaign_ticket_api import CreateSubcampaignTicketAPI, DeleteSubcampaignTicketAPI, UpdateSubcampaignTicketAPI, GetSubcampaignTicketAPI, GetSubcampaignTicketDatasetsAPI, GetEditableSubcampaignTicketAPI, CreateRequestsForSubcampaignTicketAPI
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
-from api.request_api import CreateRequestAPI, DeleteRequestAPI, DeleteRequestManyAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus, GetRequestRunsAPI
+from api.request_api import CreateRequestAPI, DeleteRequestAPI, DeleteRequestManyAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus, RequestPreviousStatus, GetRequestRunsAPI
 from api.search_api import SearchAPI
 from api.system_api import SubmissionWorkerStatusAPI, LockerStatusAPI
 
@@ -98,6 +98,7 @@ api.add_resource(GetEditableRequestAPI,
 api.add_resource(GetCMSDriverAPI, '/api/requests/get_cmsdriver/<string:prepid>')
 api.add_resource(GetRequestJobDictAPI, '/api/requests/get_dict/<string:prepid>')
 api.add_resource(RequestNextStatus, '/api/requests/next_status/<string:prepid>')
+api.add_resource(RequestPreviousStatus, '/api/requests/previous_status/<string:prepid>')
 api.add_resource(GetRequestRunsAPI, '/api/requests/get_runs/<string:prepid>')
 
 parser = argparse.ArgumentParser(description='Stats2')

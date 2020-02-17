@@ -32,7 +32,7 @@ class ModelBase():
         self.logger = ModelBase.__logger
         self.__class_name = self.__class__.__name__
 
-        self.logger.debug('Creating %s object. Json input present: %s',
+        self.logger.debug('Creating %s object. JSON input present: %s',
                           self.__class_name,
                           'YES' if json_input else 'NO')
         self.__fill_values(json_input)
@@ -108,7 +108,6 @@ class ModelBase():
                               type(value))
             value = self.cast_value_to_correct_type(attribute, value)
 
-        value = self.before_attribute_check(attribute, value)
         if not self.check_attribute(attribute, value):
             self.logger.error('Invalid value "%s" for key "%s" for object %s of type %s',
                               value,
@@ -200,11 +199,30 @@ class ModelBase():
 
         return False
 
+    def __get_json(self, item):
+        """
+        Internal method to recursively create dict representations of objects
+        """
+        if isinstance(item, ModelBase):
+            return item.get_json()
+        elif isinstance(item, list):
+            new_list = []
+            for element in item:
+                new_list.append(self.__get_json(element))
+
+            return new_list
+        else:
+            return item
+
     def get_json(self):
         """
         Return JSON of the object
         """
-        return deepcopy(self.__json)
+        new_copy = {}
+        for attribute, value in self.__json.items():
+            new_copy[attribute] = self.__get_json(value)
+
+        return new_copy
 
     @classmethod
     def schema(cls):
@@ -219,7 +237,7 @@ class ModelBase():
         """
         return (f'Object ID: {self.get_prepid()}\n'
                 f'Type: {self.__class_name}\n'
-                f'Dict: {json.dumps(self.__json, indent=4, sort_keys=True)}\n')
+                f'Dict: {json.dumps(self.get_json(), indent=2, sort_keys=True)}\n')
 
     def add_history(self, action, value, user, timestamp=None):
         """
@@ -235,10 +253,3 @@ class ModelBase():
                         'user': user,
                         'value': value})
         self.set('history', history)
-
-    def before_attribute_check(self, attribute_name, attribute_value):
-        """
-        Preprocess value if needed before performing checks setting it
-        This should include sanitization and whitespace removal (stripping)
-        """
-        return attribute_value

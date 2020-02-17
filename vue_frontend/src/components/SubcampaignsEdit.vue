@@ -27,6 +27,10 @@
           <td><input type="text" v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
         </tr>
         <tr>
+          <td>SCRAM Arch</td>
+          <td><input type="text" v-model="editableObject.scram_arch" :disabled="!editingInfo.scram_arch"></td>
+        </tr>
+        <tr>
           <td>Notes</td>
           <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
         </tr>

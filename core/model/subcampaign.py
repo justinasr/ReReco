@@ -2,6 +2,7 @@
 Module that contains Subcampaign class
 """
 from core.model.model_base import ModelBase
+from core.model.sequence import Sequence
 
 
 class Subcampaign(ModelBase):
@@ -32,7 +33,9 @@ class Subcampaign(ModelBase):
         # Default memory
         'memory': 2300,
         # Path to json that contains all runs
-        'runs_json_path': ''
+        'runs_json_path': '',
+        # scram architecture
+        'scram_arch': ''
     }
 
     _lambda_checks = {
@@ -40,15 +43,11 @@ class Subcampaign(ModelBase):
         'energy': lambda energy: energy >= 0.0,
         'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
         'memory': lambda memory: memory >= 0,
-        'cmssw_release': ModelBase._lambda_checks['cmssw_release']
+        'cmssw_release': ModelBase._lambda_checks['cmssw_release'],
+        '__sequences': lambda s: isinstance(s, Sequence),
     }
 
     def __init__(self, json_input=None):
+        json_input['runs_json_path'] = json_input.get('runs_json_path', '').lstrip('/')
+        json_input['sequences'] = [Sequence(json_input=s) for s in json_input.get('sequences', [])]
         ModelBase.__init__(self, json_input)
-
-    def before_attribute_check(self, attribute_name, attribute_value):
-        if attribute_name == 'runs_json_path':
-            while attribute_value.startswith('/'):
-                attribute_value = attribute_value[1:]
-
-        return attribute_value

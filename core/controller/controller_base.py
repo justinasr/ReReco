@@ -36,6 +36,7 @@ class ControllerBase():
         with self.locker.get_lock(prepid):
             self.logger.info('Will create %s', (prepid))
             new_object.add_history('create', prepid, None)
+            self.before_create(new_object)
             if not self.check_for_create(new_object):
                 self.logger.error('Error while checking new item %s', prepid)
                 return None
@@ -190,6 +191,12 @@ class ControllerBase():
 
         if prefix is None:
             prefix = ''
+
+        if isinstance(reference, ModelBase):
+            reference = reference.get_json()
+
+        if isinstance(target, ModelBase):
+            target = target.get_json()
 
         if isinstance(reference, dict) and isinstance(target, dict):
             # Comparing two dictionaries
