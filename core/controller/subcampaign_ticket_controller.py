@@ -5,7 +5,7 @@ import json
 import time
 from core.controller.controller_base import ControllerBase
 from core.model.subcampaign_ticket import SubcampaignTicket
-from core.utils.cmsweb import ConnectionWrapper
+from core.utils.connection_wrapper import ConnectionWrapper
 from core.database.database import Database
 from core.controller.request_controller import RequestController
 

@@ -59,6 +59,13 @@
           <template v-slot:item.size_per_event="{ item }">
             {{item.size_per_event}} kB
           </template>
+          <template v-slot:item.workflows="{ item }">
+            <ul>
+              <li v-for="workflow in item.workflows" :key="workflow">
+                <a target="_blank" :href="'https://cmsweb-testbed.cern.ch/reqmgr2/fetch?rid=' + workflow">{{workflow}}</a>
+              </li>
+            </ul>
+          </template>
         </v-data-table>
       </div>
     </div>

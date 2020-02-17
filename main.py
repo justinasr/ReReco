@@ -8,6 +8,7 @@ from api.subcampaign_ticket_api import CreateSubcampaignTicketAPI, DeleteSubcamp
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.request_api import CreateRequestAPI, DeleteRequestAPI, DeleteRequestManyAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus, RequestPreviousStatus, GetRequestRunsAPI
 from api.search_api import SearchAPI
+from api.settings_api import SettingsAPI
 from api.system_api import SubmissionWorkerStatusAPI, LockerStatusAPI
 
 
@@ -57,6 +58,8 @@ def api_documentation(path):
 
 
 api.add_resource(SearchAPI, '/api/search')
+
+api.add_resource(SettingsAPI, '/api/settings/<string:name>')
 
 api.add_resource(SubmissionWorkerStatusAPI, '/api/system/workers')
 api.add_resource(LockerStatusAPI, '/api/system/locks')

@@ -6,8 +6,7 @@ from core.controller.controller_base import ControllerBase
 from core.model.subcampaign import Subcampaign
 from core.model.sequence import Sequence
 from core.database.database import Database
-from core.utils.cmsweb import ConnectionWrapper
-from core.utils.locker import Locker
+from core.utils.connection_wrapper import ConnectionWrapper
 
 
 class SubcampaignController(ControllerBase):

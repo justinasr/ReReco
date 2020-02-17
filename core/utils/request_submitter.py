@@ -3,12 +3,13 @@ Module that has all classes used for request submission to computing
 """
 import logging
 import time
+import json
 from threading import Thread
 from queue import Queue, Empty
 from core.utils.ssh_executor import SSHExecutor
 from core.utils.locker import Locker
 from core.database.database import Database
-from core.utils.cmsweb import ConnectionWrapper
+from core.utils.connection_wrapper import ConnectionWrapper
 from core.utils.settings import Settings
 
 
@@ -173,39 +174,63 @@ class RequestSubmitter:
                                           f'export X509_USER_PROXY=$(voms-proxy-info --path)',
                                           f'./{prepid}.sh'])
             # Upload configs
-            upload_output, _ = ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
-                                                             f'chmod +x {prepid}_upload.sh',
-                                                             f'./{prepid}_upload.sh'])
+            upload_output, upload_error = ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
+                                                                        f'chmod +x {prepid}_upload.sh',
+                                                                        f'./{prepid}_upload.sh'])
 
-            upload_output = [x for x in upload_output.split('\n') if 'DocID' in x]
-            self.logger.info('IDS:\n    %s', '\n    '.join(upload_output))
-            for output_line in upload_output:
-                line_split = [x.strip().strip(':') for x in output_line.split(' ') if x.strip() and 'DocID' not in x]
-                if len(line_split) != 2:
-                    self.logger.error(line_split)
+            if upload_error:
+                self.logger.debug('Error uploading %s configs to config cache: %s', prepid, upload_error)
+                request.set('status', 'new')
+                request.add_history('submission', 'failed', 'automatic')
+                request_db.save(request.get_json())
+                return
+
+            upload_output = [tuple(x.strip() for x in x.split(' ') if x.strip()) for x in upload_output.split('\n') if 'DocID' in x]
+            expected_config_file_names = request.get_all_config_file_names()
+            for docid, config_name, config_hash in upload_output:
+                if docid != 'DocID':
+                    self.logger.Error('Output is different than expected for %s: %s', prepid, (docid, config_name, config_hash))
                     request.set('status', 'new')
                     request.add_history('submission', 'failed', 'automatic')
                     request_db.save(request.get_json())
-                    raise Exception('Something went wrong')
+                    return
 
-                object_id = line_split[0]
-                config_hash = line_split[1]
-                if object_id.endswith('harvest'):
-                    # Harvesting config
-                    sequence_number = int(object_id.split('_')[-2])
-                    sequence = request.get('sequences')[sequence_number]
-                    sequence.set('harvesting_config_id', config_hash)
-                    self.logger.debug('Set hash %s as harvesting config id for sequence %s',
-                                      config_hash,
-                                      sequence_number)
+                for sequence_index, sequence_configs in enumerate(expected_config_file_names):
+                    if sequence_configs['config'] == config_name:
+                        self.logger.debug('Set hash %s as config id for sequence %s',
+                                          config_hash,
+                                          sequence_index)
+                        request.get('sequences')[sequence_index].set('config_id', config_hash)
+                        sequence_configs['config'] = None
+                        break
+                    elif sequence_configs['harvest'] == config_name:
+                        self.logger.debug('Set hash %s as harvesting config id for sequence %s',
+                                          config_hash,
+                                          sequence_index)
+                        request.get('sequences')[sequence_index].set('harvesting_config_id', config_hash)
+                        sequence_configs['harvest'] = None
+                        break
                 else:
-                    # Normal config
-                    sequence_number = int(object_id.split('_')[-1])
-                    sequence = request.get('sequences')[sequence_number]
-                    sequence.set('config_id', config_hash)
-                    self.logger.debug('Set hash %s as config id for sequence %s',
-                                      config_hash,
-                                      sequence_number)
+                    self.logger.error('Unexpected DocID: %s', config_name)
+                    request.set('status', 'new')
+                    request.add_history('submission', 'failed', 'automatic')
+                    request_db.save(request.get_json())
+                    return
+
+            for sequence_configs in expected_config_file_names:
+                if sequence_configs['config'] is not None:
+                    self.logger.error('Missing DocID: %s', sequence_configs['config'])
+                    request.set('status', 'new')
+                    request.add_history('submission', 'failed', 'automatic')
+                    request_db.save(request.get_json())
+                    return
+
+                if sequence_configs['harvest'] is not None:
+                    self.logger.error('Missing DocID: %s', sequence_configs['harvest'])
+                    request.set('status', 'new')
+                    request.add_history('submission', 'failed', 'automatic')
+                    request_db.save(request.get_json())
+                    return
 
             job_dict = controller.get_job_dict(request)
             headers = {"Content-type": "application/json",
@@ -213,11 +238,18 @@ class RequestSubmitter:
 
             cmsweb_url = Settings().get('cmsweb_url')
             connection = ConnectionWrapper(host=cmsweb_url)
-            reqmgr_response = connection.api('POST', '/reqmgr2/data/request', job_dict, headers)
-            self.logger.info(reqmgr_response)
+            try:
+                reqmgr_response = connection.api('POST', '/reqmgr2/data/request', job_dict, headers)
+                self.logger.info(reqmgr_response)
+                workflow_name = json.loads(reqmgr_response).get('result', [])[0].get('request')
+                request.set('workflows', [workflow_name])
+                request.set('status', 'submitted')
+                request.add_history('submission', 'succeeded', 'automatic')
+                request_db.save(request.get_json())
+            except ValueError as ve:
+                self.logger.error('Error submitting request to ReqMgr2: %s', ve)
+                request.set('status', 'new')
+                request.add_history('submission', 'failed', 'automatic')
+                request_db.save(request.get_json())
 
-            request.set('status', 'submitted')
-            request.add_history('submission', 'succeeded', 'automatic')
-            request_db.save(request.get_json())
-
-        self.logger.info('Unlocked %s after submission', prepid)
+        self.logger.info('Successfully finished %s submission', prepid)

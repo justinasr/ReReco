@@ -142,6 +142,48 @@ class Request(ModelBase):
         self.logger.debug(command)
         return comment + '\n' + command
 
+    def get_config_file_names(self, sequence_index):
+        """
+        Return a dictionary with usual and harvesting config names
+        """
+        sequence = self.get('sequences')[sequence_index]
+        prepid = self.get('prepid')
+        config_name = f'{prepid}_{sequence_index}_cfg'
+        if sequence.needs_harvesting():
+            harvesting_config_name = f'{prepid}_{sequence_index}_harvest_cfg'
+        else:
+            harvesting_config_name = None
+
+        return {'config': config_name, 'harvest': harvesting_config_name}
+
+    def get_all_config_file_names(self):
+        """
+        Get list of dictionaries of all config file names without extensions
+        """
+        file_names = []
+        number_of_sequences = len(self.get('sequences'))
+        for i in range(number_of_sequences):
+            file_names.append(self.get_config_file_names(i))
+
+        return file_names
+
+    def get_all_cmsdrivers(self, overwrite_input=None):
+        """
+        Get all cmsDriver commands for this request
+        """
+        built_command = ''
+        number_of_sequences = len(self.get('sequences'))
+        for i in range(number_of_sequences):
+            if i == 0 and overwrite_input:
+                built_command += self.get_cmsdriver(i, overwrite_input)
+            else:
+                built_command += self.get_cmsdriver(i)
+
+            if (i != number_of_sequences - 1):
+                built_command += '\n\n'
+
+        return built_command
+
     def get_cmsdriver(self, sequence_index, overwrite_input=None):
         """
         Return a cmsDriver command for sequence at given index
@@ -150,7 +192,6 @@ class Request(ModelBase):
         PrepID_0_harvesting_cfg.py for harvesting
         All python files have prepid and sequence number
         """
-        prepid = self.get_prepid()
         sequence = self.get('sequences')[sequence_index]
         arguments_dict = dict(sequence.get_json())
         # Delete sequence metadata
@@ -173,18 +214,15 @@ class Request(ModelBase):
 
         # Build argument dictionary
         sequence_name = self.get_sequence_name(sequence_index)
-        python_filename = f'{prepid}_{sequence_index}'
+        config_names = self.get_config_file_names(sequence_index)
         arguments_dict['fileout'] = f'"file:{sequence_name}.root"'
-        arguments_dict['python_filename'] = f'"{python_filename}_cfg.py"'
+        arguments_dict['python_filename'] = f'"{config_names["config"]}.py"'
         arguments_dict['data'] = True
         arguments_dict['no_exec'] = True
         arguments_dict['runUnscheduled'] = True
-
         cms_driver_command = self.build_cmsdriver('RECO', arguments_dict)
-
         # Add harvesting if needed
-        needs_harvest = sequence.needs_harvesting()
-        if needs_harvest:
+        if sequence.needs_harvesting():
             # Get correct configuration of DQM step, e.g.
             # DQM:@rerecoCommon should be changed to HARVESTING:@rerecoCommon
             for one_step in sequence.get('step'):
@@ -202,7 +240,7 @@ class Request(ModelBase):
                                'data': True,
                                'no_exec': True,
                                'filein': f'"file:{sequence_name}_inDQM.root"',
-                               'python_filename': f'"{python_filename}_harvest_cfg.py"'}
+                               'python_filename': f'"{config_names["harvest"]}.py"'}
             cms_driver_command += '\n\n' + self.build_cmsdriver('HARVESTING', harvesting_dict)
 
         return cms_driver_command

@@ -56,7 +56,7 @@
         </tr>
         <tr>
           <td>Runs JSON</td>
-          <td><input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path"></td>
+          <td>Get a list of runs from JSON, for example:<pre>Collisions16/13TeV/DCSOnly/json_DCSONLY.txt</pre><input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path"></td>
         </tr>
       </table>
       <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>

@@ -9,7 +9,7 @@ from core.model.subcampaign import Subcampaign
 from core.database.database import Database
 from core.model.subcampaign_ticket import SubcampaignTicket
 from core.utils.request_submitter import RequestSubmitter
-from core.utils.cmsweb import ConnectionWrapper
+from core.utils.connection_wrapper import ConnectionWrapper
 from core.utils.settings import Settings
 
 
@@ -135,39 +135,42 @@ class RequestController(ControllerBase):
     def get_cmsdriver(self, request, for_submission=False):
         """
         Get bash script with cmsDriver commands for a given request
+        If script will be used for submission, replace input file with placeholder
         """
         self.logger.debug('Getting cmsDriver commands for %s', request.get_prepid())
-        number_of_sequences = len(request.get('sequences'))
         cms_driver = '#!/bin/bash\n\n'
         cms_driver += request.get_cmssw_setup()
         cms_driver += '\n\n'
-        for i in range(number_of_sequences):
-            if i == 0 and for_submission:
-                cms_driver += request.get_cmsdriver(i, '_placeholder_.root')
-            else:
-                cms_driver += request.get_cmsdriver(i)
-            cms_driver += '\n\n'
+        if for_submission:
+            cms_driver += request.get_all_cmsdrivers('_placeholder_.root')
+        else:
+            cms_driver += request.get_all_cmsdrivers()
+
+        cms_driver += '\n\n'
 
         return cms_driver
 
     def get_config_upload_file(self, request):
+        """
+        Get bash script that would upload config files to ReqMgr2
+        """
         self.logger.debug('Getting config upload script for %s', request.get_prepid())
-        prepid = request.get_prepid()
         database_url = Settings().get('cmsweb_db_url')
         command = '#!/bin/bash\n\n'
         command += request.get_cmssw_setup()
         command += '\n\n'
         # Add path to WMCore
         # This should be done in a smarter way
-        command += '\n'.join([f'git clone https://github.com/dmwm/WMCore.git',
+        command += '\n'.join([f'git clone --quiet https://github.com/dmwm/WMCore.git',
                               f'export PYTHONPATH=$(pwd)/WMCore/src/python/:$PYTHONPATH'])
-        number_of_sequences = len(request.get('sequences'))
-        for i in range(number_of_sequences):
+        common_part = f'python config_uploader.py --file %s.py --label %s --group ppd --user $(echo $USER) --db {database_url}'
+        for configs in request.get_all_config_file_names():
             # Run config uploader
-            command += f'\npython config_uploader.py --file {prepid}_{i}_cfg.py --label {prepid}_{i} --group ppd --user $(echo $USER) --db {database_url}'
-            sequence = request.get('sequences')[i]
-            if sequence.needs_harvesting():
-                command += f'\npython config_uploader.py --file {prepid}_{i}_harvest_cfg.py --label {prepid}_{i}_harvest --group ppd --user $(echo $USER) --db {database_url}'
+            command += '\n'
+            command += common_part % (configs['config'], configs['config'])
+            if configs['harvest']:
+                command += '\n'
+                command += common_part % (configs['harvest'], configs['harvest'])
 
         return command
 
@@ -175,44 +178,47 @@ class RequestController(ControllerBase):
         """
         Return a dictionary for ReqMgr2
         """
-        subcampaigns_db = Database('subcampaigns')
-        subcampaign_json = subcampaigns_db.get(request.get('subcampaign'))
         sequences = request.get('sequences')
-        if len(sequences) == 0:
-            return {}
-
-        seq = request.get('sequences')[0]
+        input_dataset = request.get('input_dataset')
+        input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
+        acquisition_era = input_dataset_parts[1].split('-')[0]
+        subcampaigns_db = Database('subcampaigns')
+        subcampaign_name = request.get('subcampaign')
+        subcampaign_json = subcampaigns_db.get(subcampaign_name)
+        database_url = Settings().get('cmsweb_db_url')
+        processing_string = request.get('processing_string')
         job_dict = {}
         job_dict['CMSSWVersion'] = request.get('cmssw_release')
         job_dict['ScramArch'] = subcampaign_json.get('scram_arch')
         job_dict['RequestPriority'] = request.get('priority')
-        job_dict['RunWhitelist'] = []
-        job_dict['InputDataset'] = request.get('input_dataset')
-        job_dict['RunBlacklist'] = []
-        job_dict['BlockWhitelist'] = []
-        job_dict['BlockBlacklist'] = []
-        job_dict['RequestType'] = 'ReReco'
-        job_dict['GlobalTag'] = seq.get('conditions')
+        job_dict['InputDataset'] = input_dataset
         job_dict['Group'] = 'PPD'
         job_dict['Requestor'] = 'pdmvserv'
         job_dict['Campaign'] = request.get('subcampaign').split('-')[0]
         job_dict['Memory'] = request.get('memory')
-        job_dict['SizePerEvent'] = request.get('size_per_event')
-        job_dict['TimePerEvent'] = request.get('time_per_event')
-        job_dict['EnableHarvesting'] = False
-        job_dict['ProcessingString'] = request.get('processing_string')
-        job_dict['Multicore'] = seq.get('nThreads')
-        job_dict['PrepID'] = request.get_prepid()
-        job_dict['ConfigCacheID'] = seq.get('config_id')
-        job_dict['DQMConfigCacheID'] = seq.get('harvesting_config_id')
-        input_dataset = request.get('input_dataset')
-        input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
-        processing_string = request.get('processing_string')
-        job_dict['RequestString'] = f'{input_dataset_parts[1]}_{input_dataset_parts[0]}_{processing_string}'
-        job_dict['AcquisitionEra'] = input_dataset_parts[1].split('-')[0]
-        database_url = Settings().get('cmsweb_db_url')
         job_dict['ConfigCacheUrl'] = database_url
         job_dict['CouchURL'] = database_url
+        job_dict['PrepID'] = request.get_prepid()
+        job_dict['AcquisitionEra'] = acquisition_era
+        job_dict['ProcessingString'] = processing_string
+        job_dict['RequestType'] = 'ReReco'
+        job_dict['SizePerEvent'] = request.get('size_per_event')
+        job_dict['TimePerEvent'] = request.get('time_per_event')
+        job_dict['RequestString'] = f'{input_dataset_parts[1]}_{input_dataset_parts[0]}_{processing_string}'
+        job_dict['EnableHarvesting'] = False
+        job_dict['RunWhitelist'] = request.get('runs')
+        job_dict['RunBlacklist'] = []
+        job_dict['BlockWhitelist'] = []
+        job_dict['BlockBlacklist'] = []
+        if len(sequences) == 1:
+            first_sequence = request.get('sequences')[0]
+            job_dict['GlobalTag'] = first_sequence.get('conditions')
+            job_dict['Multicore'] = first_sequence.get('nThreads')
+            job_dict['ConfigCacheID'] = first_sequence.get('config_id')
+            job_dict['DQMConfigCacheID'] = first_sequence.get('harvesting_config_id')
+            job_dict['Scenario'] = first_sequence.get('scenario')
+        elif len(sequences) > 1:
+            raise NotImplementedError('Multiple sequences are not yet supported')
 
         return job_dict
 

@@ -37,8 +37,8 @@ def upload_to_couch(cfg_file_name, label, user_name, group_name, database_url):
     configCache.setDescription(label)
     configCache.save()
 
-    print('DocID    %s: %s' % (label, configCache.document["_id"]))
-    print('Revision %s: %s' % (label, configCache.document["_rev"]))
+    print('DocID    %s %s' % (label, configCache.document["_id"]))
+    print('Revision %s %s' % (label, configCache.document["_rev"]))
 
     return configCache.document["_id"]
 
