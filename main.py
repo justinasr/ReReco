@@ -9,7 +9,7 @@ from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.request_api import CreateRequestAPI, DeleteRequestAPI, DeleteRequestManyAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus, RequestPreviousStatus, GetRequestRunsAPI
 from api.search_api import SearchAPI
 from api.settings_api import SettingsAPI
-from api.system_api import SubmissionWorkerStatusAPI, LockerStatusAPI
+from api.system_api import SubmissionWorkerStatusAPI, SubmissionQueueAPI, LockerStatusAPI
 
 
 __LOG_FORMAT = '[%(asctime)s][%(levelname)s] %(message)s'
@@ -62,6 +62,7 @@ api.add_resource(SearchAPI, '/api/search')
 api.add_resource(SettingsAPI, '/api/settings/<string:name>')
 
 api.add_resource(SubmissionWorkerStatusAPI, '/api/system/workers')
+api.add_resource(SubmissionQueueAPI, '/api/system/queue')
 api.add_resource(LockerStatusAPI, '/api/system/locks')
 
 api.add_resource(CreateSubcampaignAPI, '/api/subcampaigns/create')

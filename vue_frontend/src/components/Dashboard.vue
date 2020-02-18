@@ -2,11 +2,15 @@
   <div>
     <h1>System Dashboard</h1>
     <div style="margin: 8px">
-      <h3>Submission threads</h3>
+      <h3>Submission threads ({{Object.keys(submission_workers).length}})</h3>
       <ul>
         <li v-for="(info, worker) in submission_workers" :key="worker">Thread "{{worker}}" is {{info.job_name ? 'working on ' + info.job_name + ' for ' + info.job_time + 's' : 'not busy'}}</li>
       </ul>
-      <h3>Locked objects</h3>
+      <h3>Submission queue ({{submission_queue.length}})</h3>
+      <ul>
+        <li v-for="name in submission_queue" :key="name">{{name}}</li>
+      </ul>
+      <h3>Locked objects ({{Object.keys(locks).length}})</h3>
       <ul>
         <li v-for="(info, lock) in locks" :key="lock">{{lock}}:<ul><li>Info: {{info.i}}</li><li>Lock: {{info.l}}</li></ul></li>
       </ul>
@@ -24,13 +28,16 @@ export default {
   data () {
     return {
       submission_workers: [],
+      submission_queue: [],
       locks: []
     }
   },
   created () {
     this.fetchWorkerInfo();
     this.fetchLocksInfo();
+    this.fetchQueueInfo();
     setInterval(this.fetchWorkerInfo, 10000);
+    setInterval(this.fetchQueueInfo, 10000);
     setInterval(this.fetchLocksInfo, 10000);
   },
   methods: {
@@ -38,6 +45,13 @@ export default {
       let component = this;
       axios.get('api/system/workers').then(response => {
         component.submission_workers = response.data.response;
+
+      });
+    },
+    fetchQueueInfo () {
+      let component = this;
+      axios.get('api/system/queue').then(response => {
+        component.submission_queue = response.data.response;
 
       });
     },

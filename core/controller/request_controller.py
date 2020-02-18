@@ -24,7 +24,7 @@ class RequestController(ControllerBase):
         self.model_class = Request
 
     def create(self, json_data):
-        request_db = Database('requests')
+        request_db = Database(self.database_name)
         # Get a subcampaign
         subcampaign_db = Database('subcampaigns')
         subcampaign_name = json_data.get('subcampaign')
@@ -63,7 +63,7 @@ class RequestController(ControllerBase):
         era = input_dataset_parts[1].split('-')[0]
         processing_string = new_request.get('processing_string')
         prepid_middle_part = f'{era}-{input_dataset_parts[0]}-{processing_string}'
-        with self.locker.get_lock(f'generate-prepid-{prepid_middle_part}'):
+        with self.locker.get_lock(f'generate-request-prepid-{prepid_middle_part}'):
             # Get a new serial number
             serial_numbers = request_db.query(f'prepid=ReReco-{prepid_middle_part}-*',
                                               limit=1,
@@ -87,12 +87,15 @@ class RequestController(ControllerBase):
             if not request_db.save(new_request.get_json()):
                 raise Exception(f'Error saving {prepid}')
 
-            return new_request.get_json()
+        return new_request.get_json()
 
     def check_for_create(self, obj):
         return True
 
     def check_for_update(self, old_obj, new_obj, changed_values):
+        if old_obj.get('status') == 'submitting':
+            raise Exception('You are now allowed to update request while it is being submitted')
+
         return True
 
     def check_for_delete(self, obj):
@@ -214,8 +217,12 @@ class RequestController(ControllerBase):
             first_sequence = request.get('sequences')[0]
             job_dict['GlobalTag'] = first_sequence.get('conditions')
             job_dict['Multicore'] = first_sequence.get('nThreads')
-            job_dict['ConfigCacheID'] = first_sequence.get('config_id')
-            job_dict['DQMConfigCacheID'] = first_sequence.get('harvesting_config_id')
+            if first_sequence.get('config_id'):
+                job_dict['ConfigCacheID'] = first_sequence.get('config_id')
+
+            if first_sequence.get('harvesting_config_id'):
+                job_dict['DQMConfigCacheID'] = first_sequence.get('harvesting_config_id')
+
             job_dict['Scenario'] = first_sequence.get('scenario')
         elif len(sequences) > 1:
             raise NotImplementedError('Multiple sequences are not yet supported')
@@ -226,23 +233,27 @@ class RequestController(ControllerBase):
         """
         Trigger request to move to next status
         """
-        if request.get('status') == 'new':
-            request.set('status', 'approved')
-            self.update(request.get_json())
-            return request
+        prepid = request.get_prepid()
+        with self.locker.get_nonblocking_lock(prepid):
+            if request.get('status') == 'new':
+                request.set('status', 'approved')
+                self.update(request.get_json())
+                return request
 
-        if request.get('status') == 'approved':
-            RequestSubmitter().add_request(request, self)
-            return request
+            if request.get('status') == 'approved':
+                request.set('status', 'submitting')
+                self.update(request.get_json())
+                RequestSubmitter().add_request(request, self)
+                return request
 
-        if request.get('status') == 'submitting':
-            raise Exception('You are not allowed to set next status while request is being submitted')
+            if request.get('status') == 'submitting':
+                raise Exception('You are not allowed to set next status while request is being submitted')
 
-        if request.get('status') == 'submitted':
-            raise Exception('You are not allowed to set next status while request is submitted')
+            if request.get('status') == 'submitted':
+                raise Exception('You are not allowed to set next status while request is submitted')
 
-        if request.get('status') == 'done':
-            raise Exception('Request is already done')
+            if request.get('status') == 'done':
+                raise Exception('Request is already done')
 
         return request
 
@@ -250,25 +261,23 @@ class RequestController(ControllerBase):
         """
         Trigger request to move to previous status
         """
-        request_db = Database('requests')
-        if request.get('status') == 'approved':
-            request.set('status', 'new')
-            self.update(request.get_json())
-            return request
+        prepid = request.get_prepid()
+        request_db = Database(self.database_name)
+        with self.locker.get_nonblocking_lock(prepid):
+            if request.get('status') == 'approved':
+                request.set('status', 'new')
+                request_db.save(request.get_json())
+            elif request.get('status') == 'submitting':
+                request.set('status', 'approved')
+                request_db.save(request.get_json())
+            elif request.get('status') == 'submitted':
+                request.set('status', 'approved')
+                request.set('workflows', [])
+                for sequence in request.get('sequences'):
+                    sequence.set('config_id', '')
+                    sequence.set('harvesting_config_id', '')
 
-        if request.get('status') == 'submitting':
-            request.set('status', 'approved')
-            self.update(request.get_json())
-            return request
-
-        if request.get('status') == 'submitted':
-            request.set('status', 'approved')
-            for sequence in request.get('sequences'):
-                sequence.set('config_id', '')
-                sequence.set('harvesting_config_id', '')
-
-            request_db.save(request.get_json())
-            return request
+                request_db.save(request.get_json())
 
         return request
 

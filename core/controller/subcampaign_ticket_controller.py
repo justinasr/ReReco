@@ -20,6 +20,31 @@ class SubcampaignTicketController(ControllerBase):
         self.database_name = 'subcampaign_tickets'
         self.model_class = SubcampaignTicket
 
+    def create(self, json_data):
+        # Clean up the request input
+        subcampaign_ticket_db = Database(self.database_name)
+        json_data['prepid'] = 'SubcampaignTemp00001'
+        subcampaign_ticket = SubcampaignTicket(json_input=json_data)
+        subcampaign_name = subcampaign_ticket.get('subcampaign')
+        processing_string = subcampaign_ticket.get('processing_string')
+        prepid_middle_part = f'{subcampaign_name}-{processing_string}'
+        with self.locker.get_lock(f'generate-subcampaign-ticket-prepid-{prepid_middle_part}'):
+            # Get a new serial number
+            serial_numbers = subcampaign_ticket_db.query(f'prepid={prepid_middle_part}-*',
+                                                         limit=1,
+                                                         sort_asc=False)
+            if not serial_numbers:
+                serial_number = 0
+            else:
+                serial_number = serial_numbers[0]['prepid']
+                serial_number = int(serial_number.split('-')[-1])
+
+            serial_number += 1
+            # Form a new temporary prepid
+            prepid = f'{prepid_middle_part}-{serial_number:05d}'
+            json_data['prepid'] = prepid
+            return super().create(json_data)
+
     def check_for_create(self, obj):
         subcampaign_database = Database('subcampaigns')
         subcampaign_name = obj.get('subcampaign')
@@ -73,12 +98,12 @@ class SubcampaignTicketController(ControllerBase):
         editing_info = {k: not k.startswith('_') for k in obj.get_json().keys()}
         newly_created = not bool(editing_info.get('prepid'))
         status = obj.get('status')
-        editing_info['prepid'] = newly_created
+        editing_info['prepid'] = False
         editing_info['history'] = False
+        editing_info['subcampaign'] = newly_created
+        editing_info['processing_string'] = newly_created
         editing_info['created_requests'] = False
         if status == 'done':
-            editing_info['subcampaign'] = False
-            editing_info['processing_string'] = False
             editing_info['input_datasets'] = False
 
         return editing_info

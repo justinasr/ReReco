@@ -5,6 +5,7 @@ import http.client
 import logging
 import os
 import json
+import time
 
 
 class ConnectionWrapper():
@@ -61,6 +62,7 @@ class ConnectionWrapper():
         # this way saves time for creating connection per every request
         for i in range(self.connection_attempts):
             self.logger.debug('Connection attempt number %s', i)
+            start_time = time.time()
             try:
                 self.connection.request(method,
                                         url,
@@ -81,6 +83,12 @@ class ConnectionWrapper():
                     self.connection.close()
                     self.connection = None
 
+                end_time = time.time()
+                self.logger.debug('%s request to %s%s took %.2f',
+                                  method,
+                                  self.host_url,
+                                  url,
+                                  end_time - start_time)
                 return response_to_return
             # except http.client.BadStatusLine:
             #     raise RuntimeError('Something is really wrong')

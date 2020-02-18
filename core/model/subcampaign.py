@@ -48,6 +48,8 @@ class Subcampaign(ModelBase):
     }
 
     def __init__(self, json_input=None):
-        json_input['runs_json_path'] = json_input.get('runs_json_path', '').lstrip('/')
-        json_input['sequences'] = [Sequence(json_input=s) for s in json_input.get('sequences', [])]
+        if json_input:
+            json_input['runs_json_path'] = json_input.get('runs_json_path', '').lstrip('/')
+            json_input['sequences'] = [Sequence(json_input=s) for s in json_input.get('sequences', [])]
+
         ModelBase.__init__(self, json_input)

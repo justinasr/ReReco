@@ -25,7 +25,7 @@ class Locker():
         lock = self.get_lock(prepid, info)
         # If we do a plus one
         if not lock.acquire(blocking=False):
-            raise LockedException()
+            raise LockedException(f'Object "{prepid}" is curretly locker by other process')
 
         # We have to subtract one
         lock.release()

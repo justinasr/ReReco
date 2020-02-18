@@ -23,6 +23,23 @@ class SubmissionWorkerStatusAPI(APIBase):
         return self.output_text({'response': status, 'success': True, 'message': ''})
 
 
+class SubmissionQueueAPI(APIBase):
+    """
+    Endpoint for getting names in submission queue
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    def get(self):
+        """
+        Get status of all request submission workers
+        """
+        status = RequestSubmitter().get_names_in_queue()
+        return self.output_text({'response': status, 'success': True, 'message': ''})
+
+
 class LockerStatusAPI(APIBase):
     """
     Endpoint for getting status of all locks in the system

@@ -23,7 +23,7 @@ class ModelBase():
     _lambda_checks = {
         'cmssw_release': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}'),  # CMSSW_ddd_ddd_ddd[_XXX...]
         'dataset': lambda ds: ModelBase.matches_regex(ds, '^/[a-zA-Z0-9\\-_]{1,99}/[a-zA-Z0-9\\.\\-_]{1,199}/[A-Z\\-]{1,50}$'),
-        'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{0,100}'),
+        'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{1,100}'),
         'subcampaign': lambda subcampaign: ModelBase.matches_regex(subcampaign, '([a-zA-Z0-9]{1,20}\\-[a-zA-Z0-9_]){1,30}'),
     }
 

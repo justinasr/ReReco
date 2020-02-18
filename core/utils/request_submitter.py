@@ -98,7 +98,7 @@ class RequestSubmitter:
     # If maxsize is less than or equal to zero, the queue size is infinite.
     __task_queue = Queue(maxsize=0)
     # All worker threads
-    __worker_pool = WorkerPool(workers_count=2, task_queue=__task_queue)
+    __worker_pool = WorkerPool(workers_count=3, task_queue=__task_queue)
 
     def __init__(self):
         self.logger = logging.getLogger()
@@ -110,7 +110,7 @@ class RequestSubmitter:
         prepid = request.get_prepid()
         for task in list(RequestSubmitter.__task_queue.queue):
             if task[1] == prepid:
-                raise Exception(f'Task "%s" is already in the queue')
+                raise Exception(f'Task "{prepid}" is already in the queue')
 
         for worker, worker_info in RequestSubmitter.__worker_pool.get_worker_status().items():
             if worker_info['job_name'] == prepid:
@@ -131,6 +131,12 @@ class RequestSubmitter:
         """
         return RequestSubmitter.__worker_pool.get_worker_status()
 
+    def get_names_in_queue(self):
+        """
+        Return a list of names that are waiting in the queue
+        """
+        return [x[1] for x in RequestSubmitter.__task_queue.queue]
+
     def submit_request(self, request, controller):
         """
         Method that is used by submission workers. This is where the actual submission happens
@@ -140,7 +146,7 @@ class RequestSubmitter:
         with Locker().get_lock(prepid):
             request_db = Database('requests')
             request = controller.get(prepid)
-            if request.get('status') != 'approved':
+            if request.get('status') != 'submitting':
                 raise Exception(f'Cannot submit a request with status {request.get("status")}')
 
             request.set('status', 'submitting')

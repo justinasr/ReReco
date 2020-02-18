@@ -139,6 +139,9 @@ class Request(ModelBase):
             command += f' --{key} {arguments[key]}'.rstrip()
             comment += f'# --{key} {arguments[key]}'.rstrip() + '\n'
 
+        if arguments.get('extra'):
+            command += ' ' + arguments['extra']
+
         self.logger.debug(command)
         return comment + '\n' + command
 
@@ -219,7 +222,6 @@ class Request(ModelBase):
         arguments_dict['python_filename'] = f'"{config_names["config"]}.py"'
         arguments_dict['data'] = True
         arguments_dict['no_exec'] = True
-        arguments_dict['runUnscheduled'] = True
         cms_driver_command = self.build_cmsdriver('RECO', arguments_dict)
         # Add harvesting if needed
         if sequence.needs_harvesting():

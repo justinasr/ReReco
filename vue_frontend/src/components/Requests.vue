@@ -110,7 +110,7 @@
     </v-dialog>
 
     <footer>
-      <div style="float: left; margin: 16px 4px">
+      <div style="float: left; margin: 16px 4px 16px 16px">
         <a :href="'requests/edit'">Create new request</a>
         <a v-if="selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="deleteMany(selectedItems)">Delete selected</a>
       </div>
@@ -272,7 +272,7 @@ export default {
     nextStatus: function (request) {
       let component = this;
       axios.get('api/requests/next_status/' + request.prepid).then(response => {
-        component.showError("Success", "Successfully moved " + request.prepid + " to next status");
+        // component.showError("Success", "Successfully moved " + request.prepid + " to next status");
         component.fetchObjects();
       }).catch(error => {
         console.log(error.response.data);
@@ -282,7 +282,7 @@ export default {
     previousStatus: function (request) {
       let component = this;
       axios.get('api/requests/previous_status/' + request.prepid).then(response => {
-        component.showError("Success", "Successfully moved " + request.prepid + " to previous status");
+        // component.showError("Success", "Successfully moved " + request.prepid + " to previous status");
         component.fetchObjects();
       }).catch(error => {
         console.log(error.response.data);
