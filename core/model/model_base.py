@@ -20,11 +20,15 @@ class ModelBase():
     __model_name = None
     __logger = logging.getLogger()
     __class_name = None
-    _lambda_checks = {
+    default_lambda_checks = {
         'cmssw_release': lambda cmssw: ModelBase.matches_regex(cmssw, 'CMSSW_[0-9]{1,3}_[0-9]{1,3}_[0-9]{1,3}.{0,20}'),  # CMSSW_ddd_ddd_ddd[_XXX...]
         'dataset': lambda ds: ModelBase.matches_regex(ds, '^/[a-zA-Z0-9\\-_]{1,99}/[a-zA-Z0-9\\.\\-_]{1,199}/[A-Z\\-]{1,50}$'),
+        'energy': lambda energy: 0 <= energy <= 100,
+        'memory': lambda mem: 0 <= mem <= 64000,
         'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{1,100}'),
-        'subcampaign': lambda subcampaign: ModelBase.matches_regex(subcampaign, '([a-zA-Z0-9]{1,20}\\-[a-zA-Z0-9_]){1,30}'),
+        'scram_arch': lambda sa: ModelBase.matches_regex(sa, '[a-z0-9_]{0,30}'),
+        'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
+        'subcampaign': lambda subcampaign: ModelBase.matches_regex(subcampaign, '[a-zA-Z0-9]{1,25}\\-[a-zA-Z0-9_]{1,35}'),
     }
 
     def __init__(self, json_input=None):
@@ -36,6 +40,7 @@ class ModelBase():
                           self.__class_name,
                           'YES' if json_input else 'NO')
         self.__fill_values(json_input)
+        self.logger.debug('%s\n', str(self))
 
     def __fill_values(self, json_input):
         """
@@ -43,22 +48,16 @@ class ModelBase():
         Initialize default values from schema if any are missing
         """
         if json_input:
-            prepid = json_input.get('prepid')
-            if not prepid and ('prepid' in self.__schema or '_id' in self.__schema):
-                raise Exception('PrepID cannot be empty')
+            if ('prepid' in self.__schema or '_id' in self.__schema):
+                prepid = json_input.get('prepid')
+                if not prepid:
+                    raise Exception('PrepID cannot be empty')
 
-            if self.check_attribute('prepid', prepid):
-                if 'prepid' in self.__schema:
-                    self.__json['prepid'] = prepid
+                self.set('prepid', prepid)
+                # CouchDB legacy, can be removed if CouchDB is not used
+                if '_rev' in self.__schema and '_rev' in json_input:
+                    self.__json['_rev'] = json_input['_rev']
 
-                if '_id' in self.__schema:
-                    self.__json['_id'] = prepid
-            else:
-                self.logger.error('Invalid prepid %s for %s', prepid, self.__class_name)
-                raise Exception(f'Invalid prepid {prepid} for {self.__class_name}')
-
-            if '_rev' in self.__schema and '_rev' in json_input:
-                self.__json['_rev'] = json_input['_rev']
         else:
             json_input = {}
 
@@ -79,19 +78,19 @@ class ModelBase():
             else:
                 self.set(key, json_input[key])
 
-        self.logger.debug('%s\n', str(self))
-
     def set(self, attribute, value=None):
         """
         Set attribute of the object
         """
         prepid = self.get_prepid()
-        if attribute not in ('history'):
-            self.logger.debug('Setting %s and value %s for %s of type %s',
-                              attribute,
-                              value,
-                              prepid,
-                              self.__class_name)
+        if not prepid:
+            prepid = self.__class_name
+
+        self.logger.debug('Will set attribute "%s" and value "%s" for %s of type %s',
+                          attribute,
+                          str(value)[:100],
+                          prepid,
+                          self.__class_name)
 
         if not attribute:
             raise Exception('Attribute name not specified')
@@ -155,14 +154,19 @@ class ModelBase():
         Then it checks for lambda function with double underscore prefix which
         indicates that this is a list of values
         """
-        if attribute_name in self._lambda_checks:
-            return self._lambda_checks.get(attribute_name)(attribute_value)
+        if attribute_name in self.lambda_checks:
+            self.logger.debug('%s has a lambda check for %s',
+                              self.get_prepid(),
+                              attribute_name)
+            return self.lambda_checks.get(attribute_name)(attribute_value)
 
-        if f'__{attribute_name}' in self._lambda_checks and isinstance(attribute_value, list):
-            lambda_check = self._lambda_checks.get(f'__{attribute_name}')
+        if f'__{attribute_name}' in self.lambda_checks and isinstance(attribute_value, list):
+            lambda_check = self.lambda_checks.get(f'__{attribute_name}')
             for item in attribute_value:
                 if not lambda_check(item):
                     raise Exception(f'Bad {attribute_name} value "{item}"')
+
+        self.logger.debug('Object %s has these lambda checks: %s', self.get_prepid(), self.lambda_checks.keys())
 
         return True
 
@@ -192,6 +196,7 @@ class ModelBase():
         """
         Check if given string fully matches given regex
         """
+        ModelBase.__logger.debug('Will check if "%s" matches "%s"', value, regex)
         matcher = re.compile(regex)
         match = matcher.fullmatch(value)
         if match:
@@ -218,11 +223,11 @@ class ModelBase():
         """
         Return JSON of the object
         """
-        new_copy = {}
+        built_json = {}
         for attribute, value in self.__json.items():
-            new_copy[attribute] = self.__get_json(value)
+            built_json[attribute] = self.__get_json(value)
 
-        return new_copy
+        return deepcopy(built_json)
 
     @classmethod
     def schema(cls):
@@ -253,3 +258,7 @@ class ModelBase():
                         'user': user,
                         'value': value})
         self.set('history', history)
+
+    @staticmethod
+    def lambda_check(name):
+        return ModelBase.default_lambda_checks.get(name)

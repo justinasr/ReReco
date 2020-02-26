@@ -17,6 +17,8 @@ class Request(ModelBase):
         '_id': '',
         # Document revision (required by CouchDB)
         '_rev': '',
+        # PrepID
+        'prepid': '',
         # CMSSW version
         'cmssw_release': '',
         # Energy in TeV
@@ -31,8 +33,6 @@ class Request(ModelBase):
         'notes': '',
         # List of output
         'output_datasets': [],
-        # PrepID
-        'prepid': '',
         # Priority in computing
         'priority': 110000,
         # Processing string
@@ -55,32 +55,39 @@ class Request(ModelBase):
         'workflows': []
     }
 
-    _lambda_checks = {
-        'cmssw_release': lambda cmssw: ModelBase._lambda_checks['cmssw_release'],
-        'energy': lambda energy: energy >= 0.0,
-        'input_dataset': ModelBase._lambda_checks['dataset'],
-        'memory': lambda memory: memory >= 0,
+    lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-_]{1,100}'),
+        'cmssw_release': ModelBase.lambda_check('cmssw_release'),
+        'energy': ModelBase.lambda_check('energy'),
+        'input_dataset': ModelBase.lambda_check('dataset'),
+        'memory': ModelBase.lambda_check('memory'),
+        '__output_datasets': ModelBase.lambda_check('dataset'),
         'priority': lambda priority: 1000 <= priority <= 1000000,
-        'processing_string': ModelBase._lambda_checks['processing_string'],
+        'processing_string': ModelBase.lambda_check('processing_string'),
         '__runs': lambda r: isinstance(r, int) and r > 0,
         '__sequences': lambda s: isinstance(s, Sequence),
         'size_per_event': lambda spe: spe > 0.0,
         'status': lambda status: status in ('new', 'approved', 'submitting', 'submitted', 'done'),
-        'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
-        'subcampaign': lambda subcampaign: ModelBase._lambda_checks['subcampaign'],
+        'step': ModelBase.lambda_check('step'),
+        'subcampaign': ModelBase.lambda_check('subcampaign'),
         'time_per_event': lambda tpe: tpe > 0.0,
-        'type': lambda step: step in ['Prod', 'MCReproc', 'LHE']
+        'type': lambda step: step in ['Prod', 'MCReproc', 'LHE'],
     }
 
     def __init__(self, json_input=None):
-        json_input['runs'] = [int(r) for r in json_input.get('runs', [])]
-        json_input['sequences'] = [Sequence(json_input=s) for s in json_input.get('sequences', [])]
+        if json_input:
+            json_input['runs'] = [int(r) for r in json_input.get('runs', [])]
+            sequence_objects = []
+            for index, sequence_json in enumerate(json_input.get('sequences', [])):
+                sequence_objects.append(Sequence(json_input=sequence_json, parent=self))
+
+            json_input['sequences'] = sequence_objects
+
         ModelBase.__init__(self, json_input)
 
     def get_cmssw_setup(self):
         """
-        Return code needed to set up CMSSW environment
+        Return code needed to set up CMSSW environment for this request
         Basically, cmsenv command
         """
         cmssw_release = self.get('cmssw_release')
@@ -96,153 +103,30 @@ class Request(ModelBase):
 
         return '\n'.join(commands)
 
-    def get_sequence_name(self, sequence_index):
-        """
-        Return a sequence name which is based on request
-        prepid and sequence number
-        Last sequence always has the same name as prepid
-        Other sequences have suffix with their index, e.g
-
-        PrepID_0
-        PrepID_1
-        PrepID
-
-        If there is only one sequence, it will be the last one
-        and have the same name as prepid
-        """
-        prepid = self.get_prepid()
-        if sequence_index != len(self.get('sequences')) - 1:
-            sequence_name = f'{prepid}_{sequence_index}'
-        else:
-            sequence_name = f'{prepid}'
-
-        return sequence_name
-
-    def build_cmsdriver(self, cmsdriver_type, arguments):
-        """
-        Build a cmsDriver command from given arguments
-        """
-        # Actual command
-        command = f'# Command for {cmsdriver_type}:\ncmsDriver.py {cmsdriver_type}'
-        # Comment in front of the command for better readability
-        comment = f'# Arguments for {cmsdriver_type}:\n'
-        for key in sorted(arguments.keys()):
-            if not arguments[key]:
-                continue
-
-            if isinstance(arguments[key], bool):
-                arguments[key] = ''
-
-            if isinstance(arguments[key], list):
-                arguments[key] = ','.join([str(x) for x in arguments[key]])
-
-            command += f' --{key} {arguments[key]}'.rstrip()
-            comment += f'# --{key} {arguments[key]}'.rstrip() + '\n'
-
-        if arguments.get('extra'):
-            command += ' ' + arguments['extra']
-
-        self.logger.debug(command)
-        return comment + '\n' + command
-
-    def get_config_file_names(self, sequence_index):
-        """
-        Return a dictionary with usual and harvesting config names
-        """
-        sequence = self.get('sequences')[sequence_index]
-        prepid = self.get('prepid')
-        config_name = f'{prepid}_{sequence_index}_cfg'
-        if sequence.needs_harvesting():
-            harvesting_config_name = f'{prepid}_{sequence_index}_harvest_cfg'
-        else:
-            harvesting_config_name = None
-
-        return {'config': config_name, 'harvest': harvesting_config_name}
-
-    def get_all_config_file_names(self):
+    def get_config_file_names(self):
         """
         Get list of dictionaries of all config file names without extensions
         """
         file_names = []
-        number_of_sequences = len(self.get('sequences'))
-        for i in range(number_of_sequences):
-            file_names.append(self.get_config_file_names(i))
+        for sequence in self.get('sequences'):
+            file_names.append(sequence.get_config_file_names())
 
         return file_names
 
-    def get_all_cmsdrivers(self, overwrite_input=None):
+    def get_cmsdrivers(self, overwrite_input=None):
         """
         Get all cmsDriver commands for this request
         """
         built_command = ''
-        number_of_sequences = len(self.get('sequences'))
-        for i in range(number_of_sequences):
-            if i == 0 and overwrite_input:
-                built_command += self.get_cmsdriver(i, overwrite_input)
+        for index, sequence in enumerate(self.get('sequences')):
+            if index == 0 and overwrite_input:
+                built_command += sequence.get_cmsdriver(overwrite_input)
             else:
-                built_command += self.get_cmsdriver(i)
+                built_command += sequence.get_cmsdriver()
 
-            if (i != number_of_sequences - 1):
-                built_command += '\n\n'
+            if sequence.needs_harvesting():
+                built_command += sequence.get_harvesting_cmsdriver()
 
-        return built_command
+            built_command += '\n\n'
 
-    def get_cmsdriver(self, sequence_index, overwrite_input=None):
-        """
-        Return a cmsDriver command for sequence at given index
-        Config files are named like this
-        PrepID_0_cfg.py for normal config
-        PrepID_0_harvesting_cfg.py for harvesting
-        All python files have prepid and sequence number
-        """
-        sequence = self.get('sequences')[sequence_index]
-        arguments_dict = dict(sequence.get_json())
-        # Delete sequence metadata
-        if 'config_id' in arguments_dict:
-            del arguments_dict['config_id']
-
-        if 'harvesting_config_id' in arguments_dict:
-            del arguments_dict['harvesting_config_id']
-
-        # Handle input/output file names
-        if overwrite_input:
-            arguments_dict['filein'] = overwrite_input
-        else:
-            if sequence_index == 0:
-                input_dataset = self.get("input_dataset")
-                arguments_dict['filein'] = f'"dbs:{input_dataset}"'
-            else:
-                input_file = f'{self.get_sequence_name(sequence_index - 1)}.root'
-                arguments_dict['filein'] = f'"file:{input_file}"'
-
-        # Build argument dictionary
-        sequence_name = self.get_sequence_name(sequence_index)
-        config_names = self.get_config_file_names(sequence_index)
-        arguments_dict['fileout'] = f'"file:{sequence_name}.root"'
-        arguments_dict['python_filename'] = f'"{config_names["config"]}.py"'
-        arguments_dict['data'] = True
-        arguments_dict['no_exec'] = True
-        cms_driver_command = self.build_cmsdriver('RECO', arguments_dict)
-        # Add harvesting if needed
-        if sequence.needs_harvesting():
-            # Get correct configuration of DQM step, e.g.
-            # DQM:@rerecoCommon should be changed to HARVESTING:@rerecoCommon
-            for one_step in sequence.get('step'):
-                if one_step == 'DQM':
-                    step = 'HARVESTING'
-                    break
-                elif one_step.startswith('DQM:'):
-                    step = one_step.replace('DQM:', 'HARVESTING:', 1)
-                    break
-
-            harvesting_dict = {'conditions': arguments_dict['conditions'],
-                               'step': step,
-                               'era': arguments_dict['era'].split(',')[0],
-                               'scenario': arguments_dict['scenario'],
-                               'data': True,
-                               'no_exec': True,
-                               'filein': f'"file:{sequence_name}_inDQM.root"',
-                               'python_filename': f'"{config_names["harvest"]}.py"'}
-            cms_driver_command += '\n\n' + self.build_cmsdriver('HARVESTING', harvesting_dict)
-
-        return cms_driver_command
+        return built_command.strip()

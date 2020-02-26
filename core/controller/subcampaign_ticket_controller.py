@@ -78,16 +78,16 @@ class SubcampaignTicketController(ControllerBase):
         if not query:
             return []
 
-        start_time = time.time()
-        connection_wrapper = ConnectionWrapper()
-        response = connection_wrapper.api('POST',
-                                          '/dbs/prod/global/DBSReader/datasetlist',
-                                          {'dataset': query})
+        with self.locker.get_lock('get-subcampaign-datasets'):
+            start_time = time.time()
+            connection_wrapper = ConnectionWrapper()
+            response = connection_wrapper.api('POST',
+                                              '/dbs/prod/global/DBSReader/datasetlist',
+                                              {'dataset': query})
+
         response = json.loads(response.decode('utf-8'))
         datasets = [x['dataset'] for x in response]
         end_time = time.time()
-        self.logger.debug('Sleeping for %.2fs', max(end_time - start_time, 10) * 0.1)
-        time.sleep(max(end_time - start_time, 10) * 0.1)
         self.logger.info('Got %s datasets from DBS for query %s in %.2fs',
                          len(datasets),
                          query,
@@ -95,13 +95,14 @@ class SubcampaignTicketController(ControllerBase):
         return datasets
 
     def get_editing_info(self, obj):
-        editing_info = {k: not k.startswith('_') for k in obj.get_json().keys()}
-        newly_created = not bool(editing_info.get('prepid'))
+        editing_info = super().get_editing_info(obj)
+        prepid = obj.get_prepid()
+        new = not bool(prepid)
         status = obj.get('status')
         editing_info['prepid'] = False
         editing_info['history'] = False
-        editing_info['subcampaign'] = newly_created
-        editing_info['processing_string'] = newly_created
+        editing_info['subcampaign'] = new
+        editing_info['processing_string'] = new
         editing_info['created_requests'] = False
         if status == 'done':
             editing_info['input_datasets'] = False
@@ -114,16 +115,16 @@ class SubcampaignTicketController(ControllerBase):
         """
         database = Database('subcampaign_tickets')
         ticket_prepid = subcampaign_ticket.get_prepid()
+        newly_created_request_jsons = []
+        request_controller = RequestController()
         with self.locker.get_lock(ticket_prepid):
             subcampaign_ticket = SubcampaignTicket(json_input=database.get(ticket_prepid))
             created_requests = subcampaign_ticket.get('created_requests')
-            newly_created_request_jsons = []
             status = subcampaign_ticket.get('status')
             if status != 'new':
                 raise Exception(f'Ticket is not new, it already has '
                                 f'{len(created_requests)} requests created')
 
-            request_controller = RequestController()
             subcampaign_name = subcampaign_ticket.get('subcampaign')
             processing_string = subcampaign_ticket.get('processing_string')
             try:

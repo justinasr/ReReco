@@ -17,6 +17,8 @@ class SubcampaignTicket(ModelBase):
         '_rev': '',
         # PrepID
         'prepid': '',
+        # List of prepids of requests that were created from this ticket
+        'created_requests': [],
         # Action history
         'history': [],
         # List of input dataset names
@@ -25,20 +27,18 @@ class SubcampaignTicket(ModelBase):
         'notes': '',
         # Processing string for this ticket
         'processing_string': '',
-        # List of prepids of requests that were created from this ticket
-        'created_requests': [],
         # Status is either new or done
         'status': 'new',
         # Name of subcampaign that is used as template for requests
         'subcampaign': ''
     }
 
-    _lambda_checks = {
-        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9_\\-]{1,50}'),
-        'subcampaign': lambda subcampaign: ModelBase._lambda_checks['subcampaign'],
-        'processing_string': ModelBase._lambda_checks['processing_string'],
+    lambda_checks = {
+        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9_\\-]{1,75}'),
+        '__input_datasets': ModelBase.lambda_check('dataset'),
+        'processing_string': ModelBase.lambda_check('processing_string'),
         'status': lambda status: status in ('new', 'done'),
-        '__input_datasets': ModelBase._lambda_checks['dataset'],
+        'subcampaign': ModelBase.lambda_check('subcampaign'),
     }
 
     def __init__(self, json_input=None):

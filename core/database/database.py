@@ -2,9 +2,7 @@
 A module that handles all communication with MongoDB
 """
 from pymongo import MongoClient
-from pymongo.errors import DuplicateKeyError
 import logging
-import json
 import time
 import os
 
@@ -137,7 +135,7 @@ class Database():
         for part in query_string_parts:
             split_part = part.split('=')
             key = split_part[0]
-            value = split_part[1].replace('*', '.*')
+            value = split_part[1]
             if isinstance(schema.get(key), int) or isinstance(schema.get(key), float):
                 key = f'{key}<{type(schema.get(key)).__name__}>'
 

@@ -33,7 +33,7 @@ class Worker(Thread):
         self.logger.debug('Worker "%s" is waiting for tasks', self.name)
         while self.running:
             try:
-                func, job_name, args, kargs = self.queue.get(timeout=2)
+                func, job_name, args, kargs = self.queue.get(timeout=1)
                 self.job_name = job_name
                 self.job_start_time = time.time()
                 self.logger.debug('Worker "%s" got a task. Queue size %s',
@@ -98,7 +98,7 @@ class RequestSubmitter:
     # If maxsize is less than or equal to zero, the queue size is infinite.
     __task_queue = Queue(maxsize=0)
     # All worker threads
-    __worker_pool = WorkerPool(workers_count=3, task_queue=__task_queue)
+    __worker_pool = WorkerPool(workers_count=2, task_queue=__task_queue)
 
     def __init__(self):
         self.logger = logging.getLogger()
@@ -136,6 +136,11 @@ class RequestSubmitter:
         Return a list of names that are waiting in the queue
         """
         return [x[1] for x in RequestSubmitter.__task_queue.queue]
+
+    def update_sequences_with_hashes(self, request, hashes):
+        """
+        Update request's sequences with given list of tupules with sequence names and hashes
+        """
 
     def submit_request(self, request, controller):
         """
@@ -192,7 +197,7 @@ class RequestSubmitter:
                 return
 
             upload_output = [tuple(x.strip() for x in x.split(' ') if x.strip()) for x in upload_output.split('\n') if 'DocID' in x]
-            expected_config_file_names = request.get_all_config_file_names()
+            expected_config_file_names = request.get_config_file_names()
             for docid, config_name, config_hash in upload_output:
                 if docid != 'DocID':
                     self.logger.Error('Output is different than expected for %s: %s', prepid, (docid, config_name, config_hash))
@@ -209,7 +214,7 @@ class RequestSubmitter:
                         request.get('sequences')[sequence_index].set('config_id', config_hash)
                         sequence_configs['config'] = None
                         break
-                    elif sequence_configs['harvest'] == config_name:
+                    elif sequence_configs.get('harvest') == config_name:
                         self.logger.debug('Set hash %s as harvesting config id for sequence %s',
                                           config_hash,
                                           sequence_index)
@@ -231,7 +236,7 @@ class RequestSubmitter:
                     request_db.save(request.get_json())
                     return
 
-                if sequence_configs['harvest'] is not None:
+                if sequence_configs.get('harvest') is not None:
                     self.logger.error('Missing DocID: %s', sequence_configs['harvest'])
                     request.set('status', 'new')
                     request.add_history('submission', 'failed', 'automatic')

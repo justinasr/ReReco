@@ -21,7 +21,7 @@ class Flow(ModelBase):
         # Target campaign prepid
         'target_campaign': ''}
 
-    _lambda_checks = {
+    lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9]{1,50}')
     }
 

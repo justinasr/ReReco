@@ -3,7 +3,7 @@ Module that contains ControllerBase class
 """
 from core.database.database import Database
 from core.model.model_base import ModelBase
-from core.utils.locker import Locker, LockedException
+from core.utils.locker import Locker
 
 
 class ControllerBase():
@@ -43,11 +43,11 @@ class ControllerBase():
         with self.locker.get_lock(prepid):
             self.logger.info('Will create %s', (prepid))
             new_object.add_history('create', prepid, None)
-            self.before_create(new_object)
             if not self.check_for_create(new_object):
                 self.logger.error('Error while checking new item %s', prepid)
                 return None
 
+            self.before_create(new_object)
             database.save(new_object.get_json())
 
         return new_object.get_json()
@@ -80,7 +80,6 @@ class ControllerBase():
             old_object = self.model_class(json_input=old_object_json)
             # Move over history, so it could not be overwritten
             new_object.set('history', old_object.get('history'))
-            self.before_update(new_object)
             changed_values = self.get_changes(old_object_json, new_object.get_json())
             if not changed_values:
                 # Nothing was updated
@@ -93,6 +92,7 @@ class ControllerBase():
                 self.logger.error('Error while updating %s', prepid)
                 return None
 
+            self.before_update(new_object)
             database.save(new_object.get_json())
             return new_object.get_json()
 
@@ -110,11 +110,11 @@ class ControllerBase():
         obj = self.model_class(json_input=json_data)
         with self.locker.get_nonblocking_lock(prepid, f'Deleting {prepid}'):
             self.logger.info('Will delete %s', (prepid))
-            self.before_delete(obj)
             if not self.check_for_delete(obj):
                 self.logger.error('Error while deleting %s', prepid)
                 return None
 
+            self.before_delete(obj)
             database.delete_document(obj.get_json())
 
         return {'prepid': prepid}
@@ -123,19 +123,19 @@ class ControllerBase():
         """
         Perform checks on object before adding it to database
         """
-        raise NotImplementedError('This method must be implemented')
+        return True
 
     def check_for_update(self, old_obj, new_obj, changed_values):
         """
         Compare existing and updated objects to see if update is valid
         """
-        raise NotImplementedError('This method must be implemented')
+        return True
 
     def check_for_delete(self, obj):
         """
         Perform checks on object before deleting it from database
         """
-        raise NotImplementedError('This method must be implemented')
+        return True
 
     def before_create(self, obj):
         """
@@ -164,7 +164,7 @@ class ControllerBase():
           "notes": True
         }
         """
-        raise NotImplementedError('This method must be implemented')
+        return {k: not k.startswith('_') for k in obj.get_json().keys()}
 
     def edit_allowed(self, obj, changed_values):
         """
@@ -223,3 +223,15 @@ class ControllerBase():
                 changed_values.append(prefix.lstrip('.').lstrip('_'))
 
         return changed_values
+
+    def get_highest_serial_number(self, database, query):
+        serial_numbers = database.query(f'prepid={query}',
+                                        limit=1,
+                                        sort_asc=False)
+        if not serial_numbers:
+            serial_number = 0
+        else:
+            serial_number = serial_numbers[0]['prepid']
+            serial_number = int(serial_number.split('-')[-1])
+
+        return serial_number

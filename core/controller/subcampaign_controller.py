@@ -19,12 +19,6 @@ class SubcampaignController(ControllerBase):
         self.database_name = 'subcampaigns'
         self.model_class = Subcampaign
 
-    def check_for_create(self, obj):
-        return True
-
-    def check_for_update(self, old_obj, new_obj, changed_values):
-        return True
-
     def check_for_delete(self, obj):
         prepid = obj.get('prepid')
         requests_db = Database('requests')
@@ -46,9 +40,10 @@ class SubcampaignController(ControllerBase):
         obj.set('scram_arch', scram_arch)
 
     def get_editing_info(self, obj):
-        editing_info = {k: not k.startswith('_') for k in obj.get_json().keys()}
+        editing_info = super().get_editing_info(obj)
         prepid = obj.get_prepid()
-        editing_info['prepid'] = not bool(prepid)
+        new = not bool(prepid)
+        editing_info['prepid'] = new
         editing_info['history'] = False
         editing_info['scram_arch'] = False
         if prepid:

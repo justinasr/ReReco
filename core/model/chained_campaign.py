@@ -18,7 +18,7 @@ class ChainedCampaign(ModelBase):
         # List of flow and campaign pairs
         'campaigns': []}
 
-    _lambda_checks = {
+    lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9]{1,50}')
     }
 
