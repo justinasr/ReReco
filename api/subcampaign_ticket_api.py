@@ -162,3 +162,21 @@ class CreateRequestsForSubcampaignTicketAPI(APIBase):
 
         result = subcampaign_ticket_controller.create_requests_for_ticket(ticket)
         return self.output_text({'response': result, 'success': True, 'message': ''})
+
+
+class GetSubcampaignTicketTwikiAPI(APIBase):
+    """
+    Endpoing for getting a twiki snippet for given subcampaign ticket
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    def get(self, prepid):
+        """
+        Get twiki snippet for subcampaign ticket
+        """
+        subcampaign_ticket = subcampaign_ticket_controller.get(prepid)
+        twiki = subcampaign_ticket_controller.get_twiki_snippet(subcampaign_ticket)
+        return self.output_text(twiki, content_type='text/plain')

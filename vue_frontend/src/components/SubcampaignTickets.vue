@@ -18,16 +18,21 @@
                       class="elevation-1">
           <template v-slot:item._actions="{ item }">
             <a :href="'subcampaign_tickets/edit?prepid=' + item.prepid">Edit</a>
-            &nbsp;
+            &nbsp;|&nbsp;
             <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
-            &nbsp;
+            <span v-if="item.status == 'new'">&nbsp;|&nbsp;</span>
             <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="item.status == 'new'">Create requests</a>
+            <span v-if="item.status == 'done'">&nbsp;|&nbsp;</span>
+            <a :href="'api/subcampaign_tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'">TWiki</a>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
           </template>
           <template v-slot:item.input_datasets="{ item }">
-            {{item.input_datasets.length}} input datasets
+            {{item.input_datasets.length}} input datasets:
+            <ul>
+              <li v-for="dataset in item.input_datasets" :key="dataset"><small>{{dataset}}</small></li>
+            </ul>
           </template>
           <template v-slot:item.created_requests="{ item }">
             <ul>

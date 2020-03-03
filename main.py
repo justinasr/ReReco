@@ -4,7 +4,7 @@ from flask_restful import Api
 from flask_cors import CORS
 from flask import Flask, render_template
 from api.subcampaign_api import CreateSubcampaignAPI, DeleteSubcampaignAPI, UpdateSubcampaignAPI, GetSubcampaignAPI, GetEditableSubcampaignAPI, GetDefaultSubcampaignSequenceAPI
-from api.subcampaign_ticket_api import CreateSubcampaignTicketAPI, DeleteSubcampaignTicketAPI, UpdateSubcampaignTicketAPI, GetSubcampaignTicketAPI, GetSubcampaignTicketDatasetsAPI, GetEditableSubcampaignTicketAPI, CreateRequestsForSubcampaignTicketAPI
+from api.subcampaign_ticket_api import CreateSubcampaignTicketAPI, DeleteSubcampaignTicketAPI, UpdateSubcampaignTicketAPI, GetSubcampaignTicketAPI, GetSubcampaignTicketDatasetsAPI, GetEditableSubcampaignTicketAPI, CreateRequestsForSubcampaignTicketAPI, GetSubcampaignTicketTwikiAPI
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.request_api import CreateRequestAPI, DeleteRequestAPI, DeleteRequestManyAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus, RequestPreviousStatus, GetRequestRunsAPI
 from api.search_api import SearchAPI
@@ -85,6 +85,7 @@ api.add_resource(GetEditableSubcampaignTicketAPI,
                  '/api/subcampaign_tickets/get_editable/<string:prepid>')
 api.add_resource(GetSubcampaignTicketDatasetsAPI, '/api/subcampaign_tickets/get_datasets')
 api.add_resource(CreateRequestsForSubcampaignTicketAPI, '/api/subcampaign_tickets/create_requests')
+api.add_resource(GetSubcampaignTicketTwikiAPI, '/api/subcampaign_tickets/twiki_snippet/<string:prepid>')
 
 api.add_resource(CreateFlowAPI, '/api/flows/create')
 api.add_resource(DeleteFlowAPI, '/api/flows/delete')

@@ -80,7 +80,7 @@ class SubcampaignTicketController(ControllerBase):
 
         with self.locker.get_lock('get-subcampaign-datasets'):
             start_time = time.time()
-            connection_wrapper = ConnectionWrapper()
+            connection_wrapper = ConnectionWrapper(host='cmsweb.cern.ch')
             response = connection_wrapper.api('POST',
                                               '/dbs/prod/global/DBSReader/datasetlist',
                                               {'dataset': query})
@@ -149,3 +149,37 @@ class SubcampaignTicketController(ControllerBase):
                 raise ex
 
         return created_requests
+
+    def get_twiki_snippet(self, subcampaign_ticket):
+        """
+        Generate tables for TWiki
+        Requests are grouped by acquisition eras in input datasets
+        """
+        acquisition_eras = {}
+        request_controller = RequestController()
+        for request_prepid in subcampaign_ticket.get('created_requests'):
+            request = request_controller.get(request_prepid)
+            input_dataset = request.get('input_dataset')
+            input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
+            acquisition_era = input_dataset_parts[1].split('-')[0]
+            if acquisition_era not in acquisition_eras:
+                acquisition_eras[acquisition_era] = []
+
+            acquisition_eras[acquisition_era].append(request)
+
+        output_strings = []
+        for acquisition_era, requests in acquisition_eras.items():
+            output_strings.append(f'---+++ !{acquisition_era}\n')
+            output_strings.append('| *DataSet* | *prepID monitoring* | *run* |')
+            for request in requests:
+                prepid = request.get_prepid()
+                runs = request.get('runs')
+                runs = ', '.join(str(r) for r in runs)
+                input_dataset = request.get('input_dataset')
+                input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
+                dataset = input_dataset_parts[0]
+                output_strings.append(f'| {dataset} | [[https://cms-pdmv.cern.ch/pmp/historical?r={prepid}][{prepid}]] | {runs} |')
+
+            output_strings.append('\n')
+
+        return '\n'.join(output_strings).strip()
