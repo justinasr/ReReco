@@ -50,11 +50,8 @@ class SubcampaignController(ControllerBase):
             requests_db = Database('requests')
             subcampaign_requests = requests_db.query(f'subcampaign={prepid}')
             if subcampaign_requests:
-                editing_info['energy'] = False
                 editing_info['step'] = False
                 editing_info['cmssw_release'] = False
-                editing_info['sequences'] = False
-                editing_info['memory'] = False
 
         return editing_info
 

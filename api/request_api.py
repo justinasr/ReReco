@@ -226,3 +226,39 @@ class GetRequestRunsAPI(APIBase):
         request = request_controller.get(prepid)
         result = request_controller.get_runs_for_request(request)
         return self.output_text({'response': result, 'success': True, 'message': ''})
+
+
+class UpdateRequestWorkflowsAPI(APIBase):
+    """
+    Endpoint for trigerring a request update from Stats2 (ReqMgr2)
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    def get(self, prepid=None):
+        """
+        Get a list of run numbers
+        """
+        request = request_controller.get(prepid)
+        result = request_controller.update_workflows(request)
+        return self.output_text({'response': result.get_json(), 'success': True, 'message': ''})
+
+
+class RequestOptionResetAPI(APIBase):
+    """
+    Endpoint for rewriting request values from subcampaign
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    def get(self, prepid=None):
+        """
+        Rewrite memory, sequences and energy from subcampaign
+        """
+        request = request_controller.get(prepid)
+        result = request_controller.option_reset(request)
+        return self.output_text({'response': result.get_json(), 'success': True, 'message': ''})

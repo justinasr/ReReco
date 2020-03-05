@@ -11,6 +11,12 @@ class Database():
 
     __DATABASE_HOST = 'localhost'
     __DATABASE_PORT = 27017
+    __SEARCH_RENAME = {
+      'requests': {
+        'runs': 'runs<int>',
+        'workflows': 'workflows.name',
+      }
+    }
 
     def __init__(self, database_name=None):
         """
@@ -105,12 +111,32 @@ class Database():
                 split_part = part.split('=')
                 key = split_part[0]
                 value = split_part[1].replace('*', '.*')
+                value_condition = None
+                if '<' in value[0]:
+                    value_condition = '$lt'
+                    value = value[1:]
+                elif '>' == value[0]:
+                    value_condition = '$gt'
+                    value = value[1:]
+
                 if '<int>' in key:
-                    query_dict['$and'].append({key.replace('<int>', ''): int(value)})
+                    value = int(value)
+                    if value_condition:
+                        value = {value_condition: value}
+
+                    query_dict['$and'].append({key.replace('<int>', ''): value})
                 elif '<float>' in key:
-                    query_dict['$and'].append({key.replace('<float>', ''): float(value)})
+                    value = float(value)
+                    if value_condition:
+                        value = {value_condition: value}
+
+                    query_dict['$and'].append({key.replace('<float>', ''): value})
                 else:
-                    query_dict['$and'].append({key: {'$regex': value}})
+                    if value_condition:
+                        value = {value_condition: value}
+                        query_dict['$and'].append({key: value})
+                    else:
+                        query_dict['$and'].append({key: {'$regex': value}})
 
         self.logger.debug('Query dict %s', query_dict)
         result = self.db.find(query_dict)
@@ -136,7 +162,9 @@ class Database():
             split_part = part.split('=')
             key = split_part[0]
             value = split_part[1]
-            if isinstance(schema.get(key), int) or isinstance(schema.get(key), float):
+            if key in Database.__SEARCH_RENAME.get(self.database_name, {}):
+                key = Database.__SEARCH_RENAME[self.database_name][key]
+            elif isinstance(schema.get(key), int) or isinstance(schema.get(key), float):
                 key = f'{key}<{type(schema.get(key)).__name__}>'
 
             typed_arguments.append(f'{key}={value}')

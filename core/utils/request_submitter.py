@@ -146,7 +146,7 @@ class RequestSubmitter:
         """
         Method that is used by submission workers. This is where the actual submission happens
         """
-        ssh_executor = SSHExecutor('lxplus.cern.ch', '/home/jrumsevi/auth.txt')
+        ssh_executor = SSHExecutor('lxplus.cern.ch', '/home/jrumsevi/pdmvserv_auth.txt')
         prepid = request.get_prepid()
         with Locker().get_lock(prepid):
             request_db = Database('requests')
@@ -179,6 +179,8 @@ class RequestSubmitter:
                                      f'rereco_submission/{prepid}/config_uploader.py')
             # Start executing commands
             # Create configs
+            # Ignore in stderr:
+            # "WARNING: In non-interactive mode release checks e.g. deprecated releases, production architectures are disabled."
             ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
                                           f'chmod +x {prepid}.sh',
                                           f'voms-proxy-init -voms cms --valid 4:00',
@@ -253,7 +255,7 @@ class RequestSubmitter:
                 reqmgr_response = connection.api('POST', '/reqmgr2/data/request', job_dict, headers)
                 self.logger.info(reqmgr_response)
                 workflow_name = json.loads(reqmgr_response).get('result', [])[0].get('request')
-                request.set('workflows', [workflow_name])
+                request.set('workflows', [{'name': workflow_name}])
                 request.set('status', 'submitted')
                 request.add_history('submission', 'succeeded', 'automatic')
                 request_db.save(request.get_json())

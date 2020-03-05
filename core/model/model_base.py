@@ -155,9 +155,6 @@ class ModelBase():
         indicates that this is a list of values
         """
         if attribute_name in self.lambda_checks:
-            self.logger.debug('%s has a lambda check for %s',
-                              self.get_prepid(),
-                              attribute_name)
             return self.lambda_checks.get(attribute_name)(attribute_value)
 
         if f'__{attribute_name}' in self.lambda_checks and isinstance(attribute_value, list):
@@ -165,8 +162,6 @@ class ModelBase():
             for item in attribute_value:
                 if not lambda_check(item):
                     raise Exception(f'Bad {attribute_name} value "{item}"')
-
-        self.logger.debug('Object %s has these lambda checks: %s', self.get_prepid(), self.lambda_checks.keys())
 
         return True
 
@@ -196,7 +191,6 @@ class ModelBase():
         """
         Check if given string fully matches given regex
         """
-        ModelBase.__logger.debug('Will check if "%s" matches "%s"', value, regex)
         matcher = re.compile(regex)
         match = matcher.fullmatch(value)
         if match:
@@ -240,9 +234,13 @@ class ModelBase():
         """
         String representation of the object
         """
+        object_json = self.get_json()
+        if 'history' in object_json:
+            del object_json['history']
+
         return (f'Object ID: {self.get_prepid()}\n'
                 f'Type: {self.__class_name}\n'
-                f'Dict: {json.dumps(self.get_json(), indent=2, sort_keys=True)}\n')
+                f'Dict: {json.dumps(object_json, indent=2, sort_keys=True)}\n')
 
     def add_history(self, action, value, user, timestamp=None):
         """

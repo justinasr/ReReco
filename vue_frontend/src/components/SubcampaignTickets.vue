@@ -42,6 +42,12 @@
           <template v-slot:item.notes="{ item }">
             <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
           </template>
+          <template v-slot:item.time_per_event="{ item }">
+            {{item.time_per_event}}s
+          </template>
+          <template v-slot:item.size_per_event="{ item }">
+            {{item.size_per_event}} kB
+          </template>
         </v-data-table>
       </div>
     </div>
@@ -86,7 +92,7 @@
     </v-dialog>
 
     <footer>
-      <a :href="'subcampaign_tickets/edit'" style="float: left; margin: 16px;">Create new subcampaign ticket</a>
+      <a :href="'subcampaign_tickets/edit'" style="float: left; margin: 16px;">New subcampaign ticket</a>
       <Paginator style="float: right;"
                  :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
@@ -120,6 +126,8 @@ export default {
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
         {'dbName': 'created_requests', 'displayName': 'Created Requests', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
+        {'dbName': 'size_per_event', 'displayName': 'Size per Event', 'visible': 0},
+        {'dbName': 'time_per_event', 'displayName': 'Time per Event', 'visible': 0},
       ],
       headers: [],
       dataItems: [],

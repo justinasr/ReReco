@@ -40,9 +40,9 @@ class Sequence(ModelBase):
     lambda_checks = {
         'conditions': lambda c: ModelBase.matches_regex(c, '[a-zA-Z0-9_]{0,50}'),
         'config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
-        '__datatier': lambda s: s in ('AOD', 'MINIAOD', 'NANOAOD', 'DQMIO', 'USER', 'ALCARECO'),
+        '__datatier': lambda s: s in ('AOD', 'MINIAOD', 'NANOAOD', 'DQMIO', 'USER', 'ALCARECO', 'RECO'),
         'era': lambda e: ModelBase.matches_regex(e, '[a-zA-Z0-9_\\,]{0,50}'),
-        '__eventcontent': lambda s: s in ('AOD', 'MINIAOD', 'NANOAOD', 'DQM', 'NANOEDMAOD'),
+        '__eventcontent': lambda s: s in ('AOD', 'MINIAOD', 'NANOAOD', 'DQM', 'NANOEDMAOD', 'ALCARECO', 'RECO'),
         'harvesting_config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
         'nThreads': lambda n: 0 < n < 64,
         'scenario': lambda s: s in ('pp', 'cosmics', 'nocoll', 'HeavyIons'),
@@ -53,13 +53,15 @@ class Sequence(ModelBase):
     }
 
     def __init__(self, json_input=None, parent=None):
+        self.parent = None
         ModelBase.__init__(self, json_input)
         if parent:
             self.parent = weakref.ref(parent)
-        else:
-            self.parent = None
 
     def get_prepid(self):
+        if not self.parent:
+            return 'Sequence'
+
         parent = self.parent()
         index = self.get_index_in_parent()
         return f'Sequence_{parent}_{index}'
@@ -178,7 +180,6 @@ class Sequence(ModelBase):
         config_names = self.get_config_file_names()
         arguments_dict['fileout'] = f'"file:{sequence_name}.root"'
         arguments_dict['python_filename'] = f'"{config_names["config"]}.py"'
-        arguments_dict['data'] = True
         arguments_dict['no_exec'] = True
         cms_driver_command = self.__build_cmsdriver('RECO', arguments_dict)
         return cms_driver_command
@@ -199,9 +200,28 @@ class Sequence(ModelBase):
 
         if 'harvesting_config_id' in arguments_dict:
             del arguments_dict['harvesting_config_id']
+
+        if 'customise' in arguments_dict:
+            del arguments_dict['customise']
+
+        if 'datatier' in arguments_dict:
+            del arguments_dict['datatier']
+
+        if 'eventcontent' in arguments_dict:
+            del arguments_dict['eventcontent']
+
+        if 'nThreads' in arguments_dict:
+            del arguments_dict['nThreads']
+
+        if 'extra' in arguments_dict:
+            del arguments_dict['extra']
+
+        if 'scenario' in arguments_dict:
+            del arguments_dict['scenario']
+
         # Get correct configuration of DQM step, e.g.
         # DQM:@rerecoCommon should be changed to HARVESTING:@rerecoCommon
-        step = 'HARVESTING'
+        step = 'HARVESTING:standardDQM'
         for one_step in self.get('step'):
             if one_step.startswith('DQM:'):
                 step = one_step.replace('DQM:', 'HARVESTING:', 1)
@@ -210,9 +230,12 @@ class Sequence(ModelBase):
         # Build argument dictionary
         sequence_name = self.get_name()
         config_names = self.get_config_file_names()
+        arguments_dict['data'] = True
+        arguments_dict['no_exec'] = True
+        arguments_dict['filetype'] = 'DQM'
         arguments_dict['step'] = step
         arguments_dict['era'] = arguments_dict['era'].split(',')[0]
-        arguments_dict['filein'] = f'"file:{sequence_name}_inDQM.root"',
+        arguments_dict['filein'] = f'"file:{sequence_name}_inDQM.root"'
         arguments_dict['python_filename'] = f'"{config_names["harvest"]}.py"'
         harvesting_command = self.__build_cmsdriver('HARVESTING', arguments_dict)
         return harvesting_command

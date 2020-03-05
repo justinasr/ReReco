@@ -21,16 +21,22 @@
                       v-model="selectedItems">
           <template v-slot:item._actions="{ item }">
             <a :href="'requests/edit?prepid=' + item.prepid">Edit</a>
-            &nbsp;|&nbsp;
-            <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
+            <span v-if="item.status == 'new'">&nbsp;|&nbsp;</span>
+            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="item.status == 'new'">Delete</a>
             &nbsp;|&nbsp;
             <a :href="'api/requests/get_cmsdriver/' + item.prepid">cmsDriver</a>
             &nbsp;|&nbsp;
             <a :href="'api/requests/get_dict/' + item.prepid">Job dict</a>
-            &nbsp;|&nbsp;
-            <a style="text-decoration: underline;" @click="previousStatus(item)">Previous</a>
+            <span v-if="item.status != 'new'">&nbsp;|&nbsp;</span>
+            <a style="text-decoration: underline;" @click="previousStatus(item)" v-if="item.status != 'new'">Previous</a>
             &nbsp;|&nbsp;
             <a style="text-decoration: underline;" @click="nextStatus(item)">Next</a>
+            <span v-if="item.status == 'submitted'">&nbsp;|&nbsp;</span>
+            <a style="text-decoration: underline;" @click="updateWorkflows(item)" v-if="item.status == 'submitted'">Update from Stats2</a>
+            <span v-if="item.status == 'new'">&nbsp;|&nbsp;</span>
+            <a style="text-decoration: underline;" @click="showOptionResetDialog(item)" v-if="item.status == 'new'">Option reset</a>
+            <span v-if="item.status == 'submitted' || item.status == 'done'">&nbsp;|&nbsp;</span>
+            <a target="_blank" :href="'https://cms-pdmv.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done'">Stats2</a>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
@@ -59,11 +65,28 @@
           <template v-slot:item.size_per_event="{ item }">
             {{item.size_per_event}} kB
           </template>
+          <template v-slot:item.completed_events="{ item }">
+            {{item.completed_events}} <small v-if="item.total_events > 0">({{(100.0 * item.completed_events / item.total_events).toFixed(2)}}%)</small>
+          </template>
+          <template v-slot:item.runs="{ item }">
+            <span v-if="item.runs.length">{{item.runs.length}} runs: <small>{{item.runs.join(', ')}}</small></span>
+          </template>
+          <template v-slot:item.input_dataset="{ item }">
+            <a target="_blank" title="Open dataset in DAS" :href="'https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D' + item.input_dataset">{{item.input_dataset}}</a>
+          </template>
           <template v-slot:item.workflows="{ item }">
-            <ul>
+            <ol>
               <li v-for="workflow in item.workflows" :key="workflow">
-                <a target="_blank" :href="'https://cmsweb-testbed.cern.ch/reqmgr2/fetch?rid=' + workflow">{{workflow}}</a>
+                <a target="_blank" title="Open workflow in ReqMgr2" :href="'https://cmsweb.cern.ch/reqmgr2/fetch?rid=' + workflow.name">{{workflow.name}}</a> <small>{{workflow.type}}</small>
+                <ul>
+                  <li v-for="dataset in workflow.output_datasets" :key="dataset"><a target="_blank" title="Open dataset in DAS" :href="'https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D' + dataset.name">{{dataset.name}}</a> <small>events:</small> {{dataset.events}} <small>type:</small> {{dataset.type}}</li>
+                </ul>
               </li>
+            </ol>
+          </template>
+          <template v-slot:item.output_datasets="{ item }">
+            <ul>
+              <li v-for="dataset in item.output_datasets" :key="dataset"><a target="_blank" title="Open dataset in DAS" :href="'https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D' + dataset">{{dataset}}</a></li>
             </ul>
           </template>
         </v-data-table>
@@ -111,7 +134,7 @@
 
     <footer>
       <div style="float: left; margin: 16px 4px 16px 16px">
-        <a :href="'requests/edit'">Create new request</a>
+        <a :href="'requests/edit'">New request</a>
         <a v-if="selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="deleteMany(selectedItems)">Delete selected</a>
       </div>
       <Paginator style="float: right;"
@@ -158,6 +181,8 @@ export default {
         {'dbName': 'time_per_event', 'displayName': 'Time per Event', 'visible': 0},
         {'dbName': 'workflows', 'displayName': 'Computing Workflows', 'visible': 0},
         {'dbName': 'dataset_name', 'displayName': 'Dataset Name', 'visible': 0},
+        {'dbName': 'total_events', 'displayName': 'Total Events', 'visible': 0},
+        {'dbName': 'completed_events', 'displayName': 'Completed Events', 'visible': 0},
       ],
       headers: [],
       dataItems: [],
@@ -288,6 +313,35 @@ export default {
         console.log(error.response.data);
         component.showError("Error moving request to previous status", error.response.data.message);
       });
+    },
+    updateWorkflows: function (request) {
+      let component = this;
+      axios.get('api/requests/update_workflows/' + request.prepid).then(response => {
+        // component.showError("Success", "Successfully moved " + request.prepid + " to previous status");
+        component.fetchObjects();
+      }).catch(error => {
+        console.log(error.response.data);
+        component.showError("Error updating request info", error.response.data.message);
+      });
+    },
+    showOptionResetDialog: function(request) {
+      let component = this;
+      this.dialog.title = "Option reset " + request.prepid + "?";
+      this.dialog.description = "Are you sure you want to rewrite " + request.prepid + " memory, sequences and energy from " + request.subcampaign + "?";
+      this.dialog.ok = function() {
+        axios.get('api/requests/option_reset/' + request.prepid).then(() => {
+          component.clearDialog();
+          component.fetchObjects();
+        }).catch(error => {
+          console.log(error.response.data);
+          component.clearDialog();
+          component.showError("Error option resetting request", error.response.data.message);
+        });
+      }
+      this.dialog.cancel = function() {
+        component.clearDialog();
+      }
+      this.dialog.visible = true;
     },
   }
 }

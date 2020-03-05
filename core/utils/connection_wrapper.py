@@ -13,15 +13,17 @@ class ConnectionWrapper():
     HTTP client wrapper class to re-use existing connection
     """
 
-    def __init__(self, host='cmsweb.cern.ch', timeout=120, keep_open=False):
+    def __init__(self, host, port=443, https=True, timeout=120, keep_open=False):
+        self.logger = logging.getLogger('logger')
         self.connection = None
         self.connection_attempts = 3
         self.host_url = host.replace('https://', '').replace('http://', '')
         self.cert_file = os.getenv('USERCRT', None)
         self.key_file = os.getenv('USERKEY', None)
-        self.logger = logging.getLogger('logger')
         self.timeout = timeout
         self.keep_open = keep_open
+        self.port = port
+        self.https = https
 
     def init_connection(self, url):
         """
@@ -34,11 +36,16 @@ class ConnectionWrapper():
         if self.cert_file is None or self.key_file is None:
             raise Exception('Missing USERCRT or USERKEY environment variables')
 
-        return http.client.HTTPSConnection(url,
-                                           port=443,
-                                           cert_file=self.cert_file,
-                                           key_file=self.key_file,
-                                           timeout=self.timeout)
+        if self.https:
+            return http.client.HTTPSConnection(url,
+                                               port=self.port,
+                                               cert_file=self.cert_file,
+                                               key_file=self.key_file,
+                                               timeout=self.timeout)
+        else:
+            return http.client.HTTPConnection(url,
+                                              port=self.port,
+                                              timeout=self.timeout)
 
     def __refresh_connection(self, url):
         """
@@ -61,7 +68,9 @@ class ConnectionWrapper():
         url = url.replace('#', '%23')
         # this way saves time for creating connection per every request
         for i in range(self.connection_attempts):
-            self.logger.debug('Connection attempt number %s', i)
+            if i != 0:
+                self.logger.debug('Connection attempt number %s', i + 1)
+
             start_time = time.time()
             try:
                 self.connection.request(method,

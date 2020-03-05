@@ -21,6 +21,8 @@ class Request(ModelBase):
         'prepid': '',
         # CMSSW version
         'cmssw_release': '',
+        # Completed events
+        'completed_events': 0,
         # Energy in TeV
         'energy': 0.0,
         # Action history
@@ -51,6 +53,8 @@ class Request(ModelBase):
         'subcampaign': '',
         # Time per event in seconds
         'time_per_event': 1.0,
+        # Total events
+        'total_events': 0,
         # List of workflows in computing
         'workflows': []
     }
@@ -58,6 +62,7 @@ class Request(ModelBase):
     lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-_]{1,100}'),
         'cmssw_release': ModelBase.lambda_check('cmssw_release'),
+        'completed_events': lambda ce: ce >= 0,
         'energy': ModelBase.lambda_check('energy'),
         'input_dataset': ModelBase.lambda_check('dataset'),
         'memory': ModelBase.lambda_check('memory'),
@@ -71,6 +76,7 @@ class Request(ModelBase):
         'step': ModelBase.lambda_check('step'),
         'subcampaign': ModelBase.lambda_check('subcampaign'),
         'time_per_event': lambda tpe: tpe > 0.0,
+        'total_events': lambda te: te >= 0,
         'type': lambda step: step in ['Prod', 'MCReproc', 'LHE'],
     }
 
@@ -125,6 +131,7 @@ class Request(ModelBase):
                 built_command += sequence.get_cmsdriver()
 
             if sequence.needs_harvesting():
+                built_command += '\n\n'
                 built_command += sequence.get_harvesting_cmsdriver()
 
             built_command += '\n\n'

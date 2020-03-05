@@ -11,6 +11,7 @@ from core.model.subcampaign_ticket import SubcampaignTicket
 from core.utils.request_submitter import RequestSubmitter
 from core.utils.connection_wrapper import ConnectionWrapper
 from core.utils.settings import Settings
+from core.controller.subcampaign_controller import SubcampaignController
 
 
 class RequestController(ControllerBase):
@@ -37,6 +38,7 @@ class RequestController(ControllerBase):
         json_data['cmssw_release'] = subcampaign.get('cmssw_release')
         json_data['subcampaign'] = subcampaign.get_prepid()
         json_data['step'] = subcampaign.get('step')
+        json_data['prepid'] = 'PlaceholderPrepID'
         new_request = Request(json_input=json_data)
         if not json_data.get('sequences'):
             new_request.set('sequences', subcampaign.get('sequences'))
@@ -66,14 +68,14 @@ class RequestController(ControllerBase):
         return new_request_json
 
     def check_for_update(self, old_obj, new_obj, changed_values):
-        if old_obj.get('status') != 'submitting':
+        if old_obj.get('status') == 'submitting':
             raise Exception('You are now allowed to update request while it is being submitted')
 
         return True
 
     def check_for_delete(self, obj):
-        if obj.get('status') != 'submitting':
-            raise Exception('You are now allowed to update request while it is being submitted')
+        if obj.get('status') != 'new':
+            raise Exception('Request must be in status "new" before it is deleted')
 
         return True
 
@@ -138,7 +140,7 @@ class RequestController(ControllerBase):
         Get bash script that would upload config files to ReqMgr2
         """
         self.logger.debug('Getting config upload script for %s', request.get_prepid())
-        database_url = Settings().get('cmsweb_db_url')
+        database_url = Settings().get('cmsweb_url') + '/couchdb'
         command = '#!/bin/bash\n\n'
         command += request.get_cmssw_setup()
         command += '\n\n'
@@ -168,7 +170,7 @@ class RequestController(ControllerBase):
         subcampaigns_db = Database('subcampaigns')
         subcampaign_name = request.get('subcampaign')
         subcampaign_json = subcampaigns_db.get(subcampaign_name)
-        database_url = Settings().get('cmsweb_db_url')
+        database_url = Settings().get('cmsweb_url') + '/couchdb'
         processing_string = request.get('processing_string')
         job_dict = {}
         job_dict['CMSSWVersion'] = request.get('cmssw_release')
@@ -272,36 +274,195 @@ class RequestController(ControllerBase):
         subcampaign = subcampaign_db.get(request.get('subcampaign'))
         runs_json_path = subcampaign.get('runs_json_path')
         input_dataset = request.get('input_dataset')
-        if not runs_json_path:
-            return []
-
-        if not input_dataset:
-            return []
-
         with self.locker.get_lock('get-request-runs'):
             start_time = time.time()
-            dbs_conn = ConnectionWrapper()
-            dbs_response = dbs_conn.api('GET',
-                                        f'/dbs/prod/global/DBSReader/runs?dataset={input_dataset}')
-            dbs_response = json.loads(dbs_response.decode('utf-8'))
-            if not dbs_response:
-                return []
+            dbs_runs = []
+            if input_dataset:
+                dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch')
+                dbs_response = dbs_conn.api('GET',
+                                            f'/dbs/prod/global/DBSReader/runs?dataset={input_dataset}')
+                dbs_response = json.loads(dbs_response.decode('utf-8'))
+                if dbs_response:
+                    dbs_runs = dbs_response[0].get('run_num', [])
 
-            dbs_runs = dbs_response[0].get('run_num', [])
-            cert_conn = ConnectionWrapper(host='cms-service-dqm.web.cern.ch')
-            cert_response = cert_conn.api('GET',
-                                          f'/cms-service-dqm/CAF/certification/{runs_json_path}')
+            json_runs = []
+            if runs_json_path:
+                json_conn = ConnectionWrapper(host='cms-service-dqm.web.cern.ch')
+                json_response = json_conn.api('GET',
+                                              f'/cms-service-dqm/CAF/certification/{runs_json_path}')
+                json_response = json.loads(json_response.decode('utf-8'))
+                if json_response:
+                    json_runs = [int(x) for x in list(json_response.keys())]
 
-        cert_response = json.loads(cert_response.decode('utf-8'))
-        certification_runs = [int(x) for x in list(cert_response.keys())]
-        all_runs = list(set(dbs_runs).intersection(set(certification_runs)))
+        all_runs = []
+        dbs_runs = set(dbs_runs)
+        json_runs = set(json_runs)
+        if dbs_runs and json_runs:
+            all_runs = dbs_runs & json_runs
+        else:
+            all_runs = dbs_runs | json_runs
+
+        all_runs = sorted(list(all_runs))
         end_time = time.time()
-        self.logger.info('Got %s runs from DBS for dataset %s and %s runs from '
-                         'certification JSON in %.2fs. Intersection yielded %s runs',
+        self.logger.info('Got %s runs from DBS for dataset %s and %s runs '
+                         'from JSON in %.2fs. Result is %s runs',
                          len(dbs_runs),
                          input_dataset,
-                         len(certification_runs),
+                         len(json_runs),
                          end_time - start_time,
                          len(all_runs))
 
         return all_runs
+
+    def __pick_workflows(self, request, all_workflows, output_datasets):
+        """
+        Pick, process and sort workflows from computing based on output datasets
+        """
+        new_workflows = []
+        for _, workflow in all_workflows.items():
+            new_workflow = {'name': workflow['RequestName'],
+                            'type': workflow['RequestType'],
+                            'output_datasets': []}
+            for output_dataset in output_datasets:
+                for history_entry in reversed(workflow.get('EventNumberHistory', [])):
+                    if output_dataset in history_entry['Datasets']:
+                        new_workflow['output_datasets'].append({'name': output_dataset,
+                                                                'type': history_entry['Datasets'][output_dataset]['Type'],
+                                                                'events': history_entry['Datasets'][output_dataset]['Events']})
+                        break
+
+            new_workflows.append(new_workflow)
+
+        return sorted(new_workflows, key=lambda workflow: '_'.join(workflow['name'].split('_')[-3:]))
+
+    def __get_output_datasets(self, request, all_workflows):
+        """
+        Return a list of sorted output datasets for request from given workflows
+        """
+        output_datatiers = []
+        prepid = request.get_prepid()
+        for sequence in request.get('sequences'):
+            output_datatiers.extend(sequence.get('datatier'))
+
+        output_datatiers = set(output_datatiers)
+        self.logger.info('%s output datatiers are: %s', prepid, ', '.join(output_datatiers))
+        output_datasets_tree = {k: {} for k in output_datatiers}
+        for _, workflow in all_workflows.items():
+            for output_dataset in workflow.get('OutputDatasets', []):
+                output_dataset_parts = [x.strip() for x in output_dataset.split('/')]
+                output_dataset_datatier = output_dataset_parts[-1]
+                output_dataset_without_datatier = '/'.join(output_dataset_parts[:-1])
+                output_dataset_without_version = '-'.join(output_dataset_without_datatier.split('-')[:-1])
+                if output_dataset_datatier in output_datatiers:
+                    if output_dataset_without_version not in output_datasets_tree[output_dataset_parts[-1]]:
+                        output_datasets_tree[output_dataset_parts[-1]][output_dataset_without_version] = []
+
+                    output_datasets_tree[output_dataset_parts[-1]][output_dataset_without_version].append(output_dataset)
+
+        output_datasets = []
+        for _, datasets_without_versions in output_datasets_tree.items():
+            for _, datasets in datasets_without_versions.items():
+                if datasets:
+                    output_datasets.append(sorted(datasets)[-1])
+
+        def tier_level_comparator(dataset):
+            tier = dataset.split('/')[-1:][0]
+            # DQMIO priority is the lowest because it does not produce any
+            # events and is used only for some statistical reasons
+            tier_priority = ['DQM',
+                             'DQMIO',
+                             'USER',
+                             'ALCARECO',
+                             'RAW',
+                             'RECO',
+                             'AOD',
+                             'MINIAOD',
+                             'NANOAOD']
+
+            for (p, t) in enumerate(tier_priority):
+                if t.upper() == tier:
+                    return p
+
+            return -1
+
+        return sorted(output_datasets, key=tier_level_comparator)
+
+    def update_workflows(self, request):
+        """
+        Update computing workflows from Stats2
+        """
+        prepid = request.get_prepid()
+        request_db = Database('requests')
+        with self.locker.get_lock(prepid):
+            request_json = request_db.get(prepid)
+            request = Request(json_input=request_json)
+            stats_conn = ConnectionWrapper(host='vocms074.cern.ch', port=5984, https=False, keep_open=True)
+            existing_workflows = request.get('workflows')
+            stats_workflows = stats_conn.api('GET',
+                                             f'/requests/_design/_designDoc/_view/prepids?key="{prepid}"&include_docs=True')
+            stats_workflows = json.loads(stats_workflows)
+            stats_workflows = [x['doc'] for x in stats_workflows['rows']]
+            existing_workflows = [x['name'] for x in existing_workflows]
+            stats_workflows = [x['RequestName'] for x in stats_workflows]
+            all_workflow_names = list(set(existing_workflows) | set(stats_workflows))
+            self.logger.info('All workflows of %s are %s', prepid, ', '.join(all_workflow_names))
+            all_workflows = {}
+            for workflow_name in all_workflow_names:
+                workflow = stats_conn.api('GET', f'/requests/{workflow_name}')
+                if not workflow:
+                    raise Exception(f'Could not find {workflow_name} in Stats2')
+
+                workflow = json.loads(workflow)
+                if workflow.get('RequestType').lower() == 'resubmission':
+                    continue
+
+                all_workflows[workflow_name] = workflow
+                self.logger.info('Fetched workflow %s', workflow_name)
+
+            output_datasets = self.__get_output_datasets(request, all_workflows)
+            new_workflows = self.__pick_workflows(request, all_workflows, output_datasets)
+            for new_workflow in reversed(new_workflows):
+                completed_events = -1
+                for output_dataset in new_workflow.get('output_datasets', []):
+                    if output_datasets and output_dataset['name'] == output_datasets[-1]:
+                        completed_events = output_dataset['events']
+                        break
+
+                if completed_events != -1:
+                    request.set('completed_events', completed_events)
+                    break
+
+            if 'RequestPriority' in all_workflows[all_workflow_names[-1]]:
+                request.set('priority', all_workflows[all_workflow_names[-1]]['RequestPriority'])
+
+            request.set('output_datasets', output_datasets)
+            request.set('workflows', new_workflows)
+            request.add_history('update_workflows', '', None)
+            request_db.save(request.get_json())
+
+        return request
+
+    def option_reset(self, request):
+        """
+        Fetch and overwrite values from subcampaign
+        """
+        prepid = request.get_prepid()
+        request_db = Database('requests')
+        with self.locker.get_nonblocking_lock(prepid):
+            request_json = request_db.get(prepid)
+            request = Request(json_input=request_json)
+            if request.get('status') != 'new':
+                raise Exception('It is not allowed to option reset requests that are not in status "new"')
+
+            subcampaign_name = request.get('subcampaign')
+            subcampaign_controller = SubcampaignController()
+            subcampaign = subcampaign_controller.get(subcampaign_name)
+            if not subcampaign:
+                raise Exception(f'Subcampaign "{subcampaign_name}" does not exist')
+
+            request.set('memory', subcampaign.get('memory'))
+            request.set('sequences', subcampaign.get('sequences'))
+            request.set('energy', subcampaign.get('energy'))
+            request_db.save(request.get_json())
+
+        return request

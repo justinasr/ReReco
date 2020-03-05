@@ -17,6 +17,14 @@
           <td><input type="text" v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
         </tr>
         <tr>
+          <td>Size per event</td>
+          <td><input type="number" v-model="editableObject.size_per_event" :disabled="!editingInfo.size_per_event">kB</td>
+        </tr>
+        <tr>
+          <td>Time per event</td>
+          <td><input type="number" v-model="editableObject.time_per_event" :disabled="!editingInfo.time_per_event">s</td>
+        </tr>
+        <tr>
           <td>Notes</td>
           <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
         </tr>

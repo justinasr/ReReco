@@ -106,6 +106,8 @@ class SubcampaignTicketController(ControllerBase):
         editing_info['created_requests'] = False
         if status == 'done':
             editing_info['input_datasets'] = False
+            editing_info['size_per_event'] = False
+            editing_info['time_per_event'] = False
 
         return editing_info
 
@@ -127,11 +129,15 @@ class SubcampaignTicketController(ControllerBase):
 
             subcampaign_name = subcampaign_ticket.get('subcampaign')
             processing_string = subcampaign_ticket.get('processing_string')
+            time_per_event = subcampaign_ticket.get('time_per_event')
+            size_per_event = subcampaign_ticket.get('size_per_event')
             try:
                 for input_dataset in subcampaign_ticket.get('input_datasets'):
                     new_request_json = {'subcampaign': subcampaign_name,
                                         'input_dataset': input_dataset,
-                                        'processing_string': processing_string}
+                                        'processing_string': processing_string,
+                                        'time_per_event': time_per_event,
+                                        'size_per_event': size_per_event}
                     created_request_json = request_controller.create(new_request_json)
                     newly_created_request_jsons.append(created_request_json)
 

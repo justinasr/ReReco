@@ -89,7 +89,7 @@
     </v-dialog>
 
     <footer>
-      <a :href="'subcampaigns/edit'" style="float: left; margin: 16px;">Create new subcampaign</a>
+      <a :href="'subcampaigns/edit'" style="float: left; margin: 16px;">New subcampaign</a>
       <Paginator style="float: right;"
                  :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
