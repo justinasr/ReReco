@@ -14,6 +14,10 @@
       <ul>
         <li v-for="(info, lock) in locks" :key="lock">{{lock}}:<ul><li>Info: {{info.i}}</li><li>Lock: {{info.l}}</li></ul></li>
       </ul>
+      <h3>Settings ({{Object.keys(settings).length}})</h3>
+      <ul>
+        <li v-for="setting in settings" :key="setting._id">{{setting._id}} = {{setting.value}}</li>
+      </ul>
     </div>
   </div>
 </template>
@@ -29,13 +33,15 @@ export default {
     return {
       submission_workers: [],
       submission_queue: [],
-      locks: []
+      locks: [],
+      settings: [],
     }
   },
   created () {
     this.fetchWorkerInfo();
     this.fetchLocksInfo();
     this.fetchQueueInfo();
+    this.fetchSettings();
     setInterval(this.fetchWorkerInfo, 10000);
     setInterval(this.fetchQueueInfo, 10000);
     setInterval(this.fetchLocksInfo, 10000);
@@ -60,6 +66,12 @@ export default {
       axios.get('api/system/locks').then(response => {
         component.locks = response.data.response;
 
+      });
+    },
+    fetchSettings () {
+      let component = this;
+      axios.get('api/settings/get').then(response => {
+        component.settings = response.data.response;
       });
     }
   }

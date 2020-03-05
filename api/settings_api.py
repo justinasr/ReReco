@@ -14,9 +14,13 @@ class SettingsAPI(APIBase):
         APIBase.__init__(self)
 
     @APIBase.exceptions_to_errors
-    def get(self, name):
+    def get(self, name=None):
         """
         Get a setting with given name
         """
-        setting = Settings().get(name)
+        if name:
+            setting = Settings().get(name)
+        else:
+            setting = Settings().get_all()
+
         return self.output_text({'response': setting, 'success': True, 'message': ''})

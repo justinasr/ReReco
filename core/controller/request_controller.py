@@ -421,6 +421,7 @@ class RequestController(ControllerBase):
 
             output_datasets = self.__get_output_datasets(request, all_workflows)
             new_workflows = self.__pick_workflows(request, all_workflows, output_datasets)
+            all_workflow_names = [x['name'] for x in new_workflows]
             for new_workflow in reversed(new_workflows):
                 completed_events = -1
                 for output_dataset in new_workflow.get('output_datasets', []):
@@ -437,7 +438,6 @@ class RequestController(ControllerBase):
 
             request.set('output_datasets', output_datasets)
             request.set('workflows', new_workflows)
-            request.add_history('update_workflows', '', None)
             request_db.save(request.get_json())
 
         return request

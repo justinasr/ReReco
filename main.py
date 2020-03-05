@@ -59,7 +59,9 @@ def api_documentation(path):
 
 api.add_resource(SearchAPI, '/api/search')
 
-api.add_resource(SettingsAPI, '/api/settings/<string:name>')
+api.add_resource(SettingsAPI,
+                 '/api/settings/get',
+                 '/api/settings/get/<string:name>')
 
 api.add_resource(SubmissionWorkerStatusAPI, '/api/system/workers')
 api.add_resource(SubmissionQueueAPI, '/api/system/queue')
