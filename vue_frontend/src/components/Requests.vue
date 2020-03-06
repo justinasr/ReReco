@@ -18,6 +18,7 @@
                       hide-default-footer
                       item-key="prepid"
                       class="elevation-1"
+                      :loading="loading"
                       v-model="selectedItems">
           <template v-slot:item._actions="{ item }">
             <a v-if="role('manager')" :href="'requests/edit?prepid=' + item.prepid">Edit</a>&nbsp;
@@ -263,11 +264,12 @@ export default {
       this.dialog.title = "Delete " + request.prepid + "?";
       this.dialog.description = "Are you sure you want to delete " + request.prepid + " request?";
       this.dialog.ok = function() {
+        component.loading = true;
         axios.delete('api/requests/delete', {data: {'prepid': request.prepid, '_rev': request._rev}}).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
-          console.log(error.response.data);
+          component.loading = false;
           component.clearDialog();
           component.showError("Error deleting request", error.response.data.message);
         });
@@ -282,13 +284,14 @@ export default {
       this.dialog.title = "Delete " + this.selectedItems.length + " requests?";
       this.dialog.description = "Are you sure you want to delete " + this.selectedItems.length + " requests?";
       this.dialog.ok = function() {
+        component.loading = true;
         component.clearDialog();
-        console.log('Delete many')
         axios.delete('api/requests/delete_many', {data: component.selectedItems.slice()}).then(() => {
           component.fetchObjects();
           component.selectedItems = [];
         }).catch(error => {
-          console.log(error.response.data);
+          component.loading = false;
+          component.clearDialog();
           component.showError("Error deleting requests", error.response.data.message);
         });
       }
@@ -304,7 +307,8 @@ export default {
         // component.showError("Success", "Successfully moved " + request.prepid + " to next status");
         component.fetchObjects();
       }).catch(error => {
-        console.log(error.response.data);
+        component.loading = false;
+        component.clearDialog();
         component.showError("Error moving request to next status", error.response.data.message);
       });
     },
@@ -315,7 +319,8 @@ export default {
         // component.showError("Success", "Successfully moved " + request.prepid + " to previous status");
         component.fetchObjects();
       }).catch(error => {
-        console.log(error.response.data);
+        component.loading = false;
+        component.clearDialog();
         component.showError("Error moving request to previous status", error.response.data.message);
       });
     },
@@ -326,7 +331,8 @@ export default {
         // component.showError("Success", "Successfully moved " + request.prepid + " to previous status");
         component.fetchObjects();
       }).catch(error => {
-        console.log(error.response.data);
+        component.loading = false;
+        component.clearDialog();
         component.showError("Error updating request info", error.response.data.message);
       });
     },
@@ -340,7 +346,6 @@ export default {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
-          console.log(error.response.data);
           component.loading = false;
           component.clearDialog();
           component.showError("Error option resetting request", error.response.data.message);

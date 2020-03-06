@@ -13,6 +13,7 @@
                       :items="dataItems"
                       :items-per-page="itemsPerPage"
                       :mobile-breakpoint=NaN
+                      :loading="loading"
                       disable-sort
                       hide-default-footer
                       class="elevation-1">
@@ -203,11 +204,12 @@ export default {
       this.dialog.title = "Delete " + subcampaign_ticket.prepid + "?";
       this.dialog.description = "Are you sure you want to delete " + subcampaign_ticket.prepid + " subcampaign ticket?";
       this.dialog.ok = function() {
+        component.loading = true;
         axios.delete('api/subcampaign_tickets/delete', {data: {'prepid': subcampaign_ticket.prepid, '_rev': subcampaign_ticket._rev}}).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
-          console.log(error.response.data);
+          component.loading = false;
           component.clearDialog();
           component.showError("Error deleting subcampaign ticket", error.response.data.message);
         });
@@ -222,11 +224,12 @@ export default {
       this.dialog.title = "Create requests for " + subcampaign_ticket.prepid + "?";
       this.dialog.description = "Are you sure you want to generate requests for " + subcampaign_ticket.prepid + " subcampaign ticket?";
       this.dialog.ok = function() {
+        component.loading = true;
         axios.post('api/subcampaign_tickets/create_requests', {'prepid': subcampaign_ticket.prepid}).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
-          console.log(error.response.data);
+          component.loading = false;
           component.clearDialog();
           component.showError("Error creating requests", error.response.data.message);
         });

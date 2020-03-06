@@ -7,6 +7,7 @@ import traceback
 from flask_restful import Resource
 from flask import request, make_response
 from core.utils.user_info import UserInfo
+import time
 
 
 class APIBase(Resource):
@@ -26,6 +27,21 @@ class APIBase(Resource):
         """
         Resource.__init__(self)
         self.logger = logging.getLogger()
+
+    def __getattribute__(self, name):
+        attr = object.__getattribute__(self, name)
+        if name in ('get', 'put', 'post', 'delete') and hasattr(attr, '__call__'):
+            def newfunc(*args, **kwargs):
+                user_info = UserInfo()
+                start_time = time.time()
+                result = attr(*args, **kwargs)
+                end_time = time.time()
+                self.logger.info('[%s] {%s} %s %.4fs' % (attr.__name__.upper(), user_info.get_username(), request.path, end_time - start_time))
+                return result
+
+            return newfunc
+        else:
+            return attr
 
     @staticmethod
     def ensure_request_data(func):

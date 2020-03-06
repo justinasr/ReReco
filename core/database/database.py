@@ -12,10 +12,10 @@ class Database():
     __DATABASE_HOST = 'localhost'
     __DATABASE_PORT = 27017
     __SEARCH_RENAME = {
-      'requests': {
-        'runs': 'runs<int>',
-        'workflows': 'workflows.name',
-      }
+        'requests': {
+            'runs': 'runs<int>',
+            'workflows': 'workflows.name',
+        }
     }
 
     def __init__(self, database_name=None):
@@ -135,8 +135,10 @@ class Database():
                     if value_condition:
                         value = {value_condition: value}
                         query_dict['$and'].append({key: value})
-                    else:
+                    elif '*' in value:
                         query_dict['$and'].append({key: {'$regex': value}})
+                    else:
+                        query_dict['$and'].append({key: value})
 
         self.logger.debug('Database "%s" query dict %s', self.database_name, query_dict)
         result = self.db.find(query_dict)

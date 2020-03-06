@@ -13,6 +13,7 @@
                       :items="dataItems"
                       :items-per-page="itemsPerPage"
                       :mobile-breakpoint=NaN
+                      :loading="loading"
                       disable-sort
                       hide-default-footer
                       class="elevation-1">
@@ -203,11 +204,12 @@ export default {
       this.dialog.title = "Delete " + subcampaign.prepid + "?";
       this.dialog.description = "Are you sure you want to delete " + subcampaign.prepid + " subcampaign?";
       this.dialog.ok = function() {
+        component.loading = true;
         axios.delete('api/subcampaigns/delete', {data: {'prepid': subcampaign.prepid, '_rev': subcampaign._rev}}).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
-          console.log(error.response.data);
+          component.loading = false;
           component.clearDialog();
           component.showError("Error deleting subcampaign", error.response.data.message);
         });
