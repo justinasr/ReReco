@@ -40,7 +40,7 @@ class ModelBase():
                           self.__class_name,
                           'YES' if json_input else 'NO')
         self.__fill_values(json_input)
-        self.logger.debug('%s\n', str(self))
+        self.logger.debug('%s', str(self))
 
     def __fill_values(self, json_input):
         """
@@ -85,12 +85,6 @@ class ModelBase():
         prepid = self.get_prepid()
         if not prepid:
             prepid = self.__class_name
-
-        self.logger.debug('Will set attribute "%s" and value "%s" for %s of type %s',
-                          attribute,
-                          str(value)[:100],
-                          prepid,
-                          self.__class_name)
 
         if not attribute:
             raise Exception('Attribute name not specified')
@@ -240,7 +234,7 @@ class ModelBase():
 
         return (f'Object ID: {self.get_prepid()}\n'
                 f'Type: {self.__class_name}\n'
-                f'Dict: {json.dumps(object_json, indent=2, sort_keys=True)}\n')
+                f'Dict: {json.dumps(object_json, indent=2, sort_keys=True)}')
 
     def add_history(self, action, value, user, timestamp=None):
         """

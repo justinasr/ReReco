@@ -28,13 +28,13 @@
       <h1>{{category_name.upper().replace('_', ' ') }}</h1>
       <ul>
         {% for (endpoint_name, endpoint) in category.items() %}
-          <li style="margin: 12px;">{{endpoint.doc}}<br>
+          <li style="margin: 12px;">{{endpoint.doc}}
             {% for url in endpoint.urls %}
-              <a href="{{url[1:]}}"><pre>{{url}}</pre></a>
+              <b><pre>{{url}}</pre></b>
             {% endfor %}
             <ul style="margin: 6px;">
               {% for (method_name, method_doc) in endpoint.methods.items() %}
-                <li>{{method_name}}: {{method_doc}}</li>
+                <li><b>{{method_name}}</b>{% if method_doc.role %} (Requires "{{method_doc.role}}" role){% endif %}: {{method_doc.doc}}</li>
               {% endfor %}
             </ul>
           </li>

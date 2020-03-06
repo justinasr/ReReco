@@ -20,26 +20,27 @@
                       class="elevation-1"
                       v-model="selectedItems">
           <template v-slot:item._actions="{ item }">
-            <a :href="'requests/edit?prepid=' + item.prepid">Edit</a>
-            <span v-if="item.status == 'new'">&nbsp;|&nbsp;</span>
-            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="item.status == 'new'">Delete</a>
-            &nbsp;|&nbsp;
-            <a :href="'api/requests/get_cmsdriver/' + item.prepid">cmsDriver</a>
-            &nbsp;|&nbsp;
-            <a :href="'api/requests/get_dict/' + item.prepid">Job dict</a>
-            <span v-if="item.status != 'new'">&nbsp;|&nbsp;</span>
-            <a style="text-decoration: underline;" @click="previousStatus(item)" v-if="item.status != 'new'">Previous</a>
-            &nbsp;|&nbsp;
-            <a style="text-decoration: underline;" @click="nextStatus(item)">Next</a>
-            <span v-if="item.status == 'submitted'">&nbsp;|&nbsp;</span>
-            <a style="text-decoration: underline;" @click="updateWorkflows(item)" v-if="item.status == 'submitted'">Update from Stats2</a>
-            <span v-if="item.status == 'new'">&nbsp;|&nbsp;</span>
-            <a style="text-decoration: underline;" @click="showOptionResetDialog(item)" v-if="item.status == 'new'">Option reset</a>
-            <span v-if="item.status == 'submitted' || item.status == 'done'">&nbsp;|&nbsp;</span>
+            <a v-if="role('manager')" :href="'requests/edit?prepid=' + item.prepid">Edit</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager') && item.status == 'new'">Delete</a>&nbsp;
+            <a :href="'api/requests/get_cmsdriver/' + item.prepid">cmsDriver</a>&nbsp;
+            <a :href="'api/requests/get_dict/' + item.prepid">Job dict</a>&nbsp;
+            <a style="text-decoration: underline;" @click="previousStatus(item)" v-if="role('manager') && item.status != 'new'">Previous</a>&nbsp;
+            <a style="text-decoration: underline;" @click="nextStatus(item)" v-if="role('manager')">Next</a>&nbsp;
+            <a style="text-decoration: underline;" @click="updateWorkflows(item)" v-if="role('manager') && item.status == 'submitted'">Update from Stats2</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showOptionResetDialog(item)" v-if="role('manager') && item.status == 'new'">Option reset</a>&nbsp;
             <a target="_blank" :href="'https://cms-pdmv.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done'">Stats2</a>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
+          </template>
+          <template v-slot:item.status="{ item }">
+            <a :href="'requests?status=' + item.status">{{item.status}}</a>
+          </template>
+          <template v-slot:item.processing_string="{ item }">
+            <a :href="'requests?processing_string=' + item.processing_string">{{item.processing_string}}</a>
+          </template>
+          <template v-slot:item.subcampaign="{ item }">
+            <a :href="'requests?subcampaign=' + item.subcampaign">{{item.subcampaign}}</a>
           </template>
           <template v-slot:item.sequences="{ item }">
             <pre>{{JSON.stringify(item.sequences, null, 2)}}</pre>
@@ -76,10 +77,10 @@
           </template>
           <template v-slot:item.workflows="{ item }">
             <ol>
-              <li v-for="workflow in item.workflows" :key="workflow">
+              <li v-for="workflow in item.workflows" :key="workflow.name">
                 <a target="_blank" title="Open workflow in ReqMgr2" :href="'https://cmsweb.cern.ch/reqmgr2/fetch?rid=' + workflow.name">{{workflow.name}}</a> <small>{{workflow.type}}</small>
                 <ul>
-                  <li v-for="dataset in workflow.output_datasets" :key="dataset"><a target="_blank" title="Open dataset in DAS" :href="'https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D' + dataset.name">{{dataset.name}}</a> <small>events:</small> {{dataset.events}} <small>type:</small> {{dataset.type}}</li>
+                  <li v-for="dataset in workflow.output_datasets" :key="dataset.name"><a target="_blank" title="Open dataset in DAS" :href="'https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D' + dataset.name">{{dataset.name}}</a> <small>events:</small> {{dataset.events}} <small>type:</small> {{dataset.type}}</li>
                 </ul>
               </li>
             </ol>
@@ -134,8 +135,8 @@
 
     <footer>
       <div style="float: left; margin: 16px 4px 16px 16px">
-        <a :href="'requests/edit'">New request</a>
-        <a v-if="selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="deleteMany(selectedItems)">Delete selected</a>
+        <a :href="'requests/edit'" v-if="role('manager')">New request</a>
+        <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="deleteMany(selectedItems)">Delete selected</a>
       </div>
       <Paginator style="float: right;"
                  :totalRows="totalItems"
@@ -150,6 +151,7 @@ import axios from 'axios'
 import ColumnSelector from './ColumnSelector'
 import Paginator from './Paginator'
 import HistoryCell from './HistoryCell'
+import { roleMixin } from '../mixins/UserRoleMixin.js'
 
 export default {
   components: {
@@ -157,6 +159,7 @@ export default {
     Paginator,
     HistoryCell
   },
+  mixins: [roleMixin],
   data () {
     return {
       databaseName: undefined,
@@ -164,18 +167,18 @@ export default {
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'status', 'displayName': 'Status', 'visible': 1},
-        {'dbName': 'memory', 'displayName': 'Memory', 'visible': 1},
-        {'dbName': 'cmssw_release', 'displayName': 'CMSSW Version', 'visible': 1},
+        {'dbName': 'subcampaign', 'displayName': 'Subcampaign', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
+        {'dbName': 'input_dataset', 'displayName': 'Input dataset', 'visible': 1},
+        {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 1},
+        {'dbName': 'memory', 'displayName': 'Memory', 'visible': 0},
+        {'dbName': 'cmssw_release', 'displayName': 'CMSSW Version', 'visible': 0},
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0},
         {'dbName': 'step', 'displayName': 'Step', 'visible': 0},
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
-        {'dbName': 'input_dataset', 'displayName': 'Input dataset', 'visible': 0},
-        {'dbName': 'subcampaign', 'displayName': 'Subcampaign', 'visible': 0},
         {'dbName': 'output_datasets', 'displayName': 'Output datasets', 'visible': 0},
         {'dbName': 'priority', 'displayName': 'Priority', 'visible': 0},
-        {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 0},
         {'dbName': 'runs', 'displayName': 'Runs', 'visible': 0},
         {'dbName': 'size_per_event', 'displayName': 'Size per Event', 'visible': 0},
         {'dbName': 'time_per_event', 'displayName': 'Time per Event', 'visible': 0},
@@ -296,6 +299,7 @@ export default {
     },
     nextStatus: function (request) {
       let component = this;
+      this.loading = true;
       axios.get('api/requests/next_status/' + request.prepid).then(response => {
         // component.showError("Success", "Successfully moved " + request.prepid + " to next status");
         component.fetchObjects();
@@ -306,6 +310,7 @@ export default {
     },
     previousStatus: function (request) {
       let component = this;
+      this.loading = true;
       axios.get('api/requests/previous_status/' + request.prepid).then(response => {
         // component.showError("Success", "Successfully moved " + request.prepid + " to previous status");
         component.fetchObjects();
@@ -316,6 +321,7 @@ export default {
     },
     updateWorkflows: function (request) {
       let component = this;
+      this.loading = true;
       axios.get('api/requests/update_workflows/' + request.prepid).then(response => {
         // component.showError("Success", "Successfully moved " + request.prepid + " to previous status");
         component.fetchObjects();
@@ -329,11 +335,13 @@ export default {
       this.dialog.title = "Option reset " + request.prepid + "?";
       this.dialog.description = "Are you sure you want to rewrite " + request.prepid + " memory, sequences and energy from " + request.subcampaign + "?";
       this.dialog.ok = function() {
+        this.loading = true;
         axios.get('api/requests/option_reset/' + request.prepid).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
           console.log(error.response.data);
+          component.loading = false;
           component.clearDialog();
           component.showError("Error option resetting request", error.response.data.message);
         });

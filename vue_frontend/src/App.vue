@@ -43,24 +43,38 @@
         href="dashboard">
         <span class="mr-2">Dashboard</span>
       </v-btn>
+      <v-spacer></v-spacer>
+      <span v-if="userInfo" :title="'Username: ' + userInfo.username + '\nRole: ' + userInfo.role"><small>Logged in as</small> {{userInfo.fullname}}</span>
     </v-app-bar>
     <v-content>
-       <router-view/>
+      <router-view/>
     </v-content>
   </v-app>
 </template>
 
 <script>
 
+import axios from 'axios'
+
 export default {
   name: 'App',
 
   components: {
   },
-
   data: () => ({
-    //
+    userInfo: undefined
   }),
+  created () {
+    this.getUserInfo();
+  },
+  methods: {
+    getUserInfo () {
+      let component = this;
+      axios.get('api/system/user_info').then(response => {
+        component.userInfo = response.data.response;
+      });
+    },
+  }
 };
 </script>
 

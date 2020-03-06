@@ -9,7 +9,7 @@ from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.request_api import CreateRequestAPI, DeleteRequestAPI, DeleteRequestManyAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus, RequestPreviousStatus, GetRequestRunsAPI, UpdateRequestWorkflowsAPI, RequestOptionResetAPI
 from api.search_api import SearchAPI
 from api.settings_api import SettingsAPI
-from api.system_api import SubmissionWorkerStatusAPI, SubmissionQueueAPI, LockerStatusAPI
+from api.system_api import SubmissionWorkerStatusAPI, SubmissionQueueAPI, LockerStatusAPI, UserInfoAPI
 
 
 __LOG_FORMAT = '[%(asctime)s][%(levelname)s] %(message)s'
@@ -18,6 +18,8 @@ logging.basicConfig(format=__LOG_FORMAT, level=logging.DEBUG)
 app = Flask(__name__,
             static_folder="./vue_frontend/dist/static",
             template_folder="./vue_frontend/dist")
+# Set flask logging to warning
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
 app.url_map.strict_slashes = False
 api = Api(app)
 CORS(app,
@@ -52,7 +54,9 @@ def api_documentation(path):
         docs[category][class_name] = {'doc': class_doc, 'urls': urls, 'methods': {}}
         for method_name in view_class.methods:
             method = view_class.__dict__.get(method_name.lower())
-            docs[category][class_name]['methods'][method_name] = method.__doc__.strip()
+            docs[category][class_name]['methods'][method_name] = {'doc': method.__doc__.strip()}
+            if hasattr(method, '__role__'):
+                docs[category][class_name]['methods'][method_name]['role'] = getattr(method, '__role__')
 
     return render_template('api_documentation.html', docs=docs)
 
@@ -66,6 +70,7 @@ api.add_resource(SettingsAPI,
 api.add_resource(SubmissionWorkerStatusAPI, '/api/system/workers')
 api.add_resource(SubmissionQueueAPI, '/api/system/queue')
 api.add_resource(LockerStatusAPI, '/api/system/locks')
+api.add_resource(UserInfoAPI, '/api/system/user_info')
 
 api.add_resource(CreateSubcampaignAPI, '/api/subcampaigns/create')
 api.add_resource(DeleteSubcampaignAPI, '/api/subcampaigns/delete')
@@ -89,10 +94,10 @@ api.add_resource(GetSubcampaignTicketDatasetsAPI, '/api/subcampaign_tickets/get_
 api.add_resource(CreateRequestsForSubcampaignTicketAPI, '/api/subcampaign_tickets/create_requests')
 api.add_resource(GetSubcampaignTicketTwikiAPI, '/api/subcampaign_tickets/twiki_snippet/<string:prepid>')
 
-api.add_resource(CreateFlowAPI, '/api/flows/create')
-api.add_resource(DeleteFlowAPI, '/api/flows/delete')
-api.add_resource(UpdateFlowAPI, '/api/flows/update')
-api.add_resource(GetFlowAPI, '/api/flows/get/<string:prepid>')
+# api.add_resource(CreateFlowAPI, '/api/flows/create')
+# api.add_resource(DeleteFlowAPI, '/api/flows/delete')
+# api.add_resource(UpdateFlowAPI, '/api/flows/update')
+# api.add_resource(GetFlowAPI, '/api/flows/get/<string:prepid>')
 
 api.add_resource(CreateRequestAPI, '/api/requests/create')
 api.add_resource(DeleteRequestAPI, '/api/requests/delete')

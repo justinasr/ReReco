@@ -21,6 +21,7 @@ class CreateRequestAPI(APIBase):
 
     @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def put(self):
         """
         Create a request with the provided JSON content. Requires a unique prepid
@@ -41,6 +42,7 @@ class DeleteRequestAPI(APIBase):
 
     @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def delete(self):
         """
         Delete a request with the provided JSON content
@@ -61,6 +63,7 @@ class DeleteRequestManyAPI(APIBase):
 
     @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def delete(self):
         """
         Delete a request with the provided JSON content
@@ -84,6 +87,7 @@ class UpdateRequestAPI(APIBase):
 
     @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def post(self):
         """
         Update a request with the provided JSON content
@@ -165,7 +169,7 @@ class GetRequestJobDictAPI(APIBase):
     @APIBase.exceptions_to_errors
     def get(self, prepid=None):
         """
-        Get a text file with ReqMgr2's dicitonary
+        Get a text file with ReqMgr2's dictionary
         """
         request = request_controller.get(prepid)
         dict_string = json.dumps(request_controller.get_job_dict(request),
@@ -183,9 +187,10 @@ class RequestNextStatus(APIBase):
         APIBase.__init__(self)
 
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def get(self, prepid=None):
         """
-        Get a text file with ReqMgr2's dicitonary
+        Get a text file with ReqMgr2's dictionary
         """
         request = request_controller.get(prepid)
         result = request_controller.next_status(request)
@@ -201,9 +206,10 @@ class RequestPreviousStatus(APIBase):
         APIBase.__init__(self)
 
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def get(self, prepid=None):
         """
-        Get a text file with ReqMgr2's dicitonary
+        Get a text file with ReqMgr2's dictionary
         """
         request = request_controller.get(prepid)
         result = request_controller.previous_status(request)
@@ -219,6 +225,7 @@ class GetRequestRunsAPI(APIBase):
         APIBase.__init__(self)
 
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def get(self, prepid=None):
         """
         Get a list of run numbers
@@ -230,16 +237,17 @@ class GetRequestRunsAPI(APIBase):
 
 class UpdateRequestWorkflowsAPI(APIBase):
     """
-    Endpoint for trigerring a request update from Stats2 (ReqMgr2)
+    Endpoint for trigerring a request update from Stats2 (ReqMgr2 + DBS)
     """
 
     def __init__(self):
         APIBase.__init__(self)
 
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def get(self, prepid=None):
         """
-        Get a list of run numbers
+        Pull workflows from Stats2 (ReqMgr2 + DBS) and update request with that information
         """
         request = request_controller.get(prepid)
         result = request_controller.update_workflows(request)
@@ -255,6 +263,7 @@ class RequestOptionResetAPI(APIBase):
         APIBase.__init__(self)
 
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def get(self, prepid=None):
         """
         Rewrite memory, sequences and energy from subcampaign

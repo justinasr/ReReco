@@ -436,6 +436,9 @@ class RequestController(ControllerBase):
             if 'RequestPriority' in all_workflows[all_workflow_names[-1]]:
                 request.set('priority', all_workflows[all_workflow_names[-1]]['RequestPriority'])
 
+            if 'TotalEvents' in all_workflows[all_workflow_names[-1]]:
+                request.set('total_events', all_workflows[all_workflow_names[-1]]['TotalEvents'])
+
             request.set('output_datasets', output_datasets)
             request.set('workflows', new_workflows)
             request_db.save(request.get_json())

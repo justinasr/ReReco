@@ -17,13 +17,10 @@
                       hide-default-footer
                       class="elevation-1">
           <template v-slot:item._actions="{ item }">
-            <a :href="'subcampaign_tickets/edit?prepid=' + item.prepid">Edit</a>
-            &nbsp;|&nbsp;
-            <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
-            <span v-if="item.status == 'new'">&nbsp;|&nbsp;</span>
-            <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="item.status == 'new'">Create requests</a>
-            <span v-if="item.status == 'done'">&nbsp;|&nbsp;</span>
-            <a :href="'api/subcampaign_tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'">TWiki</a>
+            <a :href="'subcampaign_tickets/edit?prepid=' + item.prepid" v-if="role('manager')">Edit</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')">Delete</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'">Create requests</a>&nbsp;
+            <a :href="'api/subcampaign_tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'">TWiki</a>&nbsp;
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
@@ -92,7 +89,7 @@
     </v-dialog>
 
     <footer>
-      <a :href="'subcampaign_tickets/edit'" style="float: left; margin: 16px;">New subcampaign ticket</a>
+      <a :href="'subcampaign_tickets/edit'" style="float: left; margin: 16px;" v-if="role('manager')">New ticket</a>
       <Paginator style="float: right;"
                  :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
@@ -106,6 +103,7 @@ import axios from 'axios'
 import ColumnSelector from './ColumnSelector'
 import Paginator from './Paginator'
 import HistoryCell from './HistoryCell'
+import { roleMixin } from '../mixins/UserRoleMixin.js'
 
 export default {
   components: {
@@ -113,6 +111,7 @@ export default {
     Paginator,
     HistoryCell
   },
+  mixins: [roleMixin],
   data () {
     return {
       databaseName: undefined,

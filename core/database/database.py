@@ -138,7 +138,7 @@ class Database():
                     else:
                         query_dict['$and'].append({key: {'$regex': value}})
 
-        self.logger.debug('Query dict %s', query_dict)
+        self.logger.debug('Database "%s" query dict %s', self.database_name, query_dict)
         result = self.db.find(query_dict)
         if not sort_attr:
             sort_attr = '_id'

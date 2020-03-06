@@ -7,7 +7,7 @@ from core.utils.settings import Settings
 
 class SettingsAPI(APIBase):
     """
-    Endpoint for getting a setting value
+    Endpoint for getting a value from settings
     """
 
     def __init__(self):
@@ -16,7 +16,7 @@ class SettingsAPI(APIBase):
     @APIBase.exceptions_to_errors
     def get(self, name=None):
         """
-        Get a setting with given name
+        Get a value from settings with given name
         """
         if name:
             setting = Settings().get(name)

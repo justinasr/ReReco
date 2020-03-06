@@ -6,6 +6,7 @@ import logging
 import traceback
 from flask_restful import Resource
 from flask import request, make_response
+from core.utils.user_info import UserInfo
 
 
 class APIBase(Resource):
@@ -48,6 +49,9 @@ class APIBase(Resource):
 
         ensure_request_data_wrapper.__name__ = func.__name__
         ensure_request_data_wrapper.__doc__ = func.__doc__
+        if hasattr(func, '__role__'):
+            ensure_request_data_wrapper.__role__ = func.__role__
+
         return ensure_request_data_wrapper
 
     @staticmethod
@@ -70,7 +74,45 @@ class APIBase(Resource):
 
         exceptions_to_errors_wrapper.__name__ = func.__name__
         exceptions_to_errors_wrapper.__doc__ = func.__doc__
+        if hasattr(func, '__role__'):
+            exceptions_to_errors_wrapper.__role__ = func.__role__
+
         return exceptions_to_errors_wrapper
+
+    @staticmethod
+    def ensure_role(role_name):
+        """
+        Ensure that user has appropriate roles for this API call
+        """
+        def ensure_role_wrapper(func):
+            """
+            Wrapper
+            """
+            def ensure_role_wrapper_wrapper(*args, **kwargs):
+                """
+                Wrapper inside wrapper
+                """
+                user_info = UserInfo()
+                logging.getLogger().info('Making sure user "%s" has "%s" role',
+                                         user_info.get_username(),
+                                         role_name)
+                if user_info.role_index_is_more_or_equal(role_name):
+                    return func(*args, **kwargs)
+                else:
+                    return APIBase.output_text({'response': None,
+                                                'success': False,
+                                                'message': f'User "{user_info.get_username()}" '
+                                                           f'has role "{user_info.get_role()}" '
+                                                           f'and is not allowed to access this '
+                                                           f'API. Required role "{role_name}"'},
+                                               code=403)
+
+            ensure_role_wrapper_wrapper.__name__ = func.__name__
+            ensure_role_wrapper_wrapper.__doc__ = func.__doc__
+            ensure_role_wrapper_wrapper.__role__ = role_name
+            return ensure_role_wrapper_wrapper
+
+        return ensure_role_wrapper
 
     @staticmethod
     def exception_to_http_code(exception):

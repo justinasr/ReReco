@@ -22,6 +22,7 @@ class CreateSubcampaignTicketAPI(APIBase):
 
     @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def put(self):
         """
         Create a subcampaign ticket with the provided JSON content
@@ -42,6 +43,7 @@ class DeleteSubcampaignTicketAPI(APIBase):
 
     @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def delete(self):
         """
         Delete a subcampaign with the provided JSON content
@@ -62,6 +64,7 @@ class UpdateSubcampaignTicketAPI(APIBase):
 
     @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def post(self):
         """
         Update a subcampaign with the provided JSON content
@@ -98,6 +101,7 @@ class GetSubcampaignTicketDatasetsAPI(APIBase):
         APIBase.__init__(self)
 
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def get(self):
         """
         Get a single subcampaign with given prepid
@@ -145,6 +149,7 @@ class CreateRequestsForSubcampaignTicketAPI(APIBase):
 
     @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def post(self):
         """
         Create requests for give subcampaign ticket

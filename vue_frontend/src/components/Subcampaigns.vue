@@ -17,9 +17,8 @@
                       hide-default-footer
                       class="elevation-1">
           <template v-slot:item._actions="{ item }">
-            <a :href="'subcampaigns/edit?prepid=' + item.prepid">Edit</a>
-            &nbsp;|&nbsp;
-            <a style="text-decoration: underline;" @click="showDeleteDialog(item)">Delete</a>
+            <a :href="'subcampaigns/edit?prepid=' + item.prepid" v-if="role('manager')">Edit</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')">Delete</a>&nbsp;
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
@@ -89,7 +88,7 @@
     </v-dialog>
 
     <footer>
-      <a :href="'subcampaigns/edit'" style="float: left; margin: 16px;">New subcampaign</a>
+      <a :href="'subcampaigns/edit'" style="float: left; margin: 16px;" v-if="role('manager')">New subcampaign</a>
       <Paginator style="float: right;"
                  :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
@@ -103,6 +102,7 @@ import axios from 'axios'
 import ColumnSelector from './ColumnSelector'
 import Paginator from './Paginator'
 import HistoryCell from './HistoryCell'
+import { roleMixin } from '../mixins/UserRoleMixin.js'
 
 export default {
   components: {
@@ -110,6 +110,7 @@ export default {
     Paginator,
     HistoryCell
   },
+  mixins: [roleMixin],
   data () {
     return {
       databaseName: undefined,

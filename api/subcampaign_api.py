@@ -21,6 +21,7 @@ class CreateSubcampaignAPI(APIBase):
 
     @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def put(self):
         """
         Create a subcampaign with the provided JSON content. Requires a unique prepid
@@ -41,6 +42,7 @@ class DeleteSubcampaignAPI(APIBase):
 
     @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def delete(self):
         """
         Delete a subcampaign with the provided JSON content
@@ -61,6 +63,7 @@ class UpdateSubcampaignAPI(APIBase):
 
     @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def post(self):
         """
         Update a subcampaign with the provided JSON content
