@@ -2,7 +2,7 @@
   <div>
     <h1 v-if="creatingNew">Creating new Subcampaign Ticket</h1>
     <h1 v-else>Editing {{editableObject.prepid}}</h1>
-    <v-card raised style="margin: auto; padding: 16px; max-width: 750px;">
+    <v-card raised class="editPageCard">
       <table v-if="editableObject">
         <tr>
           <td>PrepID</td>
@@ -34,20 +34,45 @@
         </tr>
       </table>
       <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
-      <v-btn v-if="editingInfo.input_datasets" small class="mr-1 mb-1" color="primary" @click="getDatasetsDialogVisible = true">Get dataset list from DBS</v-btn>
+      <v-btn v-if="editingInfo.input_datasets" small class="mr-1 mb-1" color="primary" @click="showGetDatasetsDialog()">Get dataset list from DBS</v-btn>
     </v-card>
-    <v-dialog v-model="getDatasetsDialogVisible"
+    <v-dialog v-model="getDatasetsDialog.visible"
               max-width="50%">
       <v-card>
         <v-card-title class="headline">Get dataset list</v-card-title>
         <v-card-text>
-          Automatically get a list of input datasets from DBS. Query must satisfy this format:<pre>/*/*/RAW</pre>Enter dataset name query below, for example:<pre>/ZeroBias/*/RAW</pre>
-          <input type="text" v-model="getDatasetsDialogInput">
+          Automatically get a list of input datasets from DBS. Query must satisfy this format:<pre>/*/*/RAW</pre>Enter dataset name query below, for example:<pre>/ZeroBias/Run2018*/RAW</pre>
+          <input type="text" v-model="getDatasetsDialog.input">
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn small class="mr-1 mb-1" color="primary" :disabled="!getDatasetsDialogInput.length" @click="getDatasets()">Get</v-btn>
-          <v-btn small class="mr-1 mb-1" color="error" @click="getDatasetsDialogVisible = false; getDatasetsDialogInput = ''">Close</v-btn>
+          <v-btn small class="mr-1 mb-1" color="primary" :disabled="!getDatasetsDialog.input.length" @click="getDatasets()">Get</v-btn>
+          <v-btn small class="mr-1 mb-1" color="error" @click="closeGetDatasetsDialog()">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-overlay :absolute="false"
+               :opacity="0.95"
+               :z-index="3"
+               :value="loading"
+               style="text-align: center">
+      <v-progress-circular indeterminate color="primary"></v-progress-circular>
+      <br>Please wait...
+    </v-overlay>
+    <v-dialog v-model="errorDialog.visible"
+              max-width="50%">
+      <v-card>
+        <v-card-title class="headline">
+          {{errorDialog.title}}
+        </v-card-title>
+        <v-card-text>
+          {{errorDialog.description}}
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn small class="mr-1 mb-1" color="primary" @click="clearErrorDialog()">
+            Dismiss
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -69,22 +94,24 @@ export default {
       editingInfo: {},
       loading: true,
       creatingNew: true,
-      getDatasetsDialogVisible: false,
-      getDatasetsDialogInput: ''
+      getDatasetsDialog: {
+        visible: false,
+        input: '',
+      },
+      errorDialog: {
+        visible: false,
+        title: '',
+        description: '',
+      }
     }
   },
-  computed: {
-  },
-  watch: {
-  },
   created () {
+    this.loading = true;
     let query = Object.assign({}, this.$route.query);
     this.prepid = query['prepid'];
     this.creatingNew = this.prepid === undefined;
-    this.loading = true;
     let component = this;
     axios.get('api/subcampaign_tickets/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
-      console.log(response.data);
       component.editableObject = response.data.response.object;
       component.editableObject.sequences = JSON.stringify(component.editableObject.sequences, null, 4);
       component.editableObject.input_datasets = component.editableObject.input_datasets.filter(Boolean).join('\n')
@@ -94,44 +121,57 @@ export default {
   },
   methods: {
     save: function() {
-      console.log('Saving ' + this.prepid)
       let editableObject = JSON.parse(JSON.stringify(this.editableObject))
-      this.loading = true;
       let component = this;
       editableObject['notes'] = editableObject['notes'].trim();
       editableObject['input_datasets'] = editableObject['input_datasets'].split('\n').map(function(s) { return s.trim() }).filter(Boolean);
-      console.log(editableObject);
       let httpRequest;
+      this.loading = true;
       if (this.creatingNew) {
         httpRequest = axios.put('api/subcampaign_tickets/create', editableObject)
       } else {
         httpRequest = axios.post('api/subcampaign_tickets/update', editableObject)
       }
       httpRequest.then(response => {
-        console.log(response.data.response.prepid);
         component.loading = false;
         window.location = 'subcampaign_tickets?prepid=' + response.data.response.prepid;
       }).catch(error => {
-        console.log('Error!');
-        alert(error.response.data.message);
-        console.log(error.response.data);
+        component.loading = false;
+        this.showError('Error saving subcampaign ticket', error.response.data.message)
       });
     },
     getDatasets: function() {
+      this.loading = true;
       let component = this;
-      console.log(this.getDatasetsDialogInput);
-      let httpRequest = axios.get('api/subcampaign_tickets/get_datasets?q=' + this.getDatasetsDialogInput)
+      let httpRequest = axios.get('api/subcampaign_tickets/get_datasets?q=' + this.getDatasetsDialog.input);
+      this.closeGetDatasetsDialog();
       httpRequest.then(response => {
-        console.log(response.data.response.prepid);
         component.editableObject['input_datasets'] = response.data.response.filter(Boolean).join('\n');
-        component.getDatasetsDialogVisible = false;
-        component.getDatasetsDialogInput = '';
+        component.loading = false;
       }).catch(error => {
-        console.log('Error!');
-        alert(error.response.data.message);
-        console.log(error.response.data);
+        this.showError('Error getting datasets for subcampaign ticket', error.response.data.message)
+        component.loading = false;
       });
-    }
+    },
+    showGetDatasetsDialog: function() {
+      this.getDatasetsDialog.visible = true;
+      this.getDatasetsDialog.input = '';
+    },
+    closeGetDatasetsDialog: function() {
+      this.getDatasetsDialog.visible = false;
+      this.getDatasetsDialog.input = '';
+    },
+    clearErrorDialog: function() {
+      this.errorDialog.visible = false;
+      this.errorDialog.title = '';
+      this.errorDialog.description = '';
+    },
+    showError: function(title, description) {
+      this.clearErrorDialog();
+      this.errorDialog.title = title;
+      this.errorDialog.description = description;
+      this.errorDialog.visible = true;
+    },
   }
 }
 </script>
@@ -146,6 +186,12 @@ td {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-right: 4px;
+}
+
+.editPageCard {
+  margin: auto;
+  padding: 16px;
+  max-width: 750px;
 }
 
 </style>

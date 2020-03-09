@@ -91,6 +91,31 @@
                        v-on:saveSequence="onSeqenceSave"/>
       </v-card>
     </v-dialog>
+    <v-overlay :absolute="false"
+               :opacity="0.95"
+               :z-index="3"
+               :value="loading"
+               style="text-align: center">
+      <v-progress-circular indeterminate color="primary"></v-progress-circular>
+      <br>Please wait...
+    </v-overlay>
+    <v-dialog v-model="errorDialog.visible"
+              max-width="50%">
+      <v-card>
+        <v-card-title class="headline">
+          {{errorDialog.title}}
+        </v-card-title>
+        <v-card-text>
+          {{errorDialog.description}}
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn small class="mr-1 mb-1" color="primary" @click="clearErrorDialog()">
+            Dismiss
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -115,12 +140,13 @@ export default {
         index: -1,
         sequence: undefined,
         editable: false,
+      },
+      errorDialog: {
+        visible: false,
+        title: '',
+        description: '',
       }
     }
-  },
-  computed: {
-  },
-  watch: {
   },
   created () {
     let query = Object.assign({}, this.$route.query);
@@ -129,7 +155,6 @@ export default {
     this.loading = true;
     let component = this;
     axios.get('api/requests/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
-      console.log(response.data);
       component.editableObject = response.data.response.object;
       // component.editableObject.sequences = JSON.stringify(component.editableObject.sequences, null, 2);
       component.editableObject.runs = component.editableObject.runs.join('\n')
@@ -139,14 +164,11 @@ export default {
   },
   methods: {
     save: function() {
-      console.log('Saving ' + this.prepid)
       this.loading = true;
       let editableObject = JSON.parse(JSON.stringify(this.editableObject))
       let component = this;
       editableObject['notes'] = editableObject['notes'].trim();
       editableObject['runs'] = editableObject['runs'].replace(/,/g, '\n').split('\n').map(function(s) { return s.trim() }).filter(Boolean);
-      console.log(this.editableObject);
-      // editableObject['sequences'] = JSON.parse(editableObject['sequences']);
       let httpRequest;
       if (this.creatingNew) {
         httpRequest = axios.put('api/requests/create', editableObject)
@@ -154,18 +176,14 @@ export default {
         httpRequest = axios.post('api/requests/update', editableObject)
       }
       httpRequest.then(response => {
-        console.log(response.data.response.prepid);
         component.loading = false;
         window.location = 'requests?prepid=' + response.data.response.prepid;
       }).catch(error => {
-        console.log('Error!');
+        this.showError('Error saving request', error.response.data.message);
         component.loading = false;
-        alert(error.response.data.message);
-        console.log(error.response.data);
       });
     },
     showSequenceDialog: function(index, editable) {
-      console.log('Editable? ' + editable)
       if (index < 0) {
         let component = this;
         axios.get('api/subcampaigns/get_default_sequence' + (this.creatingNew ? '' : ('/' + this.editableObject.subcampaign))).then(response => {
@@ -182,7 +200,6 @@ export default {
       }
     },
     onSeqenceSave: function(index, sequence) {
-      console.log('Saving ' + index + ' sequence');
       if (index < 0) {
         this.editableObject['sequences'].push(sequence);
       } else {
@@ -191,15 +208,30 @@ export default {
       this.sequenceEditDialog.visible = false;
     },
     deleteSequence: function(index) {
-      console.log('Deleting ' + index + ' sequence');
       this.editableObject['sequences'].splice(index, 1);
     },
     getRuns: function() {
       let component = this;
+      this.loading = true;
       axios.get('api/requests/get_runs/' + this.prepid).then(response => {
         component.editableObject.runs = response.data.response.filter(Boolean).map(function(s) { return s.toString() }).join('\n');
+        this.loading = false;
+      }).catch(error => {
+        this.showError('Error getting runs for request', error.response.data.message)
+        component.loading = false;
       });
-    }
+    },
+    clearErrorDialog: function() {
+      this.errorDialog.visible = false;
+      this.errorDialog.title = '';
+      this.errorDialog.description = '';
+    },
+    showError: function(title, description) {
+      this.clearErrorDialog();
+      this.errorDialog.title = title;
+      this.errorDialog.description = description;
+      this.errorDialog.visible = true;
+    },
   }
 }
 </script>

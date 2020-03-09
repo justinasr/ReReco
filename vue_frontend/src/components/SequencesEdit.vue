@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>{{editable ? 'Editing' : 'Viewing'}} "{{sequenceIndex < 0 ? 'new' : sequenceIndex + 1}}" sequence</h1>
+    <h1>{{editable ? 'Editing' : 'Viewing'}} "{{ sequenceIndex > -1 ? sequenceIndex + 1 : 'new' }}" sequence</h1>
     <table>
       <tr>
         <td>conditions</td><td><input type="text" v-model="editableObject.conditions" :disabled="!editable"></td>
@@ -38,7 +38,8 @@
         <td>step</td><td><input type="text" v-model="editableObject.step" :disabled="!editable"></td>
       </tr>
     </table>
-    <v-btn small class="mr-1 mb-1" color="primary" v-if="editable" @click="save()">Save</v-btn>
+    <v-btn small class="mr-1 mb-1" color="primary" v-if="editable" @click="saveSequenceEdit()">Save</v-btn>
+    <v-btn small class="mr-1 mb-1" color="error" @click="closeSequenceEdit()">Close</v-btn>
   </div>
 </template>
 
@@ -53,8 +54,6 @@ export default {
       editableObject: undefined,
     }
   },
-  computed: {
-  },
   watch: {
     sequenceObject: function (newValue, oldValue) {
       this.editableObject = this.sequenceObject;
@@ -62,18 +61,24 @@ export default {
   },
   props:{
     sequenceObject: undefined,
+    editable: {
+      type: Boolean,
+      default: false,
+    },
     sequenceIndex: {
       type: Number,
       default: -1,
     },
-    editable: false
   },
   created () {
     this.editableObject = this.sequenceObject;
   },
   methods: {
-    save: function() {
+    saveSequenceEdit: function() {
       this.$emit('saveSequence', this.sequenceIndex, this.sequenceObject);
+    },
+    closeSequenceEdit: function() {
+      this.$emit('saveSequence', this.sequenceIndex, undefined);
     }
   }
 }
