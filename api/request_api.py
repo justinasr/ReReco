@@ -254,6 +254,34 @@ class UpdateRequestWorkflowsAPI(APIBase):
         return self.output_text({'response': result.get_json(), 'success': True, 'message': ''})
 
 
+class UpdateRequestManyWorkflowsAPI(APIBase):
+    """
+    Endpoint for trigerring a request update from Stats2 (ReqMgr2 + DBS) for list of requests
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.ensure_request_data
+    @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
+    def post(self):
+        """
+        Pull workflows from Stats2 (ReqMgr2 + DBS) and update request with that information
+        for list of requests
+        """
+        data = flask.request.data
+        requests_json = json.loads(data.decode('utf-8'))
+        results = []
+        for request_json in requests_json:
+            prepid = request_json.get('prepid')
+            request = request_controller.get(prepid)
+            results.append(request_controller.update_workflows(request))
+
+        results = [x.get_json() for x in results]
+        return self.output_text({'response': results, 'success': True, 'message': ''})
+
+
 class RequestOptionResetAPI(APIBase):
     """
     Endpoint for rewriting request values from subcampaign

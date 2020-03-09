@@ -10,13 +10,20 @@
       <ul>
         <li v-for="name in submission_queue" :key="name">{{name}}</li>
       </ul>
-      <h3>Locked objects ({{Object.keys(locks).length}})</h3>
-      <ul>
-        <li v-for="(info, lock) in locks" :key="lock">{{lock}}:<ul><li>Info: {{info.i}}</li><li>Lock: {{info.l}}</li></ul></li>
-      </ul>
       <h3>Settings ({{Object.keys(settings).length}})</h3>
       <ul>
-        <li v-for="setting in settings" :key="setting._id">{{setting._id}} = {{setting.value}}</li>
+        <li v-for="setting in settings" :key="setting._id">{{setting._id}}: <pre>{{JSON.stringify(setting.value, null, 2)}}</pre></li>
+      </ul>
+      <h3>Locked objects ({{Object.keys(locks).length}})</h3>
+      <ul>
+        <li v-for="(info, lock) in locks" :key="lock">{{lock}}:
+          <small>
+            <ul>
+              <li>Info: {{info.i}}</li>
+              <li>Lock: {{info.l}}</li>
+            </ul>
+        </small>
+        </li>
       </ul>
     </div>
   </div>

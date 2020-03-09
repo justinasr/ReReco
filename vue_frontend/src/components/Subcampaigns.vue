@@ -20,6 +20,10 @@
           <template v-slot:item._actions="{ item }">
             <a :href="'subcampaigns/edit?prepid=' + item.prepid" v-if="role('manager')">Edit</a>&nbsp;
             <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')">Delete</a>&nbsp;
+            <a :href="'requests?subcampaign=' + item.prepid">Requests</a>&nbsp;
+          </template>
+          <template v-slot:item.prepid="{ item }">
+            <a :href="'subcampaigns?prepid=' + item.prepid">{{item.prepid}}</a>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>

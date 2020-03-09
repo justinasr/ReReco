@@ -25,7 +25,7 @@
             <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager') && item.status == 'new'">Delete</a>&nbsp;
             <a :href="'api/requests/get_cmsdriver/' + item.prepid">cmsDriver</a>&nbsp;
             <a :href="'api/requests/get_dict/' + item.prepid">Job dict</a>&nbsp;
-            <a style="text-decoration: underline;" @click="previousStatus(item)" v-if="role('manager') && item.status != 'new'">Previous</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showPreviousStatusDialog(item)" v-if="role('manager') && item.status != 'new'">Previous</a>&nbsp;
             <a style="text-decoration: underline;" @click="nextStatus(item)" v-if="role('manager')">Next</a>&nbsp;
             <a style="text-decoration: underline;" @click="updateWorkflows(item)" v-if="role('manager') && item.status == 'submitted'">Update from Stats2</a>&nbsp;
             <a style="text-decoration: underline;" @click="showOptionResetDialog(item)" v-if="role('manager') && item.status == 'new'">Option reset</a>&nbsp;
@@ -34,6 +34,9 @@
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
           </template>
+          <template v-slot:item.prepid="{ item }">
+            <a :href="'requests?prepid=' + item.prepid">{{item.prepid}}</a>
+          </template>
           <template v-slot:item.status="{ item }">
             <a :href="'requests?status=' + item.status">{{item.status}}</a>
           </template>
@@ -41,7 +44,8 @@
             <a :href="'requests?processing_string=' + item.processing_string">{{item.processing_string}}</a>
           </template>
           <template v-slot:item.subcampaign="{ item }">
-            <a :href="'requests?subcampaign=' + item.subcampaign">{{item.subcampaign}}</a>
+            <a :href="'requests?subcampaign=' + item.subcampaign">{{item.subcampaign}}</a>&nbsp;
+            <a :href="'subcampaigns?prepid=' + item.subcampaign">Subcampaign</a>
           </template>
           <template v-slot:item.sequences="{ item }">
             <pre>{{JSON.stringify(item.sequences, null, 2)}}</pre>
@@ -138,6 +142,7 @@
       <div style="float: left; margin: 16px 4px 16px 16px">
         <a :href="'requests/edit'" v-if="role('manager')">New request</a>
         <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="deleteMany(selectedItems)">Delete selected</a>
+        <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="updateWorkflowsMany(selectedItems)">Update from Stats2 selected</a>
       </div>
       <Paginator style="float: right;"
                  :totalRows="totalItems"
@@ -285,20 +290,34 @@ export default {
       this.dialog.description = "Are you sure you want to delete " + this.selectedItems.length + " requests?";
       this.dialog.ok = function() {
         component.loading = true;
-        component.clearDialog();
         axios.delete('api/requests/delete_many', {data: component.selectedItems.slice()}).then(() => {
+          component.clearDialog();
           component.fetchObjects();
           component.selectedItems = [];
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
           component.showError("Error deleting requests", error.response.data.message);
+          component.selectedItems =  [];
         });
       }
       this.dialog.cancel = function() {
         component.clearDialog();
       }
       this.dialog.visible = true;
+    },
+    updateWorkflowsMany: function(request) {
+      let component = this;
+      this.loading = true;
+      axios.post('api/requests/update_workflows_many', component.selectedItems.slice()).then(response => {
+        component.fetchObjects();
+        component.selectedItems =  [];
+      }).catch(error => {
+        component.loading = false;
+        component.clearDialog();
+        component.showError("Error updating request info", error.response.data.message);
+        component.selectedItems =  [];
+      });
     },
     nextStatus: function (request) {
       let component = this;
@@ -312,17 +331,25 @@ export default {
         component.showError("Error moving request to next status", error.response.data.message);
       });
     },
-    previousStatus: function (request) {
+    showPreviousStatusDialog: function(request) {
       let component = this;
-      this.loading = true;
-      axios.get('api/requests/previous_status/' + request.prepid).then(response => {
-        // component.showError("Success", "Successfully moved " + request.prepid + " to previous status");
-        component.fetchObjects();
-      }).catch(error => {
-        component.loading = false;
+      this.dialog.title = "Set " + request.prepid + " to previous status?";
+      this.dialog.description = "Are you sure you want to set " + request.prepid + " request request to previous status?";
+      this.dialog.ok = function() {
+        component.loading = true;
+        axios.get('api/requests/previous_status/' + request.prepid).then(response => {
+          component.clearDialog();
+          component.fetchObjects();
+        }).catch(error => {
+          component.loading = false;
+          component.clearDialog();
+          component.showError("Error moving request to previous status", error.response.data.message);
+        });
+      }
+      this.dialog.cancel = function() {
         component.clearDialog();
-        component.showError("Error moving request to previous status", error.response.data.message);
-      });
+      }
+      this.dialog.visible = true;
     },
     updateWorkflows: function (request) {
       let component = this;
@@ -341,7 +368,7 @@ export default {
       this.dialog.title = "Option reset " + request.prepid + "?";
       this.dialog.description = "Are you sure you want to rewrite " + request.prepid + " memory, sequences and energy from " + request.subcampaign + "?";
       this.dialog.ok = function() {
-        this.loading = true;
+        component.loading = true;
         axios.get('api/requests/option_reset/' + request.prepid).then(() => {
           component.clearDialog();
           component.fetchObjects();
@@ -368,7 +395,7 @@ h1 {
 
 th {
   color: var(--v-accent-base) !important;
-    caret-color: var(--v-accent-base) !important;
+  caret-color: var(--v-accent-base) !important;
 }
 
 </style>

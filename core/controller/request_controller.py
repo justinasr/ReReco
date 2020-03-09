@@ -258,6 +258,8 @@ class RequestController(ControllerBase):
                 self.update_status(request, 'approved')
             elif request.get('status') == 'submitted':
                 request.set('workflows', [])
+                request.set('total_events', 0)
+                request.set('completed_events', 0)
                 for sequence in request.get('sequences'):
                     sequence.set('config_id', '')
                     sequence.set('harvesting_config_id', '')
@@ -359,6 +361,7 @@ class RequestController(ControllerBase):
 
                     output_datasets_tree[output_dataset_parts[-1]][output_dataset_without_version].append(output_dataset)
 
+        self.logger.debug('Output datasets tree:\n%s', json.dumps(output_datasets_tree, indent=2, sort_keys=True))
         output_datasets = []
         for _, datasets_without_versions in output_datasets_tree.items():
             for _, datasets in datasets_without_versions.items():
@@ -385,7 +388,9 @@ class RequestController(ControllerBase):
 
             return -1
 
-        return sorted(output_datasets, key=tier_level_comparator)
+        output_datasets = sorted(output_datasets, key=tier_level_comparator)
+        self.logger.debug('Output datasets:\n%s', json.dumps(output_datasets, indent=2, sort_keys=True))
+        return output_datasets
 
     def update_workflows(self, request):
         """
@@ -437,7 +442,7 @@ class RequestController(ControllerBase):
                 request.set('priority', all_workflows[all_workflow_names[-1]]['RequestPriority'])
 
             if 'TotalEvents' in all_workflows[all_workflow_names[-1]]:
-                request.set('total_events', all_workflows[all_workflow_names[-1]]['TotalEvents'])
+                request.set('total_events', max(0, all_workflows[all_workflow_names[-1]]['TotalEvents']))
 
             request.set('output_datasets', output_datasets)
             request.set('workflows', new_workflows)

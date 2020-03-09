@@ -23,6 +23,9 @@
             <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'">Create requests</a>&nbsp;
             <a :href="'api/subcampaign_tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'">TWiki</a>&nbsp;
           </template>
+          <template v-slot:item.prepid="{ item }">
+            <a :href="'subcampaign_tickets?prepid=' + item.prepid">{{item.prepid}}</a>
+          </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
           </template>
