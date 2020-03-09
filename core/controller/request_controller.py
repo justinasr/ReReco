@@ -79,6 +79,12 @@ class RequestController(ControllerBase):
 
         return True
 
+    def before_update(self, obj):
+        if obj.get('status') == 'submitted':
+            old_obj = self.get(obj.get_prepid())
+            if old_obj.get('priority') != obj.get('priority'):
+                self.change_request_priority(obj, obj.get('priority'))
+
     def before_delete(self, obj):
         prepid = obj.get_prepid()
         subcampaign_tickets_db = Database('subcampaign_tickets')
@@ -424,6 +430,7 @@ class RequestController(ControllerBase):
                 all_workflows[workflow_name] = workflow
                 self.logger.info('Fetched workflow %s', workflow_name)
 
+            stats_conn.close()
             output_datasets = self.__get_output_datasets(request, all_workflows)
             new_workflows = self.__pick_workflows(request, all_workflows, output_datasets)
             all_workflow_names = [x['name'] for x in new_workflows]
@@ -471,6 +478,35 @@ class RequestController(ControllerBase):
             request.set('memory', subcampaign.get('memory'))
             request.set('sequences', subcampaign.get('sequences'))
             request.set('energy', subcampaign.get('energy'))
+            request_db.save(request.get_json())
+
+        return request
+
+    def change_request_priority(self, request, priority):
+        """
+        Change request priority
+        """
+        prepid = request.get_prepid()
+        request_db = Database('requests')
+        self.logger.info('Will try to change %s priority to %s', prepid, priority)
+        with self.locker.get_nonblocking_lock(prepid):
+            request_json = request_db.get(prepid)
+            request = Request(json_input=request_json)
+            if request.get('status') != 'submitted':
+                raise Exception('It is not allowed to change priority of requests that are not in status "submitted"')
+
+            request.set('priority', priority)
+            settings = Settings()
+            connection = ConnectionWrapper(host=settings.get('cmsweb_url'), keep_open=True)
+            for workflow in request.get('workflows'):
+                workflow_name = workflow['name']
+                self.logger.info('Changing "%s" priority to %s', workflow_name, priority)
+                response = connection.api('PUT',
+                                          f'/reqmgr2/data/request/{workflow_name}',
+                                          {'RequestPriority': priority})
+                self.logger.debug(response)
+
+            connection.close()
             request_db.save(request.get_json())
 
         return request

@@ -54,6 +54,15 @@ class ConnectionWrapper():
         self.logger.debug('Refreshing connection')
         self.connection = self.init_connection(url)
 
+    def close(self):
+        """
+        Close connection if it exists
+        """
+        if self.connection:
+            self.logger.debug('Closing connection for %s', self.host_url)
+            self.connection.close()
+            self.connection = None
+
     def api(self, method, url, data=None, headers=None):
         """
         Make a HTTP request to given url
@@ -88,9 +97,7 @@ class ConnectionWrapper():
 
                 response_to_return = response.read()
                 if not self.keep_open:
-                    self.logger.debug('Closing connection for %s', self.host_url)
-                    self.connection.close()
-                    self.connection = None
+                    self.close()
 
                 end_time = time.time()
                 self.logger.debug('%s request to %s%s took %.2f',
