@@ -11,6 +11,7 @@ from core.model.subcampaign_ticket import SubcampaignTicket
 from core.utils.request_submitter import RequestSubmitter
 from core.utils.connection_wrapper import ConnectionWrapper
 from core.utils.settings import Settings
+from core.utils.ssh_executor import SSHExecutor
 from core.controller.subcampaign_controller import SubcampaignController
 
 
@@ -498,15 +499,27 @@ class RequestController(ControllerBase):
             request.set('priority', priority)
             settings = Settings()
             connection = ConnectionWrapper(host=settings.get('cmsweb_url'), keep_open=True)
+            updated_workflows = []
             for workflow in request.get('workflows'):
                 workflow_name = workflow['name']
                 self.logger.info('Changing "%s" priority to %s', workflow_name, priority)
                 response = connection.api('PUT',
                                           f'/reqmgr2/data/request/{workflow_name}',
                                           {'RequestPriority': priority})
+                updated_workflows.append(workflow_name)
                 self.logger.debug(response)
 
             connection.close()
+            # Update priority in Stats2
+            ssh_executor = SSHExecutor('vocms074.cern.ch', '/home/jrumsevi/pdmvserv_auth.txt')
+            workflow_update_commands = ['cd /home/pdmvserv/Stats2',
+                                        'export USERKEY=/home/pdmvserv/private/hostkey.pem',
+                                        'export USERCRT=/home/pdmvserv/private/hostcert.pem']
+            for workflow_name in updated_workflows:
+                workflow_update_commands.append(f'python3 stats_update.py --action update --name {workflow_name}')
+
+            ssh_executor.execute_command(workflow_update_commands)
+            # Finally save the request
             request_db.save(request.get_json())
 
         return request
