@@ -14,7 +14,10 @@ class Database():
     __SEARCH_RENAME = {
         'requests': {
             'runs': 'runs<int>',
+            'run': 'runs<int>',
             'workflows': 'workflows.name',
+            'workflow': 'workflows.name',
+            'output_dataset': 'output_datasets',
         }
     }
 

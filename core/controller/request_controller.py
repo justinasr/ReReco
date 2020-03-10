@@ -113,7 +113,7 @@ class RequestController(ControllerBase):
         editing_info['processing_string'] = new
         editing_info['subcampaign'] = new
         editing_info['energy'] = True
-        editing_info['sequences'] = new
+        editing_info['sequences'] = True
         status = obj.get('status')
         if status != 'new':
             editing_info['memory'] = False
@@ -275,14 +275,13 @@ class RequestController(ControllerBase):
 
         return request
 
-    def get_runs_for_request(self, request):
+    def get_runs(self, subcampaign_name, input_dataset):
         """
-        Return a list of runs for given request
+        Return a list of runs for given input dataset in a subcampaign
         """
         subcampaign_db = Database('subcampaigns')
-        subcampaign = subcampaign_db.get(request.get('subcampaign'))
+        subcampaign = subcampaign_db.get(subcampaign_name)
         runs_json_path = subcampaign.get('runs_json_path')
-        input_dataset = request.get('input_dataset')
         with self.locker.get_lock('get-request-runs'):
             start_time = time.time()
             dbs_runs = []
@@ -322,6 +321,15 @@ class RequestController(ControllerBase):
                          len(all_runs))
 
         return all_runs
+
+    def get_runs_for_request(self, request):
+        """
+        Return a list of runs for given request
+        """
+        subcampaign_name = request.get('subcampaign')
+        input_dataset = request.get('input_dataset')
+        return self.get_runs(subcampaign_name, input_dataset)
+
 
     def __pick_workflows(self, request, all_workflows, output_datasets):
         """
@@ -446,11 +454,12 @@ class RequestController(ControllerBase):
                     request.set('completed_events', completed_events)
                     break
 
-            if 'RequestPriority' in all_workflows[all_workflow_names[-1]]:
-                request.set('priority', all_workflows[all_workflow_names[-1]]['RequestPriority'])
+            if all_workflow_names:
+                if 'RequestPriority' in all_workflows[all_workflow_names[-1]]:
+                    request.set('priority', all_workflows[all_workflow_names[-1]]['RequestPriority'])
 
-            if 'TotalEvents' in all_workflows[all_workflow_names[-1]]:
-                request.set('total_events', max(0, all_workflows[all_workflow_names[-1]]['TotalEvents']))
+                if 'TotalEvents' in all_workflows[all_workflow_names[-1]]:
+                    request.set('total_events', max(0, all_workflows[all_workflow_names[-1]]['TotalEvents']))
 
             request.set('output_datasets', output_datasets)
             request.set('workflows', new_workflows)
@@ -511,15 +520,22 @@ class RequestController(ControllerBase):
 
             connection.close()
             # Update priority in Stats2
-            ssh_executor = SSHExecutor('vocms074.cern.ch', '/home/jrumsevi/pdmvserv_auth.txt')
-            workflow_update_commands = ['cd /home/pdmvserv/Stats2',
-                                        'export USERKEY=/home/pdmvserv/private/hostkey.pem',
-                                        'export USERCRT=/home/pdmvserv/private/hostcert.pem']
-            for workflow_name in updated_workflows:
-                workflow_update_commands.append(f'python3 stats_update.py --action update --name {workflow_name}')
-
-            ssh_executor.execute_command(workflow_update_commands)
+            self.force_stats_to_refresh(updated_workflows)
             # Finally save the request
             request_db.save(request.get_json())
 
         return request
+
+    def force_stats_to_refresh(self, workflows):
+        """
+        Force Stats2 to update workflows with given workflow names
+        """
+        with self.locker.get_lock('refresh-stats'):
+            ssh_executor = SSHExecutor('vocms074.cern.ch', '/home/jrumsevi/pdmvserv_auth.txt')
+            workflow_update_commands = ['cd /home/pdmvserv/Stats2',
+                                        'export USERKEY=/home/pdmvserv/private/hostkey.pem',
+                                        'export USERCRT=/home/pdmvserv/private/hostcert.pem']
+            for workflow_name in workflows:
+                workflow_update_commands.append(f'python3 stats_update.py --action update --name {workflow_name}')
+
+            ssh_executor.execute_command(workflow_update_commands)

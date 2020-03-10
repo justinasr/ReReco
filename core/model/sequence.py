@@ -221,7 +221,7 @@ class Sequence(ModelBase):
 
         # Get correct configuration of DQM step, e.g.
         # DQM:@rerecoCommon should be changed to HARVESTING:@rerecoCommon
-        step = 'HARVESTING:standardDQM'
+        step = 'HARVESTING:dqmHarvesting'
         for one_step in self.get('step'):
             if one_step.startswith('DQM:'):
                 step = one_step.replace('DQM:', 'HARVESTING:', 1)

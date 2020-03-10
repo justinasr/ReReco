@@ -6,7 +6,7 @@ from flask import Flask, render_template
 from api.subcampaign_api import CreateSubcampaignAPI, DeleteSubcampaignAPI, UpdateSubcampaignAPI, GetSubcampaignAPI, GetEditableSubcampaignAPI, GetDefaultSubcampaignSequenceAPI
 from api.subcampaign_ticket_api import CreateSubcampaignTicketAPI, DeleteSubcampaignTicketAPI, UpdateSubcampaignTicketAPI, GetSubcampaignTicketAPI, GetSubcampaignTicketDatasetsAPI, GetEditableSubcampaignTicketAPI, CreateRequestsForSubcampaignTicketAPI, GetSubcampaignTicketTwikiAPI
 from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
-from api.request_api import CreateRequestAPI, DeleteRequestAPI, DeleteRequestManyAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus, RequestPreviousStatus, GetRequestRunsAPI, UpdateRequestWorkflowsAPI, RequestOptionResetAPI, UpdateRequestManyWorkflowsAPI
+from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetRequestJobDictAPI, RequestNextStatus, RequestPreviousStatus, GetRequestRunsAPI, UpdateRequestWorkflowsAPI, RequestOptionResetAPI
 from api.search_api import SearchAPI
 from api.settings_api import SettingsAPI
 from api.system_api import SubmissionWorkerStatusAPI, SubmissionQueueAPI, LockerStatusAPI, UserInfoAPI
@@ -101,7 +101,6 @@ api.add_resource(GetSubcampaignTicketTwikiAPI, '/api/subcampaign_tickets/twiki_s
 
 api.add_resource(CreateRequestAPI, '/api/requests/create')
 api.add_resource(DeleteRequestAPI, '/api/requests/delete')
-api.add_resource(DeleteRequestManyAPI, '/api/requests/delete_many')
 api.add_resource(UpdateRequestAPI, '/api/requests/update')
 api.add_resource(GetRequestAPI, '/api/requests/get/<string:prepid>')
 api.add_resource(GetEditableRequestAPI,
@@ -109,12 +108,11 @@ api.add_resource(GetEditableRequestAPI,
                  '/api/requests/get_editable/<string:prepid>')
 api.add_resource(GetCMSDriverAPI, '/api/requests/get_cmsdriver/<string:prepid>')
 api.add_resource(GetRequestJobDictAPI, '/api/requests/get_dict/<string:prepid>')
-api.add_resource(RequestNextStatus, '/api/requests/next_status/<string:prepid>')
-api.add_resource(RequestPreviousStatus, '/api/requests/previous_status/<string:prepid>')
+api.add_resource(RequestNextStatus, '/api/requests/next_status')
+api.add_resource(RequestPreviousStatus, '/api/requests/previous_status')
 api.add_resource(GetRequestRunsAPI, '/api/requests/get_runs/<string:prepid>')
-api.add_resource(UpdateRequestWorkflowsAPI, '/api/requests/update_workflows/<string:prepid>')
-api.add_resource(UpdateRequestManyWorkflowsAPI, '/api/requests/update_workflows_many')
-api.add_resource(RequestOptionResetAPI, '/api/requests/option_reset/<string:prepid>')
+api.add_resource(UpdateRequestWorkflowsAPI, '/api/requests/update_workflows')
+api.add_resource(RequestOptionResetAPI, '/api/requests/option_reset')
 
 parser = argparse.ArgumentParser(description='Stats2')
 parser.add_argument('--debug',

@@ -258,6 +258,7 @@ class RequestSubmitter:
                 request.set('workflows', [{'name': workflow_name}])
                 request.set('status', 'submitted')
                 request.add_history('submission', 'succeeded', 'automatic')
+                controller.force_stats_to_refresh([workflow_name])
                 request_db.save(request.get_json())
             except ValueError as ve:
                 self.logger.error('Error submitting request to ReqMgr2: %s', ve)
@@ -265,4 +266,5 @@ class RequestSubmitter:
                 request.add_history('submission', 'failed', 'automatic')
                 request_db.save(request.get_json())
 
+        controller.update_workflows(request)
         self.logger.info('Successfully finished %s submission', prepid)

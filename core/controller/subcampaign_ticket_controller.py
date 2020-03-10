@@ -138,6 +138,17 @@ class SubcampaignTicketController(ControllerBase):
                                         'processing_string': processing_string,
                                         'time_per_event': time_per_event,
                                         'size_per_event': size_per_event}
+                    try:
+                        runs = request_controller.get_runs(subcampaign_name, input_dataset)
+                        new_request_json['runs'] = runs
+                    except Exception as ex:
+                        self.logger.error('Error getting runs for %s %s %s request. '
+                                          'Will leave empty. Error:\n%s',
+                                          subcampaign_name,
+                                          input_dataset,
+                                          processing_string,
+                                          ex)
+
                     created_request_json = request_controller.create(new_request_json)
                     newly_created_request_jsons.append(created_request_json)
 

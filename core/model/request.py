@@ -3,6 +3,7 @@ Module that contains Request class
 """
 from core.model.model_base import ModelBase
 from core.model.sequence import Sequence
+from copy import deepcopy
 
 
 class Request(ModelBase):
@@ -82,6 +83,7 @@ class Request(ModelBase):
 
     def __init__(self, json_input=None):
         if json_input:
+            json_input = deepcopy(json_input)
             json_input['runs'] = [int(r) for r in json_input.get('runs', [])]
             sequence_objects = []
             for index, sequence_json in enumerate(json_input.get('sequences', [])):

@@ -34,7 +34,7 @@ class CreateRequestAPI(APIBase):
 
 class DeleteRequestAPI(APIBase):
     """
-    Endpoint for deleting a request
+    Endpoint for deleting one or multiple requests
     """
 
     def __init__(self):
@@ -49,30 +49,14 @@ class DeleteRequestAPI(APIBase):
         """
         data = flask.request.data
         request_json = json.loads(data.decode('utf-8'))
-        obj = request_controller.delete(request_json)
-        return self.output_text({'response': obj, 'success': True, 'message': ''})
-
-
-class DeleteRequestManyAPI(APIBase):
-    """
-    Endpoint for deleting a list of requests request
-    """
-
-    def __init__(self):
-        APIBase.__init__(self)
-
-    @APIBase.ensure_request_data
-    @APIBase.exceptions_to_errors
-    @APIBase.ensure_role('manager')
-    def delete(self):
-        """
-        Delete a request with the provided JSON content
-        """
-        data = flask.request.data
-        requests_json = json.loads(data.decode('utf-8'))
-        results = []
-        for request_json in requests_json:
-            results.append(request_controller.delete(request_json))
+        if isinstance(request_json, dict):
+            results = request_controller.delete(request_json)
+        elif isinstance(request_json, list):
+            results = []
+            for single_request_json in request_json:
+                results.append(request_controller.delete(single_request_json))
+        else:
+            raise Exception('Expected a single request dict or a list of request dicts')
 
         return self.output_text({'response': results, 'success': True, 'message': ''})
 
@@ -180,40 +164,74 @@ class GetRequestJobDictAPI(APIBase):
 
 class RequestNextStatus(APIBase):
     """
-    Endpoint for moving request to next status
+    Endpoint for moving one or multiple requests to next status
     """
 
     def __init__(self):
         APIBase.__init__(self)
 
+    @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
     @APIBase.ensure_role('manager')
-    def get(self, prepid=None):
+    def post(self, prepid=None):
         """
-        Get a text file with ReqMgr2's dictionary
+        Move one or multiple requests to next status
         """
-        request = request_controller.get(prepid)
-        result = request_controller.next_status(request)
-        return self.output_text({'response': result.get_json(), 'success': True, 'message': ''})
+        data = flask.request.data
+        request_json = json.loads(data.decode('utf-8'))
+        if isinstance(request_json, dict):
+            prepid = request_json.get('prepid')
+            request = request_controller.get(prepid)
+            results = request_controller.next_status(request)
+            results = results.get_json()
+        elif isinstance(request_json, list):
+            results = []
+            for single_request_json in request_json:
+                prepid = single_request_json.get('prepid')
+                request = request_controller.get(prepid)
+                results.append(request_controller.next_status(request))
+
+            results = [x.get_json() for x in results]
+        else:
+            raise Exception('Expected a single request dict or a list of request dicts')
+
+        return self.output_text({'response': results, 'success': True, 'message': ''})
 
 
 class RequestPreviousStatus(APIBase):
     """
-    Endpoint for moving request to previous status
+    Endpoint for moving one or multiple requests to previous status
     """
 
     def __init__(self):
         APIBase.__init__(self)
 
+    @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
     @APIBase.ensure_role('manager')
-    def get(self, prepid=None):
+    def post(self, prepid=None):
         """
-        Get a text file with ReqMgr2's dictionary
+        Move one or multiple requests to previous status
         """
-        request = request_controller.get(prepid)
-        result = request_controller.previous_status(request)
-        return self.output_text({'response': result.get_json(), 'success': True, 'message': ''})
+        data = flask.request.data
+        request_json = json.loads(data.decode('utf-8'))
+        if isinstance(request_json, dict):
+            prepid = request_json.get('prepid')
+            request = request_controller.get(prepid)
+            results = request_controller.previous_status(request)
+            results = results.get_json()
+        elif isinstance(request_json, list):
+            results = []
+            for single_request_json in request_json:
+                prepid = single_request_json.get('prepid')
+                request = request_controller.get(prepid)
+                results.append(request_controller.previous_status(request))
+
+            results = [x.get_json() for x in results]
+        else:
+            raise Exception('Expected a single request dict or a list of request dicts')
+
+        return self.output_text({'response': results, 'success': True, 'message': ''})
 
 
 class GetRequestRunsAPI(APIBase):
@@ -237,26 +255,7 @@ class GetRequestRunsAPI(APIBase):
 
 class UpdateRequestWorkflowsAPI(APIBase):
     """
-    Endpoint for trigerring a request update from Stats2 (ReqMgr2 + DBS)
-    """
-
-    def __init__(self):
-        APIBase.__init__(self)
-
-    @APIBase.exceptions_to_errors
-    @APIBase.ensure_role('manager')
-    def get(self, prepid=None):
-        """
-        Pull workflows from Stats2 (ReqMgr2 + DBS) and update request with that information
-        """
-        request = request_controller.get(prepid)
-        result = request_controller.update_workflows(request)
-        return self.output_text({'response': result.get_json(), 'success': True, 'message': ''})
-
-
-class UpdateRequestManyWorkflowsAPI(APIBase):
-    """
-    Endpoint for trigerring a request update from Stats2 (ReqMgr2 + DBS) for list of requests
+    Endpoint for trigerring one or multiple request update from Stats2 (ReqMgr2 + DBS)
     """
 
     def __init__(self):
@@ -268,17 +267,25 @@ class UpdateRequestManyWorkflowsAPI(APIBase):
     def post(self):
         """
         Pull workflows from Stats2 (ReqMgr2 + DBS) and update request with that information
-        for list of requests
         """
         data = flask.request.data
-        requests_json = json.loads(data.decode('utf-8'))
-        results = []
-        for request_json in requests_json:
+        request_json = json.loads(data.decode('utf-8'))
+        if isinstance(request_json, dict):
             prepid = request_json.get('prepid')
             request = request_controller.get(prepid)
-            results.append(request_controller.update_workflows(request))
+            results = request_controller.update_workflows(request)
+            results = results.get_json()
+        elif isinstance(request_json, list):
+            results = []
+            for single_request_json in request_json:
+                prepid = single_request_json.get('prepid')
+                request = request_controller.get(prepid)
+                results.append(request_controller.update_workflows(request))
 
-        results = [x.get_json() for x in results]
+            results = [x.get_json() for x in results]
+        else:
+            raise Exception('Expected a single request dict or a list of request dicts')
+
         return self.output_text({'response': results, 'success': True, 'message': ''})
 
 
@@ -287,15 +294,29 @@ class RequestOptionResetAPI(APIBase):
     Endpoint for rewriting request values from subcampaign
     """
 
-    def __init__(self):
-        APIBase.__init__(self)
-
+    @APIBase.ensure_request_data
     @APIBase.exceptions_to_errors
     @APIBase.ensure_role('manager')
-    def get(self, prepid=None):
+    def post(self, prepid=None):
         """
-        Rewrite memory, sequences and energy from subcampaign
+        Rewrite memory, sequences and energy from subcampaign for one or multiple requests
         """
-        request = request_controller.get(prepid)
-        result = request_controller.option_reset(request)
-        return self.output_text({'response': result.get_json(), 'success': True, 'message': ''})
+        data = flask.request.data
+        request_json = json.loads(data.decode('utf-8'))
+        if isinstance(request_json, dict):
+            prepid = request_json.get('prepid')
+            request = request_controller.get(prepid)
+            results = request_controller.option_reset(request)
+            results = results.get_json()
+        elif isinstance(request_json, list):
+            results = []
+            for single_request_json in request_json:
+                prepid = single_request_json.get('prepid')
+                request = request_controller.get(prepid)
+                results.append(request_controller.option_reset(request))
+
+            results = [x.get_json() for x in results]
+        else:
+            raise Exception('Expected a single request dict or a list of request dicts')
+
+        return self.output_text({'response': results, 'success': True, 'message': ''})
