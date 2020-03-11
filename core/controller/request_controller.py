@@ -148,21 +148,34 @@ class RequestController(ControllerBase):
         """
         self.logger.debug('Getting config upload script for %s', request.get_prepid())
         database_url = Settings().get('cmsweb_url') + '/couchdb'
-        command = '#!/bin/bash\n\n'
+        command = '#!/bin/bash\n'
+        common_check_part = f'if [ ! -s "%s.py" ]; then\n'
+        common_check_part += f'  echo "File %s.py is missing" >&2\n'
+        common_check_part += f'  exit 1\n'
+        common_check_part += f'fi\n'
+        for configs in request.get_config_file_names():
+            # Run config uploader
+            command += '\n'
+            command += common_check_part % (configs['config'], configs['config'])
+            if configs.get('harvest'):
+                command += '\n'
+                command += common_check_part % (configs['harvest'], configs['harvest'])
+
+        command += '\n'
         command += request.get_cmssw_setup()
         command += '\n\n'
         # Add path to WMCore
         # This should be done in a smarter way
         command += '\n'.join([f'git clone --quiet https://github.com/dmwm/WMCore.git',
                               f'export PYTHONPATH=$(pwd)/WMCore/src/python/:$PYTHONPATH'])
-        common_part = f'python config_uploader.py --file %s.py --label %s --group ppd --user $(echo $USER) --db {database_url}'
+        common_upload_part = f'python config_uploader.py --file %s.py --label %s --group ppd --user $(echo $USER) --db {database_url}'
         for configs in request.get_config_file_names():
             # Run config uploader
             command += '\n'
-            command += common_part % (configs['config'], configs['config'])
+            command += common_upload_part % (configs['config'], configs['config'])
             if configs.get('harvest'):
                 command += '\n'
-                command += common_part % (configs['harvest'], configs['harvest'])
+                command += common_upload_part % (configs['harvest'], configs['harvest'])
 
         return command
 

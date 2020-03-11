@@ -75,8 +75,8 @@ class SSHExecutor():
         for line in stderr.readlines():
             stderr_list.append(line[0:256])
 
-        stdout = ''.join(stdout_list)
-        stderr = ''.join(stderr_list)
+        stdout = ''.join(stdout_list).strip()
+        stderr = ''.join(stderr_list).strip()
 
         # Read output from stdout and stderr streams
         if stdout:
@@ -100,6 +100,9 @@ class SSHExecutor():
             self.logger.debug('Uploaded file to %s', copy_to)
         except Exception as ex:
             self.logger.error('Error uploading file from %s to %s. %s', copy_from, copy_to, ex)
+            return False
+
+        return True
 
     def download_file(self, copy_from, copy_to):
         """
@@ -114,6 +117,9 @@ class SSHExecutor():
             self.logger.debug('Downloaded file to %s', copy_to)
         except Exception as ex:
             self.logger.error('Error downloading file from %s to %s. %s', copy_from, copy_to, ex)
+            return False
+
+        return True
 
     def close_connections(self):
         """

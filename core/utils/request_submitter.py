@@ -142,6 +142,16 @@ class RequestSubmitter:
         Update request's sequences with given list of tupules with sequence names and hashes
         """
 
+    def __handle_error(self, request, error_message):
+        """
+        Handle error that occured during submission, modify request accordingly
+        """
+        self.logger.error(error_message)
+        request_db = Database('requests')
+        request.set('status', 'new')
+        request.add_history('submission', 'failed', 'automatic')
+        request_db.save(request.get_json())
+
     def submit_request(self, request, controller):
         """
         Method that is used by submission workers. This is where the actual submission happens
@@ -179,33 +189,33 @@ class RequestSubmitter:
                                      f'rereco_submission/{prepid}/config_uploader.py')
             # Start executing commands
             # Create configs
+            config_gen_output, config_gen_error = ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
+                                                                                f'chmod +x {prepid}.sh',
+                                                                                f'voms-proxy-init -voms cms --valid 4:00',
+                                                                                f'export X509_USER_PROXY=$(voms-proxy-info --path)',
+                                                                                f'./{prepid}.sh'])
             # Ignore in stderr:
             # "WARNING: In non-interactive mode release checks e.g. deprecated releases, production architectures are disabled."
-            ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
-                                          f'chmod +x {prepid}.sh',
-                                          f'voms-proxy-init -voms cms --valid 4:00',
-                                          f'export X509_USER_PROXY=$(voms-proxy-info --path)',
-                                          f'./{prepid}.sh'])
+            config_gen_error = '\n'.join([x for x in config_gen_error.split('\n') if 'WARNING: In non-interactive mode' not in x])
+            if config_gen_error:
+                self.__handle_error(request, f'Error generating configs for {prepid}.\n{config_gen_error}')
+                return
+
             # Upload configs
             upload_output, upload_error = ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
                                                                         f'chmod +x {prepid}_upload.sh',
                                                                         f'./{prepid}_upload.sh'])
 
             if upload_error:
-                self.logger.debug('Error uploading %s configs to config cache: %s', prepid, upload_error)
-                request.set('status', 'new')
-                request.add_history('submission', 'failed', 'automatic')
-                request_db.save(request.get_json())
+                self.__handle_error(request, f'Error uploading configs for {prepid}.\n{upload_error}')
                 return
 
             upload_output = [tuple(x.strip() for x in x.split(' ') if x.strip()) for x in upload_output.split('\n') if 'DocID' in x]
             expected_config_file_names = request.get_config_file_names()
             for docid, config_name, config_hash in upload_output:
                 if docid != 'DocID':
-                    self.logger.Error('Output is different than expected for %s: %s', prepid, (docid, config_name, config_hash))
-                    request.set('status', 'new')
-                    request.add_history('submission', 'failed', 'automatic')
-                    request_db.save(request.get_json())
+                    self.__handle_error(request,
+                                        f'Output is different than expected for {prepid}: {docid} {config_name} {config_hash}')
                     return
 
                 for sequence_index, sequence_configs in enumerate(expected_config_file_names):
@@ -224,10 +234,8 @@ class RequestSubmitter:
                         sequence_configs['harvest'] = None
                         break
                 else:
-                    self.logger.error('Unexpected DocID: %s', config_name)
-                    request.set('status', 'new')
-                    request.add_history('submission', 'failed', 'automatic')
-                    request_db.save(request.get_json())
+                    self.__handle_error(request,
+                                        f'Unexpected DocID for {prepid}: {config_name} {config_name} {config_hash}')
                     return
 
             for sequence_configs in expected_config_file_names:
@@ -261,10 +269,9 @@ class RequestSubmitter:
                 controller.force_stats_to_refresh([workflow_name])
                 request_db.save(request.get_json())
             except ValueError as ve:
-                self.logger.error('Error submitting request to ReqMgr2: %s', ve)
-                request.set('status', 'new')
-                request.add_history('submission', 'failed', 'automatic')
-                request_db.save(request.get_json())
+                self.__handle_error(request,
+                                    f'Error submitting {prepid} to ReqMgr2:\n{reqmgr_response}')
+                return
 
         controller.update_workflows(request)
         self.logger.info('Successfully finished %s submission', prepid)
