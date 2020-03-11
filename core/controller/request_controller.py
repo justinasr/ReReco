@@ -218,13 +218,13 @@ class RequestController(ControllerBase):
 
         return job_dict
 
-    def update_status(self, request, status):
+    def update_status(self, request, status, timestamp=None):
         """
         Set new status to request, update history accordingly and save to database
         """
         request_db = Database(self.database_name)
         request.set('status', status)
-        request.add_history('status', status, None)
+        request.add_history('status', status, None, timestamp)
         request_db.save(request.get_json())
 
     def next_status(self, request):
@@ -234,19 +234,16 @@ class RequestController(ControllerBase):
         prepid = request.get_prepid()
         with self.locker.get_nonblocking_lock(prepid):
             if request.get('status') == 'new':
-                self.update_status(request, 'approved')
-                return request
+                return self.move_request_to_approved(request)
 
             if request.get('status') == 'approved':
-                self.update_status(request, 'submitting')
-                RequestSubmitter().add_request(request, self)
-                return request
+                return self.move_request_to_submitting(request)
 
             if request.get('status') == 'submitting':
                 raise Exception('You are not allowed to set next status while request is being submitted')
 
             if request.get('status') == 'submitted':
-                raise Exception('You are not allowed to set next status while request is submitted')
+                return self.move_request_to_done(request)
 
             if request.get('status') == 'done':
                 raise Exception('Request is already done')
@@ -272,6 +269,55 @@ class RequestController(ControllerBase):
                     sequence.set('harvesting_config_id', '')
 
                 self.update_status(request, 'approved')
+
+        return request
+
+    def move_request_to_approved(self, request):
+        """
+        Try to move rquest to approved
+        """
+        prepid = request.get_prepid()
+        if not request.get('runs'):
+            raise Exception(f'No runs are specified in {prepid}')
+
+        self.update_status(request, 'approved')
+        return request
+
+    def move_request_to_submitting(self, request):
+        """
+        Try to move request to submitting status and get sumbitted
+        """
+        RequestSubmitter().add_request(request, self)
+        self.update_status(request, 'submitting')
+        return request
+
+    def move_request_to_done(self, request):
+        """
+        Try to move request to done status
+        """
+        prepid = request.get_prepid()
+        request = self.update_workflows(request)
+        workflows = request.get('workflows')
+        if workflows:
+            last_workflow = workflows[-1]
+            timestamps = []
+            for output_dataset in last_workflow['output_datasets']:
+                dataset_type = output_dataset['type']
+                if dataset_type.lower() != 'valid':
+                    dataset_name = output_dataset['name']
+                    raise Exception(f'Could not move {prepid} to "done" because {dataset_name} is {dataset_type}')
+
+            for status in last_workflow['status_history']:
+                if status['status'].lower() == 'completed':
+                    completed_timestamp = status['time']
+                    break
+            else:
+                last_workflow_name = last_workflow['name']
+                raise Exception(f'Could not move {prepid} to "done" because {last_workflow_name} is not yet "completed"')
+
+            self.update_status(request, 'done', completed_timestamp)
+        else:
+            raise Exception(f'{prepid} does not have any workflows in computing')
 
         return request
 
@@ -339,7 +385,8 @@ class RequestController(ControllerBase):
         for _, workflow in all_workflows.items():
             new_workflow = {'name': workflow['RequestName'],
                             'type': workflow['RequestType'],
-                            'output_datasets': []}
+                            'output_datasets': [],
+                            'status_history': []}
             for output_dataset in output_datasets:
                 for history_entry in reversed(workflow.get('EventNumberHistory', [])):
                     if output_dataset in history_entry['Datasets']:
@@ -347,6 +394,10 @@ class RequestController(ControllerBase):
                                                                 'type': history_entry['Datasets'][output_dataset]['Type'],
                                                                 'events': history_entry['Datasets'][output_dataset]['Events']})
                         break
+
+            for request_transition in workflow.get('RequestTransition', []):
+                new_workflow['status_history'].append({'time': request_transition['UpdateTime'],
+                                                       'status': request_transition['Status']})
 
             new_workflows.append(new_workflow)
 
