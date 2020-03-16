@@ -12,7 +12,6 @@ class Locker():
     """
 
     __locks = {}
-    __infos = {}
     __locker_lock = RLock()
 
     def __init__(self):
@@ -37,9 +36,19 @@ class Locker():
         It can be either existing one or a new one will be created
         """
         with Locker.__locker_lock:
-            lock = self.__locks.get(prepid, RLock())
-            self.__locks[prepid] = lock
-            self.__infos[prepid] = info
+            lock = self.__locks.get(prepid, {'lock': RLock()})['lock']
+            self.__locks[prepid] = {'lock': lock,
+                                    'info': info}
+
+            # If there are more than 99 locks in the system, do a cleanup
+            if len(self.__locks) > 99:
+                for key in list(self.__locks.keys()):
+                    if key == prepid:
+                        continue
+
+                    if 'count=0' in str(self.__locks[key]['lock']):
+                        self.logger.debug('Removing %s from locks dictionary', key)
+                        del self.__locks[key]
 
         self.logger.debug('Returning a lock for %s. Thread %s',
                           prepid,
@@ -51,7 +60,7 @@ class Locker():
         """
         Return dictionary of all locks and their statuses and infos
         """
-        return {k: {'l': str(v), 'i': self.__infos[k]} for k, v in self.__locks.items()}
+        return {k: {'l': str(v['lock']), 'i': v['info']} for k, v in self.__locks.items()}
 
 
 class LockedException(Exception):

@@ -29,7 +29,7 @@
           <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
         </tr>
         <tr>
-          <td>Input Datasets</td>
+          <td>Input Datasets ({{listLength(editableObject.input_datasets)}})</td>
           <td><textarea v-model="editableObject.input_datasets" :disabled="!editingInfo.input_datasets"></textarea></td>
         </tr>
       </table>
@@ -143,7 +143,8 @@ export default {
     getDatasets: function() {
       this.loading = true;
       let component = this;
-      let httpRequest = axios.get('api/subcampaign_tickets/get_datasets?q=' + this.getDatasetsDialog.input);
+      // Timeout 120000ms is 2 minutes
+      let httpRequest = axios.get('api/subcampaign_tickets/get_datasets?q=' + this.getDatasetsDialog.input, {timeout: 120000});
       this.closeGetDatasetsDialog();
       httpRequest.then(response => {
         component.editableObject['input_datasets'] = response.data.response.filter(Boolean).join('\n');
@@ -171,6 +172,9 @@ export default {
       this.errorDialog.title = title;
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
+    },
+    listLength(l) {
+      return l.split('\n').filter(Boolean).length;
     },
   }
 }

@@ -6,6 +6,7 @@ import time
 from core.controller.controller_base import ControllerBase
 from core.model.subcampaign_ticket import SubcampaignTicket
 from core.utils.connection_wrapper import ConnectionWrapper
+from core.utils.settings import Settings
 from core.database.database import Database
 from core.controller.request_controller import RequestController
 
@@ -51,6 +52,13 @@ class SubcampaignTicketController(ControllerBase):
         if not subcampaign_database.document_exists(subcampaign_name):
             raise Exception('Subcampaign %s does not exist' % (subcampaign_name))
 
+        dataset_blacklist = set(Settings().get('dataset_blacklist'))
+        for input_dataset in obj.get('input_datasets'):
+            dataset = input_dataset.split('/')[1]
+            if dataset in dataset_blacklist:
+                raise Exception(f'Input dataset {input_dataset} is not '
+                                f'allowed because {dataset} is in blacklist')
+
         return True
 
     def check_for_update(self, old_obj, new_obj, changed_values):
@@ -59,6 +67,14 @@ class SubcampaignTicketController(ControllerBase):
             subcampaign_name = new_obj.get('subcampaign')
             if not subcampaign_database.document_exists(subcampaign_name):
                 raise Exception('Subcampaign %s does not exist' % (subcampaign_name))
+
+        if 'input_datasets' in changed_values:
+            dataset_blacklist = set(Settings().get('dataset_blacklist'))
+            for input_dataset in obj.get('input_datasets'):
+                dataset = input_dataset.split('/')[1]
+                if dataset in dataset_blacklist:
+                    raise Exception(f'Input dataset {input_dataset} is not '
+                                f'allowed because {dataset} is in blacklist')
 
         return True
 
@@ -80,13 +96,15 @@ class SubcampaignTicketController(ControllerBase):
 
         with self.locker.get_lock('get-subcampaign-datasets'):
             start_time = time.time()
-            connection_wrapper = ConnectionWrapper(host='cmsweb.cern.ch')
+            connection_wrapper = ConnectionWrapper(host='cmsweb.cern.ch', max_attempts=1)
             response = connection_wrapper.api('POST',
                                               '/dbs/prod/global/DBSReader/datasetlist',
                                               {'dataset': query})
 
         response = json.loads(response.decode('utf-8'))
         datasets = [x['dataset'] for x in response]
+        dataset_blacklist = set(Settings().get('dataset_blacklist'))
+        datasets = [x for x in datasets if x.split('/')[1] not in dataset_blacklist]
         end_time = time.time()
         self.logger.info('Got %s datasets from DBS for query %s in %.2fs',
                          len(datasets),
@@ -119,6 +137,7 @@ class SubcampaignTicketController(ControllerBase):
         ticket_prepid = subcampaign_ticket.get_prepid()
         newly_created_request_jsons = []
         request_controller = RequestController()
+        dataset_blacklist = set(Settings().get('dataset_blacklist'))
         with self.locker.get_lock(ticket_prepid):
             subcampaign_ticket = SubcampaignTicket(json_input=database.get(ticket_prepid))
             created_requests = subcampaign_ticket.get('created_requests')
@@ -126,6 +145,13 @@ class SubcampaignTicketController(ControllerBase):
             if status != 'new':
                 raise Exception(f'Ticket is not new, it already has '
                                 f'{len(created_requests)} requests created')
+
+            # In case black list was updated after ticket was created
+            for input_dataset in subcampaign_ticket.get('input_datasets'):
+                dataset = input_dataset.split('/')[1]
+                if dataset in dataset_blacklist:
+                    raise Exception(f'Input dataset {input_dataset} is not '
+                                f'allowed because {dataset} is in blacklist')
 
             subcampaign_name = subcampaign_ticket.get('subcampaign')
             processing_string = subcampaign_ticket.get('processing_string')

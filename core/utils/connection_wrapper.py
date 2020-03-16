@@ -13,10 +13,10 @@ class ConnectionWrapper():
     HTTP client wrapper class to re-use existing connection
     """
 
-    def __init__(self, host, port=443, https=True, timeout=120, keep_open=False):
+    def __init__(self, host, port=443, https=True, timeout=120, keep_open=False, max_attempts=3):
         self.logger = logging.getLogger('logger')
         self.connection = None
-        self.connection_attempts = 3
+        self.connection_attempts = max_attempts
         self.host_url = host.replace('https://', '').replace('http://', '')
         self.cert_file = os.getenv('USERCRT', None)
         self.key_file = os.getenv('USERKEY', None)

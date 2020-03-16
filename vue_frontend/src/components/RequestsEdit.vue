@@ -67,7 +67,7 @@
           <td><input type="text" v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
         </tr>
         <tr>
-          <td>Runs</td>
+          <td>Runs ({{listLength(editableObject.runs)}})</td>
           <td><textarea v-model="editableObject.runs" :disabled="!editingInfo.runs"></textarea></td>
         </tr>
         <tr>
@@ -231,6 +231,9 @@ export default {
       this.errorDialog.title = title;
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
+    },
+    listLength(l) {
+      return l.split('\n').filter(Boolean).length;
     },
   }
 }
