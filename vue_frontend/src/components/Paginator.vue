@@ -85,7 +85,7 @@
   border: solid 1px #aaa;
   padding: 0;
   display: inline-block;
-  color: rgb(25, 118, 210);
+  color: var(--v-accent-base);
 }
 
 .button-group-button {
@@ -100,8 +100,9 @@
 }
 
 .clicked {
-  background-color: #aaa;
+  background-color: var(--v-accent-base);
   color: white;
+  font-weight: 500;
 }
 
 </style>
