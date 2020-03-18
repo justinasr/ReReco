@@ -11,6 +11,7 @@ from core.utils.locker import Locker
 from core.database.database import Database
 from core.utils.connection_wrapper import ConnectionWrapper
 from core.utils.settings import Settings
+from core.utils.emailer import Emailer
 
 
 class Worker(Thread):
@@ -151,6 +152,30 @@ class RequestSubmitter:
         request.set('status', 'new')
         request.add_history('submission', 'failed', 'automatic')
         request_db.save(request.get_json())
+        emailer = Emailer()
+        prepid = request.get_prepid()
+        subject = f'Request {prepid} submission failed'
+        body = f'Hello,\n\nUnfortunately submission of {prepid} failed.\n'
+        body += f'You can find this request at https://pdmv-dev-proxy.web.cern.ch/rereco/requests?prepid={prepid}\n'
+        body += f'Error message:\n\n{error_message}'
+        recipients = emailer.get_recipients(request)
+        emailer.send(subject, body, recipients)
+
+    def __handle_success(self, request):
+        """
+        Handle notification of successful submission
+        """
+        prepid = request.get_prepid()
+        last_workflow = request.get('workflows')[-1]['name']
+        cmsweb_url = Settings().get('cmsweb_url')
+        self.logger.info(f'Submission of {prepid} succeeded')
+        emailer = Emailer()
+        subject = f'Request {prepid} submission succeeded'
+        body = f'Hello,\n\nSubmission of {prepid} succeeded.\n'
+        body += f'You can find this request at https://pdmv-dev-proxy.web.cern.ch/rereco/requests?prepid={prepid}\n'
+        body += f'Workflow in ReqMgr2 {cmsweb_url}/reqmgr2/fetch?rid={last_workflow}'
+        recipients = emailer.get_recipients(request)
+        emailer.send(subject, body, recipients)
 
     def submit_request(self, request, controller):
         """
@@ -197,6 +222,7 @@ class RequestSubmitter:
             # Ignore in stderr:
             # "WARNING: In non-interactive mode release checks e.g. deprecated releases, production architectures are disabled."
             config_gen_error = '\n'.join([x for x in config_gen_error.split('\n') if 'WARNING: In non-interactive mode' not in x])
+            config_gen_error = config_gen_error.strip()
             if config_gen_error:
                 self.__handle_error(request, f'Error generating configs for {prepid}.\n{config_gen_error}')
                 return
@@ -206,6 +232,7 @@ class RequestSubmitter:
                                                                         f'chmod +x {prepid}_upload.sh',
                                                                         f'./{prepid}_upload.sh'])
 
+            upload_error = upload_error.strip()
             if upload_error:
                 self.__handle_error(request, f'Error uploading configs for {prepid}.\n{upload_error}')
                 return
@@ -240,17 +267,13 @@ class RequestSubmitter:
 
             for sequence_configs in expected_config_file_names:
                 if sequence_configs['config'] is not None:
-                    self.logger.error('Missing DocID: %s', sequence_configs['config'])
-                    request.set('status', 'new')
-                    request.add_history('submission', 'failed', 'automatic')
-                    request_db.save(request.get_json())
+                    self.__handle_error(request,
+                                        'Missing DocID: %s', sequence_configs['config'])
                     return
 
                 if sequence_configs.get('harvest') is not None:
-                    self.logger.error('Missing DocID: %s', sequence_configs['harvest'])
-                    request.set('status', 'new')
-                    request.add_history('submission', 'failed', 'automatic')
-                    request_db.save(request.get_json())
+                    self.__handle_error(request,
+                                        'Missing DocID: %s', sequence_configs['harvest'])
                     return
 
             job_dict = controller.get_job_dict(request)
@@ -268,6 +291,7 @@ class RequestSubmitter:
                 request.add_history('submission', 'succeeded', 'automatic')
                 controller.force_stats_to_refresh([workflow_name])
                 request_db.save(request.get_json())
+                self.__handle_success(request)
             except ValueError as ve:
                 self.__handle_error(request,
                                     f'Error submitting {prepid} to ReqMgr2:\n{reqmgr_response}')
