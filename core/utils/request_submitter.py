@@ -283,19 +283,31 @@ class RequestSubmitter:
             cmsweb_url = Settings().get('cmsweb_url')
             connection = ConnectionWrapper(host=cmsweb_url)
             try:
-                reqmgr_response = connection.api('POST', '/reqmgr2/data/request', job_dict, headers)
+                # Submit job dictionary (ReqMgr2 JSON)
+                reqmgr_response = connection.api('POST',
+                                                 '/reqmgr2/data/request',
+                                                 job_dict,
+                                                 headers)
                 self.logger.info(reqmgr_response)
                 workflow_name = json.loads(reqmgr_response).get('result', [])[0].get('request')
                 request.set('workflows', [{'name': workflow_name}])
                 request.set('status', 'submitted')
                 request.add_history('submission', 'succeeded', 'automatic')
-                controller.force_stats_to_refresh([workflow_name])
                 request_db.save(request.get_json())
-                self.__handle_success(request)
             except ValueError as ve:
                 self.__handle_error(request,
                                     f'Error submitting {prepid} to ReqMgr2:\n{reqmgr_response}')
                 return
+
+            # Try to approve workflow (move to assignment-approved) after few seconds
+            time.sleep(3)
+            approve_response = connection.api('PUT',
+                                              f'/reqmgr2/data/request/{workflow_name}',
+                                              {'RequestStatus': 'assignment-approved'},
+                                              headers)
+            self.logger.info(approve_response)
+            controller.force_stats_to_refresh([workflow_name])
+            self.__handle_success(request)
 
         controller.update_workflows(request)
         self.logger.info('Successfully finished %s submission', prepid)
