@@ -277,11 +277,11 @@ class RequestSubmitter:
                     return
 
             job_dict = controller.get_job_dict(request)
-            headers = {"Content-type": "application/json",
-                       "Accept": "application/json"}
+            headers = {'Content-type': 'application/json',
+                       'Accept': 'application/json'}
 
             cmsweb_url = Settings().get('cmsweb_url')
-            connection = ConnectionWrapper(host=cmsweb_url)
+            connection = ConnectionWrapper(host=cmsweb_url, keep_open=True)
             try:
                 # Submit job dictionary (ReqMgr2 JSON)
                 reqmgr_response = connection.api('POST',
@@ -305,6 +305,7 @@ class RequestSubmitter:
                                               f'/reqmgr2/data/request/{workflow_name}',
                                               {'RequestStatus': 'assignment-approved'},
                                               headers)
+            connection.close()
             self.logger.info(approve_response)
             controller.force_stats_to_refresh([workflow_name])
             self.__handle_success(request)

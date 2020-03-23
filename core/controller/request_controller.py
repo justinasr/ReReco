@@ -270,18 +270,11 @@ class RequestController(ControllerBase):
         prepid = request.get_prepid()
         with self.locker.get_nonblocking_lock(prepid):
             if request.get('status') == 'approved':
-                self.update_status(request, 'new')
+                self.move_request_back_to_new(request)
             elif request.get('status') == 'submitting':
-                self.update_status(request, 'approved')
+                self.move_request_back_to_approved(request)
             elif request.get('status') == 'submitted':
-                request.set('workflows', [])
-                request.set('total_events', 0)
-                request.set('completed_events', 0)
-                for sequence in request.get('sequences'):
-                    sequence.set('config_id', '')
-                    sequence.set('harvesting_config_id', '')
-
-                self.update_status(request, 'approved')
+                self.move_request_back_to_approved(request)
 
         return request
 
@@ -332,6 +325,47 @@ class RequestController(ControllerBase):
         else:
             raise Exception(f'{prepid} does not have any workflows in computing')
 
+        return request
+
+    def move_request_back_to_new(self, request):
+        """
+        Try to move rquest back to new
+        """
+        self.update_status(request, 'new')
+        return request
+
+    def move_request_back_to_approved(self, request):
+        """
+        Try to move rquest back to approved
+        """
+        active_workflows = self.__pick_active_workflows(request)
+        self.force_stats_to_refresh([x['name'] for x in active_workflows])
+        # Take active workflows again in case any of them changed during Stats refresh
+        active_workflows = self.__pick_active_workflows(request)
+        if active_workflows:
+            cmsweb_url = Settings().get('cmsweb_url')
+            connection = ConnectionWrapper(host=cmsweb_url, keep_open=True)
+            headers = {'Content-type': 'application/json',
+                       'Accept': 'application/json'}
+            for active_workflow in active_workflows:
+                workflow_name = active_workflow['name']
+                self.logger.info('Rejecting %s', workflow_name)
+                reject_response = connection.api('PUT',
+                                                 f'/reqmgr2/data/request/{workflow_name}',
+                                                 {'RequestStatus': 'rejected'},
+                                                 headers)
+                self.logger.info(reject_response)
+
+            connection.close()
+
+        request.set('workflows', [])
+        request.set('total_events', 0)
+        request.set('completed_events', 0)
+        for sequence in request.get('sequences'):
+            sequence.set('config_id', '')
+            sequence.set('harvesting_config_id', '')
+
+        self.update_status(request, 'approved')
         return request
 
     def get_runs(self, subcampaign_name, input_dataset):
@@ -570,10 +604,11 @@ class RequestController(ControllerBase):
                 raise Exception('It is not allowed to change priority of requests that are not in status "submitted"')
 
             request.set('priority', priority)
+            updated_workflows = []
+            active_workflows = self.__pick_active_workflows(request)
             settings = Settings()
             connection = ConnectionWrapper(host=settings.get('cmsweb_url'), keep_open=True)
-            updated_workflows = []
-            for workflow in request.get('workflows'):
+            for workflow in active_workflows:
                 workflow_name = workflow['name']
                 self.logger.info('Changing "%s" priority to %s', workflow_name, priority)
                 response = connection.api('PUT',
@@ -602,4 +637,21 @@ class RequestController(ControllerBase):
             for workflow_name in workflows:
                 workflow_update_commands.append(f'python3 stats_update.py --action update --name {workflow_name}')
 
+            self.logger.info('Will make Stats2 refresh these workflows: %s', ', '.join(workflows))
             ssh_executor.execute_command(workflow_update_commands)
+
+    def __pick_active_workflows(self, request):
+        """
+        Filter out workflows that are rejected, aborted or failed
+        """
+        prepid = request.get_prepid()
+        workflows = request.get('workflows')
+        active_workflows = []
+        inactive_statuses = {'aborted', 'rejected', 'failed'}
+        for workflow in workflows:
+            status_history = set(x['status'] for x in workflow.get('status_history', []))
+            if not (inactive_statuses & status_history):
+                active_workflows.append(workflow)
+
+        self.logger.info('Active workflows of %s are %s', prepid, ', '.join([x['name'] for x in active_workflows]))
+        return active_workflows
