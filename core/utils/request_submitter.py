@@ -99,7 +99,7 @@ class RequestSubmitter:
     # If maxsize is less than or equal to zero, the queue size is infinite.
     __task_queue = Queue(maxsize=0)
     # All worker threads
-    __worker_pool = WorkerPool(workers_count=2, task_queue=__task_queue)
+    __worker_pool = WorkerPool(workers_count=4, task_queue=__task_queue)
 
     def __init__(self):
         self.logger = logging.getLogger()

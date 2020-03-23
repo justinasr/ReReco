@@ -19,12 +19,7 @@
       <h3>Locked objects ({{Object.keys(locks).length}})</h3>
       <small>
         <ul>
-          <li v-for="(info, lock) in locks" :key="lock">{{lock}}:
-            <ul>
-              <li>Info: {{info.i}}</li>
-              <li>Lock: {{info.l}}</li>
-            </ul>
-          </li>
+          <li v-for="(info, lock) in locks" :key="lock">{{lock}}: {{info.l}}</li>
         </ul>
       </small>
     </div>
@@ -51,9 +46,9 @@ export default {
     this.fetchLocksInfo();
     this.fetchQueueInfo();
     this.fetchSettings();
-    setInterval(this.fetchWorkerInfo, 10000);
-    setInterval(this.fetchQueueInfo, 10000);
-    setInterval(this.fetchLocksInfo, 10000);
+    setInterval(this.fetchWorkerInfo, 60000);
+    setInterval(this.fetchQueueInfo, 60000);
+    setInterval(this.fetchLocksInfo, 60000);
   },
   methods: {
     fetchWorkerInfo () {

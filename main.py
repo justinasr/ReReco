@@ -9,7 +9,7 @@ from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
 from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetConfigUploadAPI, GetRequestJobDictAPI, RequestNextStatus, RequestPreviousStatus, GetRequestRunsAPI, UpdateRequestWorkflowsAPI, RequestOptionResetAPI
 from api.search_api import SearchAPI
 from api.settings_api import SettingsAPI
-from api.system_api import SubmissionWorkerStatusAPI, SubmissionQueueAPI, LockerStatusAPI, UserInfoAPI
+from api.system_api import SubmissionWorkerStatusAPI, SubmissionQueueAPI, LockerStatusAPI, UserInfoAPI, ObjectsInfoAPI
 
 
 __LOG_FORMAT = '[%(asctime)s][%(levelname)s] %(message)s'
@@ -71,6 +71,7 @@ api.add_resource(SubmissionWorkerStatusAPI, '/api/system/workers')
 api.add_resource(SubmissionQueueAPI, '/api/system/queue')
 api.add_resource(LockerStatusAPI, '/api/system/locks')
 api.add_resource(UserInfoAPI, '/api/system/user_info')
+api.add_resource(ObjectsInfoAPI, '/api/system/objects_info')
 
 api.add_resource(CreateSubcampaignAPI, '/api/subcampaigns/create')
 api.add_resource(DeleteSubcampaignAPI, '/api/subcampaigns/delete')
