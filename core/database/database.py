@@ -121,6 +121,9 @@ class Database():
                 elif '>' == value[0]:
                     value_condition = '$gt'
                     value = value[1:]
+                elif '!' == value[0]:
+                    value_condition = '$ne'
+                    value = value[1:]
 
                 if '<int>' in key:
                     value = int(value)
