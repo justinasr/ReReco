@@ -83,7 +83,7 @@
           <template v-slot:item.workflows="{ item }">
             <ol>
               <li v-for="(workflow, index) in item.workflows" :key="workflow.name">
-                <a target="_blank" title="Open workflow in ReqMgr2" :href="'https://cmsweb.cern.ch/reqmgr2/fetch?rid=' + workflow.name">{{workflow.name}}</a> <small>type:</small> {{workflow.type}} <span v-if="workflow.status_history.length > 0"><small>status:</small> {{workflow.status_history[workflow.status_history.length - 1].status}}</span>
+                <a target="_blank" title="Open workflow in ReqMgr2" :href="'https://cmsweb.cern.ch/reqmgr2/fetch?rid=' + workflow.name">{{workflow.name}}</a> <small>type:</small> {{workflow.type}} <span v-if="workflow.status_history && workflow.status_history.length > 0"><small>status:</small> {{workflow.status_history[workflow.status_history.length - 1].status}}</span>
                 <ul v-if="index == item.workflows.length - 1">
                   <li v-for="dataset in workflow.output_datasets" :key="dataset.name"><a target="_blank" title="Open dataset in DAS" :href="'https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D' + dataset.name">{{dataset.name}}</a> <small>events:</small> {{dataset.events}} <small>type:</small> {{dataset.type}}</li>
                 </ul>
