@@ -343,20 +343,7 @@ class RequestController(ControllerBase):
         # Take active workflows again in case any of them changed during Stats refresh
         active_workflows = self.__pick_active_workflows(request)
         if active_workflows:
-            cmsweb_url = Settings().get('cmsweb_url')
-            connection = ConnectionWrapper(host=cmsweb_url, keep_open=True)
-            headers = {'Content-type': 'application/json',
-                       'Accept': 'application/json'}
-            for active_workflow in active_workflows:
-                workflow_name = active_workflow['name']
-                self.logger.info('Rejecting %s', workflow_name)
-                reject_response = connection.api('PUT',
-                                                 f'/reqmgr2/data/request/{workflow_name}',
-                                                 {'RequestStatus': 'rejected'},
-                                                 headers)
-                self.logger.info(reject_response)
-
-            connection.close()
+            self.__reject_workflows(active_workflows)
 
         request.set('workflows', [])
         request.set('total_events', 0)
@@ -655,3 +642,35 @@ class RequestController(ControllerBase):
 
         self.logger.info('Active workflows of %s are %s', prepid, ', '.join([x['name'] for x in active_workflows]))
         return active_workflows
+
+    def __reject_workflows(self, workflows):
+        """
+        Reject or abort list of workflows in ReqMgr2
+        """
+        cmsweb_url = Settings().get('cmsweb_url')
+        connection = ConnectionWrapper(host=cmsweb_url, keep_open=True)
+        headers = {'Content-type': 'application/json',
+                   'Accept': 'application/json'}
+        for workflow in workflows:
+            workflow_name = active_workflow['name']
+            status_history = workflow.get('status_history')
+            if not status_history:
+                self.logger.error('%s has no status history', workflow_name)
+                continue
+
+            last_workflow_status = status_history[-1]['status']
+            self.logger.info('%s last status is %s', last_workflow_status)
+            # Depending on current status of workflow, it might need to be either aborted or rejected
+            if last_workflow_status in ('assigned', 'staging', 'staged', 'acquired', 'running-open', 'running-closed'):
+                new_status = 'aborted'
+            else:
+                new_status = 'rejected'
+
+            self.logger.info('Will change %s status %s to %s', workflow_name, last_workflow_status, new_status)
+            reject_response = connection.api('PUT',
+                                             f'/reqmgr2/data/request/{workflow_name}',
+                                             {'RequestStatus': new_status},
+                                             headers)
+            self.logger.info(reject_response)
+
+        connection.close()
