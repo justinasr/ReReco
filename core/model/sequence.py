@@ -40,9 +40,21 @@ class Sequence(ModelBase):
     lambda_checks = {
         'conditions': lambda c: ModelBase.matches_regex(c, '[a-zA-Z0-9_]{0,50}'),
         'config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
-        '__datatier': lambda s: s in ('AOD', 'MINIAOD', 'NANOAOD', 'DQMIO', 'USER', 'ALCARECO', 'RECO'),
+        '__datatier': lambda s: s in ('AOD',
+                                      'MINIAOD',
+                                      'NANOAOD',
+                                      'DQMIO',
+                                      'USER',
+                                      'ALCARECO',
+                                      'RECO'),
         'era': lambda e: ModelBase.matches_regex(e, '[a-zA-Z0-9_\\,]{0,50}'),
-        '__eventcontent': lambda s: s in ('AOD', 'MINIAOD', 'NANOAOD', 'DQM', 'NANOEDMAOD', 'ALCARECO', 'RECO'),
+        '__eventcontent': lambda s: s in ('AOD',
+                                          'MINIAOD',
+                                          'NANOAOD',
+                                          'DQM',
+                                          'NANOEDMAOD',
+                                          'ALCARECO',
+                                          'RECO'),
         'harvesting_config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
         'nThreads': lambda n: 0 < n < 64,
         'scenario': lambda s: s in ('pp', 'cosmics', 'nocoll', 'HeavyIons'),
@@ -78,6 +90,9 @@ class Sequence(ModelBase):
         return False
 
     def get_index_in_parent(self):
+        """
+        Return sequence's index in parent's list of sequences
+        """
         for index, sequence in enumerate(self.parent().get('sequences')):
             if self == sequence:
                 return index
@@ -108,6 +123,9 @@ class Sequence(ModelBase):
         return sequence_name
 
     def get_config_file_names(self):
+        """
+        Return dictionary of 'config' and 'harvest' config file names
+        """
         parent_prepid = self.parent().get_prepid()
         index = self.get_index_in_parent()
         config_file_names = {'config': f'{parent_prepid}_{index}_cfg'}
@@ -121,6 +139,7 @@ class Sequence(ModelBase):
         Build a cmsDriver command from given arguments
         Add comment in front of the command
         """
+        self.logger.info('Generating %s cmdDriver', cmsdriver_type)
         # Actual command
         command = f'# Command for {cmsdriver_type}:\ncmsDriver.py {cmsdriver_type}'
         # Comment in front of the command for better readability
@@ -129,7 +148,7 @@ class Sequence(ModelBase):
             if not arguments[key]:
                 continue
 
-            if key in ('extra'):
+            if key in 'extra':
                 continue
 
             if isinstance(arguments[key], bool):

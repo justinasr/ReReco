@@ -3,41 +3,75 @@ import argparse
 from flask_restful import Api
 from flask_cors import CORS
 from flask import Flask, render_template
-from api.subcampaign_api import CreateSubcampaignAPI, DeleteSubcampaignAPI, UpdateSubcampaignAPI, GetSubcampaignAPI, GetEditableSubcampaignAPI, GetDefaultSubcampaignSequenceAPI
-from api.subcampaign_ticket_api import CreateSubcampaignTicketAPI, DeleteSubcampaignTicketAPI, UpdateSubcampaignTicketAPI, GetSubcampaignTicketAPI, GetSubcampaignTicketDatasetsAPI, GetEditableSubcampaignTicketAPI, CreateRequestsForSubcampaignTicketAPI, GetSubcampaignTicketTwikiAPI
-from api.flow_api import CreateFlowAPI, DeleteFlowAPI, UpdateFlowAPI, GetFlowAPI
-from api.request_api import CreateRequestAPI, DeleteRequestAPI, UpdateRequestAPI, GetRequestAPI, GetEditableRequestAPI, GetCMSDriverAPI, GetConfigUploadAPI, GetRequestJobDictAPI, RequestNextStatus, RequestPreviousStatus, GetRequestRunsAPI, UpdateRequestWorkflowsAPI, RequestOptionResetAPI
+from api.subcampaign_api import (CreateSubcampaignAPI,
+                                 DeleteSubcampaignAPI,
+                                 UpdateSubcampaignAPI,
+                                 GetSubcampaignAPI,
+                                 GetEditableSubcampaignAPI,
+                                 GetDefaultSubcampaignSequenceAPI)
+from api.subcampaign_ticket_api import (CreateSubcampaignTicketAPI,
+                                        DeleteSubcampaignTicketAPI,
+                                        UpdateSubcampaignTicketAPI,
+                                        GetSubcampaignTicketAPI,
+                                        GetSubcampaignTicketDatasetsAPI,
+                                        GetEditableSubcampaignTicketAPI,
+                                        CreateRequestsForSubcampaignTicketAPI,
+                                        GetSubcampaignTicketTwikiAPI)
+from api.request_api import (CreateRequestAPI,
+                             DeleteRequestAPI,
+                             UpdateRequestAPI,
+                             GetRequestAPI,
+                             GetEditableRequestAPI,
+                             GetCMSDriverAPI,
+                             GetConfigUploadAPI,
+                             GetRequestJobDictAPI,
+                             RequestNextStatus,
+                             RequestPreviousStatus,
+                             GetRequestRunsAPI,
+                             UpdateRequestWorkflowsAPI,
+                             RequestOptionResetAPI)
 from api.search_api import SearchAPI
 from api.settings_api import SettingsAPI
-from api.system_api import SubmissionWorkerStatusAPI, SubmissionQueueAPI, LockerStatusAPI, UserInfoAPI, ObjectsInfoAPI
+from api.system_api import (SubmissionWorkerStatusAPI,
+                            SubmissionQueueAPI,
+                            LockerStatusAPI,
+                            UserInfoAPI,
+                            ObjectsInfoAPI)
 
 
-__LOG_FORMAT = '[%(asctime)s][%(levelname)s] %(message)s'
-logging.basicConfig(format=__LOG_FORMAT, level=logging.DEBUG)
+log_format = '[%(asctime)s][%(levelname)s] %(message)s'
+logging.basicConfig(format=log_format, level=logging.DEBUG)
 
 app = Flask(__name__,
-            static_folder="./vue_frontend/dist/static",
-            template_folder="./vue_frontend/dist")
+            static_folder='./vue_frontend/dist/static',
+            template_folder='./vue_frontend/dist')
 # Set flask logging to warning
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
+
 app.url_map.strict_slashes = False
 api = Api(app)
 CORS(app,
-     allow_headers=["Content-Type",
-                    "Authorization",
-                    "Access-Control-Allow-Credentials"],
+     allow_headers=['Content-Type',
+                    'Authorization',
+                    'Access-Control-Allow-Credentials'],
      supports_credentials=True)
 
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def catch_all(path):
+@app.route('/', defaults={'_path': ''})
+@app.route('/<path:_path>')
+def catch_all(_path):
+    """
+    Return index.html for all paths except API
+    """
     return render_template('index.html')
 
 
-@app.route('/api', defaults={'path': ''})
-@app.route('/api/<path:path>')
-def api_documentation(path):
+@app.route('/api', defaults={'_path': ''})
+@app.route('/api/<path:_path>')
+def api_documentation(_path):
+    """
+    Endpoint for API documentation HTML
+    """
     docs = {}
     for endpoint, view in app.view_functions.items():
         view_class = dict(view.__dict__).get('view_class')
@@ -54,9 +88,10 @@ def api_documentation(path):
         docs[category][class_name] = {'doc': class_doc, 'urls': urls, 'methods': {}}
         for method_name in view_class.methods:
             method = view_class.__dict__.get(method_name.lower())
-            docs[category][class_name]['methods'][method_name] = {'doc': method.__doc__.strip()}
+            method_dict = {'doc': method.__doc__.strip()}
+            docs[category][class_name]['methods'][method_name] = method_dict
             if hasattr(method, '__role__'):
-                docs[category][class_name]['methods'][method_name]['role'] = getattr(method, '__role__')
+                method_dict['role'] = getattr(method, '__role__')
 
     return render_template('api_documentation.html', docs=docs)
 
@@ -92,13 +127,10 @@ api.add_resource(GetEditableSubcampaignTicketAPI,
                  '/api/subcampaign_tickets/get_editable',
                  '/api/subcampaign_tickets/get_editable/<string:prepid>')
 api.add_resource(GetSubcampaignTicketDatasetsAPI, '/api/subcampaign_tickets/get_datasets')
-api.add_resource(CreateRequestsForSubcampaignTicketAPI, '/api/subcampaign_tickets/create_requests')
-api.add_resource(GetSubcampaignTicketTwikiAPI, '/api/subcampaign_tickets/twiki_snippet/<string:prepid>')
-
-# api.add_resource(CreateFlowAPI, '/api/flows/create')
-# api.add_resource(DeleteFlowAPI, '/api/flows/delete')
-# api.add_resource(UpdateFlowAPI, '/api/flows/update')
-# api.add_resource(GetFlowAPI, '/api/flows/get/<string:prepid>')
+api.add_resource(CreateRequestsForSubcampaignTicketAPI,
+                 '/api/subcampaign_tickets/create_requests')
+api.add_resource(GetSubcampaignTicketTwikiAPI,
+                 '/api/subcampaign_tickets/twiki_snippet/<string:prepid>')
 
 api.add_resource(CreateRequestAPI, '/api/requests/create')
 api.add_resource(DeleteRequestAPI, '/api/requests/delete')
@@ -116,14 +148,22 @@ api.add_resource(GetRequestRunsAPI, '/api/requests/get_runs/<string:prepid>')
 api.add_resource(UpdateRequestWorkflowsAPI, '/api/requests/update_workflows')
 api.add_resource(RequestOptionResetAPI, '/api/requests/option_reset')
 
-parser = argparse.ArgumentParser(description='Stats2')
-parser.add_argument('--debug',
-                    help='Run Flask in debug mode',
-                    action='store_true')
 
-args = vars(parser.parse_args())
-debug = args.get('debug', False)
-app.run(host='0.0.0.0',
-        port=8005,
-        threaded=True,
-        debug=debug)
+def main():
+    """
+    Main function: start Flask web server
+    """
+    parser = argparse.ArgumentParser(description='ReReco Machine')
+    parser.add_argument('--debug',
+                        help='Run Flask in debug mode',
+                        action='store_true')
+
+    args = vars(parser.parse_args())
+    debug = args.get('debug', False)
+    app.run(host='0.0.0.0',
+            port=8005,
+            threaded=True,
+            debug=debug)
+
+if __name__ == '__main__':
+    main()

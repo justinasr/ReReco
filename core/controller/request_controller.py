@@ -96,7 +96,11 @@ class RequestController(ControllerBase):
             with self.locker.get_lock(ticket_prepid):
                 subcampaign_ticket_json = subcampaign_tickets_db.get(ticket_prepid)
                 subcampaign_ticket = SubcampaignTicket(json_input=subcampaign_ticket_json)
-                subcampaign_ticket.set('created_requests', [x for x in subcampaign_ticket.get('created_requests') if x != prepid])
+                created_requests = subcampaign_ticket.get('created_requests')
+                if prepid in created_requests:
+                    created_requests.remove(prepid)
+
+                subcampaign_ticket.set('created_requests', created_requests)
                 subcampaign_ticket.add_history('remove_request', prepid, None)
                 subcampaign_tickets_db.save(subcampaign_ticket.get_json())
 
@@ -168,7 +172,8 @@ class RequestController(ControllerBase):
         # This should be done in a smarter way
         command += '\n'.join([f'git clone --quiet https://github.com/dmwm/WMCore.git',
                               f'export PYTHONPATH=$(pwd)/WMCore/src/python/:$PYTHONPATH'])
-        common_upload_part = f'python config_uploader.py --file %s.py --label %s --group ppd --user $(echo $USER) --db {database_url}'
+        common_upload_part = (f'python config_uploader.py --file %s.py --label %s '
+                              f'--group ppd --user $(echo $USER) --db {database_url}')
         for configs in request.get_config_file_names():
             # Run config uploader
             command += '\n'
@@ -183,6 +188,8 @@ class RequestController(ControllerBase):
         """
         Return a dictionary for ReqMgr2
         """
+        prepid = request.get_prepid()
+        self.logger.debug('Getting job dict for %s', prepid)
         sequences = request.get('sequences')
         input_dataset = request.get('input_dataset')
         input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
@@ -192,6 +199,7 @@ class RequestController(ControllerBase):
         subcampaign_json = subcampaigns_db.get(subcampaign_name)
         database_url = Settings().get('cmsweb_url') + '/couchdb'
         processing_string = request.get('processing_string')
+        request_string = f'{input_dataset_parts[1]}_{input_dataset_parts[0]}_{processing_string}'
         job_dict = {}
         job_dict['CMSSWVersion'] = request.get('cmssw_release')
         job_dict['ScramArch'] = subcampaign_json.get('scram_arch')
@@ -209,7 +217,7 @@ class RequestController(ControllerBase):
         job_dict['RequestType'] = 'ReReco'
         job_dict['SizePerEvent'] = request.get('size_per_event')
         job_dict['TimePerEvent'] = request.get('time_per_event')
-        job_dict['RequestString'] = f'{input_dataset_parts[1]}_{input_dataset_parts[0]}_{processing_string}'
+        job_dict['RequestString'] = request_string
         job_dict['EnableHarvesting'] = False
         job_dict['RunWhitelist'] = request.get('runs')
         job_dict['RunBlacklist'] = []
@@ -253,7 +261,7 @@ class RequestController(ControllerBase):
                 return self.move_request_to_submitting(request)
 
             if request.get('status') == 'submitting':
-                raise Exception('You are not allowed to set next status while request is being submitted')
+                raise Exception('Request is being submitted')
 
             if request.get('status') == 'submitted':
                 return self.move_request_to_done(request)
@@ -306,12 +314,12 @@ class RequestController(ControllerBase):
         workflows = request.get('workflows')
         if workflows:
             last_workflow = workflows[-1]
-            timestamps = []
             for output_dataset in last_workflow['output_datasets']:
                 dataset_type = output_dataset['type']
                 if dataset_type.lower() != 'valid':
                     dataset_name = output_dataset['name']
-                    raise Exception(f'Could not move {prepid} to "done" because {dataset_name} is {dataset_type}')
+                    raise Exception(f'Could not move {prepid} to "done" '
+                                    f'because {dataset_name} is {dataset_type}')
 
             for status in last_workflow['status_history']:
                 if status['status'].lower() == 'completed':
@@ -319,7 +327,8 @@ class RequestController(ControllerBase):
                     break
             else:
                 last_workflow_name = last_workflow['name']
-                raise Exception(f'Could not move {prepid} to "done" because {last_workflow_name} is not yet "completed"')
+                raise Exception(f'Could not move {prepid} to "done" because '
+                                f'{last_workflow_name} is not yet "completed"')
 
             self.update_status(request, 'done', completed_timestamp)
         else:
@@ -367,8 +376,10 @@ class RequestController(ControllerBase):
             dbs_runs = []
             if input_dataset:
                 dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch')
-                dbs_response = dbs_conn.api('GET',
-                                            f'/dbs/prod/global/DBSReader/runs?dataset={input_dataset}')
+                dbs_response = dbs_conn.api(
+                    'GET',
+                    f'/dbs/prod/global/DBSReader/runs?dataset={input_dataset}'
+                )
                 dbs_response = json.loads(dbs_response.decode('utf-8'))
                 if dbs_response:
                     dbs_runs = dbs_response[0].get('run_num', [])
@@ -376,8 +387,10 @@ class RequestController(ControllerBase):
             json_runs = []
             if runs_json_path:
                 json_conn = ConnectionWrapper(host='cms-service-dqm.web.cern.ch')
-                json_response = json_conn.api('GET',
-                                              f'/cms-service-dqm/CAF/certification/{runs_json_path}')
+                json_response = json_conn.api(
+                    'GET',
+                    f'/cms-service-dqm/CAF/certification/{runs_json_path}'
+                )
                 json_response = json.loads(json_response.decode('utf-8'))
                 if json_response:
                     json_runs = [int(x) for x in list(json_response.keys())]
@@ -410,8 +423,7 @@ class RequestController(ControllerBase):
         input_dataset = request.get('input_dataset')
         return self.get_runs(subcampaign_name, input_dataset)
 
-
-    def __pick_workflows(self, request, all_workflows, output_datasets):
+    def __pick_workflows(self, all_workflows, output_datasets):
         """
         Pick, process and sort workflows from computing based on output datasets
         """
@@ -424,9 +436,10 @@ class RequestController(ControllerBase):
             for output_dataset in output_datasets:
                 for history_entry in reversed(workflow.get('EventNumberHistory', [])):
                     if output_dataset in history_entry['Datasets']:
+                        dataset_dict = history_entry['Datasets'][output_dataset]
                         new_workflow['output_datasets'].append({'name': output_dataset,
-                                                                'type': history_entry['Datasets'][output_dataset]['Type'],
-                                                                'events': history_entry['Datasets'][output_dataset]['Events']})
+                                                                'type': dataset_dict['Type'],
+                                                                'events': dataset_dict['Events']})
                         break
 
             for request_transition in workflow.get('RequestTransition', []):
@@ -435,7 +448,10 @@ class RequestController(ControllerBase):
 
             new_workflows.append(new_workflow)
 
-        return sorted(new_workflows, key=lambda workflow: '_'.join(workflow['name'].split('_')[-3:]))
+        new_workflows = sorted(new_workflows, key=lambda w: '_'.join(w['name'].split('_')[-3:]))
+        self.logger.info('Picked workflows:\n%s',
+                         ', '.join([w['name'] for w in new_workflows]))
+        return new_workflows
 
     def __get_output_datasets(self, request, all_workflows):
         """
@@ -453,15 +469,19 @@ class RequestController(ControllerBase):
             for output_dataset in workflow.get('OutputDatasets', []):
                 output_dataset_parts = [x.strip() for x in output_dataset.split('/')]
                 output_dataset_datatier = output_dataset_parts[-1]
-                output_dataset_without_datatier = '/'.join(output_dataset_parts[:-1])
-                output_dataset_without_version = '-'.join(output_dataset_without_datatier.split('-')[:-1])
+                output_dataset_no_datatier = '/'.join(output_dataset_parts[:-1])
+                output_dataset_no_version = '-'.join(output_dataset_no_datatier.split('-')[:-1])
                 if output_dataset_datatier in output_datatiers:
-                    if output_dataset_without_version not in output_datasets_tree[output_dataset_parts[-1]]:
-                        output_datasets_tree[output_dataset_parts[-1]][output_dataset_without_version] = []
+                    datatier_tree = output_datasets_tree[output_dataset_datatier]
+                    if output_dataset_no_version not in datatier_tree:
+                        datatier_tree[output_dataset_no_version] = []
 
-                    output_datasets_tree[output_dataset_parts[-1]][output_dataset_without_version].append(output_dataset)
+                    datatier_tree[output_dataset_no_version].append(output_dataset)
 
-        self.logger.debug('Output datasets tree:\n%s', json.dumps(output_datasets_tree, indent=2, sort_keys=True))
+        self.logger.debug('Output datasets tree:\n%s',
+                          json.dumps(output_datasets_tree,
+                                     indent=2,
+                                     sort_keys=True))
         output_datasets = []
         for _, datasets_without_versions in output_datasets_tree.items():
             for _, datasets in datasets_without_versions.items():
@@ -469,7 +489,7 @@ class RequestController(ControllerBase):
                     output_datasets.append(sorted(datasets)[-1])
 
         def tier_level_comparator(dataset):
-            tier = dataset.split('/')[-1:][0]
+            dataset_tier = dataset.split('/')[-1:][0]
             # DQMIO priority is the lowest because it does not produce any
             # events and is used only for some statistical reasons
             tier_priority = ['DQM',
@@ -482,14 +502,17 @@ class RequestController(ControllerBase):
                              'MINIAOD',
                              'NANOAOD']
 
-            for (p, t) in enumerate(tier_priority):
-                if t.upper() == tier:
-                    return p
+            for (priority, tier) in enumerate(tier_priority):
+                if tier == dataset_tier:
+                    return priority
 
             return -1
 
         output_datasets = sorted(output_datasets, key=tier_level_comparator)
-        self.logger.debug('Output datasets:\n%s', json.dumps(output_datasets, indent=2, sort_keys=True))
+        self.logger.debug('Output datasets:\n%s',
+                          json.dumps(output_datasets,
+                                     indent=2,
+                                     sort_keys=True))
         return output_datasets
 
     def update_workflows(self, request):
@@ -501,10 +524,15 @@ class RequestController(ControllerBase):
         with self.locker.get_lock(prepid):
             request_json = request_db.get(prepid)
             request = Request(json_input=request_json)
-            stats_conn = ConnectionWrapper(host='vocms074.cern.ch', port=5984, https=False, keep_open=True)
+            stats_conn = ConnectionWrapper(host='vocms074.cern.ch',
+                                           port=5984,
+                                           https=False,
+                                           keep_open=True)
             existing_workflows = request.get('workflows')
-            stats_workflows = stats_conn.api('GET',
-                                             f'/requests/_design/_designDoc/_view/prepids?key="{prepid}"&include_docs=True')
+            stats_workflows = stats_conn.api(
+                'GET',
+                f'/requests/_design/_designDoc/_view/prepids?key="{prepid}"&include_docs=True'
+            )
             stats_workflows = json.loads(stats_workflows)
             stats_workflows = [x['doc'] for x in stats_workflows['rows']]
             existing_workflows = [x['name'] for x in existing_workflows]
@@ -526,7 +554,7 @@ class RequestController(ControllerBase):
 
             stats_conn.close()
             output_datasets = self.__get_output_datasets(request, all_workflows)
-            new_workflows = self.__pick_workflows(request, all_workflows, output_datasets)
+            new_workflows = self.__pick_workflows(all_workflows, output_datasets)
             all_workflow_names = [x['name'] for x in new_workflows]
             for new_workflow in reversed(new_workflows):
                 completed_events = -1
@@ -540,11 +568,12 @@ class RequestController(ControllerBase):
                     break
 
             if all_workflow_names:
-                if 'RequestPriority' in all_workflows[all_workflow_names[-1]]:
-                    request.set('priority', all_workflows[all_workflow_names[-1]]['RequestPriority'])
+                newest_workflow = all_workflows[all_workflow_names[-1]]
+                if 'RequestPriority' in newest_workflow:
+                    request.set('priority', newest_workflow['RequestPriority'])
 
-                if 'TotalEvents' in all_workflows[all_workflow_names[-1]]:
-                    request.set('total_events', max(0, all_workflows[all_workflow_names[-1]]['TotalEvents']))
+                if 'TotalEvents' in newest_workflow:
+                    request.set('total_events', max(0, newest_workflow['TotalEvents']))
 
             request.set('output_datasets', output_datasets)
             request.set('workflows', new_workflows)
@@ -562,7 +591,8 @@ class RequestController(ControllerBase):
             request_json = request_db.get(prepid)
             request = Request(json_input=request_json)
             if request.get('status') != 'new':
-                raise Exception('It is not allowed to option reset requests that are not in status "new"')
+                raise Exception('It is not allowed to option reset '
+                                'requests that are not in status "new"')
 
             subcampaign_name = request.get('subcampaign')
             subcampaign_controller = SubcampaignController()
@@ -588,7 +618,8 @@ class RequestController(ControllerBase):
             request_json = request_db.get(prepid)
             request = Request(json_input=request_json)
             if request.get('status') != 'submitted':
-                raise Exception('It is not allowed to change priority of requests that are not in status "submitted"')
+                raise Exception('It is not allowed to change priority of '
+                                'requests that are not in status "submitted"')
 
             request.set('priority', priority)
             updated_workflows = []
@@ -622,7 +653,9 @@ class RequestController(ControllerBase):
                                         'export USERKEY=/home/pdmvserv/private/hostkey.pem',
                                         'export USERCRT=/home/pdmvserv/private/hostcert.pem']
             for workflow_name in workflows:
-                workflow_update_commands.append(f'python3 stats_update.py --action update --name {workflow_name}')
+                workflow_update_commands.append(
+                    f'python3 stats_update.py --action update --name {workflow_name}'
+                )
 
             self.logger.info('Will make Stats2 refresh these workflows: %s', ', '.join(workflows))
             ssh_executor.execute_command(workflow_update_commands)
@@ -637,10 +670,12 @@ class RequestController(ControllerBase):
         inactive_statuses = {'aborted', 'rejected', 'failed'}
         for workflow in workflows:
             status_history = set(x['status'] for x in workflow.get('status_history', []))
-            if not (inactive_statuses & status_history):
+            if not inactive_statuses & status_history:
                 active_workflows.append(workflow)
 
-        self.logger.info('Active workflows of %s are %s', prepid, ', '.join([x['name'] for x in active_workflows]))
+        self.logger.info('Active workflows of %s are %s',
+                         prepid,
+                         ', '.join([x['name'] for x in active_workflows]))
         return active_workflows
 
     def __reject_workflows(self, workflows):
@@ -652,21 +687,30 @@ class RequestController(ControllerBase):
         headers = {'Content-type': 'application/json',
                    'Accept': 'application/json'}
         for workflow in workflows:
-            workflow_name = active_workflow['name']
+            workflow_name = workflow['name']
             status_history = workflow.get('status_history')
             if not status_history:
                 self.logger.error('%s has no status history', workflow_name)
                 continue
 
             last_workflow_status = status_history[-1]['status']
-            self.logger.info('%s last status is %s', last_workflow_status)
-            # Depending on current status of workflow, it might need to be either aborted or rejected
-            if last_workflow_status in ('assigned', 'staging', 'staged', 'acquired', 'running-open', 'running-closed'):
+            self.logger.info('%s last status is %s', workflow_name, last_workflow_status)
+            # Depending on current status of workflow,
+            # it might need to be either aborted or rejected
+            if last_workflow_status in ('assigned',
+                                        'staging',
+                                        'staged',
+                                        'acquired',
+                                        'running-open',
+                                        'running-closed'):
                 new_status = 'aborted'
             else:
                 new_status = 'rejected'
 
-            self.logger.info('Will change %s status %s to %s', workflow_name, last_workflow_status, new_status)
+            self.logger.info('Will change %s status %s to %s',
+                             workflow_name,
+                             last_workflow_status,
+                             new_status)
             reject_response = connection.api('PUT',
                                              f'/reqmgr2/data/request/{workflow_name}',
                                              {'RequestStatus': new_status},

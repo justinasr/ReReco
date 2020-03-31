@@ -1,9 +1,9 @@
 """
 Module that contains Request class
 """
+from copy import deepcopy
 from core.model.model_base import ModelBase
 from core.model.sequence import Sequence
-from copy import deepcopy
 
 
 class Request(ModelBase):
@@ -86,7 +86,7 @@ class Request(ModelBase):
             json_input = deepcopy(json_input)
             json_input['runs'] = [int(r) for r in json_input.get('runs', [])]
             sequence_objects = []
-            for index, sequence_json in enumerate(json_input.get('sequences', [])):
+            for sequence_json in json_input.get('sequences', []):
                 sequence_objects.append(Sequence(json_input=sequence_json, parent=self))
 
             json_input['sequences'] = sequence_objects

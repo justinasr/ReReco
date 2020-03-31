@@ -1,7 +1,6 @@
 """
 Module that handles all email notifications
 """
-import json
 import logging
 import smtplib
 from email.message import EmailMessage
@@ -17,7 +16,7 @@ class Emailer():
 
     def get_recipients(self, rereco_object):
         """
-        Return
+        Return list of emails of people that are in object's history
         """
         recipients = set()
         for entry in rereco_object.get('history'):
@@ -34,6 +33,9 @@ class Emailer():
         return list(recipients)
 
     def send(self, subject, body, recipients):
+        """
+        Send email
+        """
         # Create a text/plain message
         message = EmailMessage()
         body = body.strip()
@@ -46,5 +48,6 @@ class Emailer():
         # Send the message via our own SMTP server.
         smtp = smtplib.SMTP()
         smtp.connect()
+        self.logger.debug('Sending email %s to %s', message['Subject'], message['To'])
         smtp.send_message(message)
         smtp.quit()

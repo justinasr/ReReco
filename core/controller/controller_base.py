@@ -1,6 +1,7 @@
 """
 Module that contains ControllerBase class
 """
+import logging
 from core.database.database import Database
 from core.model.model_base import ModelBase
 from core.utils.locker import Locker
@@ -16,7 +17,7 @@ class ControllerBase():
     """
 
     def __init__(self):
-        self.logger = ModelBase._ModelBase__logger
+        self.logger = logging.getLogger()
         self.locker = Locker()
         self.database_name = None
         self.model_class = ModelBase

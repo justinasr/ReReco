@@ -70,11 +70,11 @@ class SubcampaignTicketController(ControllerBase):
 
         if 'input_datasets' in changed_values:
             dataset_blacklist = set(Settings().get('dataset_blacklist'))
-            for input_dataset in obj.get('input_datasets'):
+            for input_dataset in new_obj.get('input_datasets'):
                 dataset = input_dataset.split('/')[1]
                 if dataset in dataset_blacklist:
                     raise Exception(f'Input dataset {input_dataset} is not '
-                                f'allowed because {dataset} is in blacklist')
+                                    f'allowed because {dataset} is in blacklist')
 
         return True
 
@@ -151,7 +151,7 @@ class SubcampaignTicketController(ControllerBase):
                 dataset = input_dataset.split('/')[1]
                 if dataset in dataset_blacklist:
                     raise Exception(f'Input dataset {input_dataset} is not '
-                                f'allowed because {dataset} is in blacklist')
+                                    f'allowed because {dataset} is in blacklist')
 
             subcampaign_name = subcampaign_ticket.get('subcampaign')
             processing_string = subcampaign_ticket.get('processing_string')
@@ -198,6 +198,8 @@ class SubcampaignTicketController(ControllerBase):
         Generate tables for TWiki
         Requests are grouped by acquisition eras in input datasets
         """
+        prepid = subcampaign_ticket.get_prepid()
+        self.logger.debug('Returning TWiki snippet for %s', prepid)
         acquisition_eras = {}
         request_controller = RequestController()
         for request_prepid in subcampaign_ticket.get('created_requests'):
@@ -211,6 +213,7 @@ class SubcampaignTicketController(ControllerBase):
             acquisition_eras[acquisition_era].append(request)
 
         output_strings = []
+        pmp_url = 'https://cms-pdmv.cern.ch/pmp/historical?r='
         for acquisition_era, requests in acquisition_eras.items():
             output_strings.append(f'---+++ !{acquisition_era}\n')
             output_strings.append('| *DataSet* | *prepID monitoring* | *run* |')
@@ -221,7 +224,7 @@ class SubcampaignTicketController(ControllerBase):
                 input_dataset = request.get('input_dataset')
                 input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
                 dataset = input_dataset_parts[0]
-                output_strings.append(f'| {dataset} | [[https://cms-pdmv.cern.ch/pmp/historical?r={prepid}][{prepid}]] | {runs} |')
+                output_strings.append(f'| {dataset} | [[{pmp_url}{prepid}][{prepid}]] | {runs} |')
 
             output_strings.append('\n')
 

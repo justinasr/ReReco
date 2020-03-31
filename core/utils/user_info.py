@@ -70,4 +70,7 @@ class UserInfo():
         return self.get_user_info()['role']
 
     def role_index_is_more_or_equal(self, role_name):
+        """
+        Return whether this user has equal or higher role
+        """
         return self.__roles.index(role_name) <= self.__roles.index(self.get_role())

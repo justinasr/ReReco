@@ -4,10 +4,10 @@ API base module
 import json
 import logging
 import traceback
+import time
 from flask_restful import Resource
 from flask import request, make_response
 from core.utils.user_info import UserInfo
-import time
 
 
 class APIBase(Resource):
@@ -36,12 +36,16 @@ class APIBase(Resource):
                 start_time = time.time()
                 result = attr(*args, **kwargs)
                 end_time = time.time()
-                self.logger.info('[%s] {%s} %s %.4fs' % (attr.__name__.upper(), user_info.get_username(), request.path, end_time - start_time))
+                self.logger.info('[%s] {%s} %s %.4fs',
+                                 attr.__name__.upper(),
+                                 user_info.get_username(),
+                                 request.path,
+                                 end_time - start_time)
                 return result
 
             return newfunc
-        else:
-            return attr
+
+        return attr
 
     @staticmethod
     def ensure_request_data(func):
@@ -114,14 +118,14 @@ class APIBase(Resource):
                                          role_name)
                 if user_info.role_index_is_more_or_equal(role_name):
                     return func(*args, **kwargs)
-                else:
-                    return APIBase.output_text({'response': None,
-                                                'success': False,
-                                                'message': f'User "{user_info.get_username()}" '
-                                                           f'has role "{user_info.get_role()}" '
-                                                           f'and is not allowed to access this '
-                                                           f'API. Required role "{role_name}"'},
-                                               code=403)
+
+                return APIBase.output_text({'response': None,
+                                            'success': False,
+                                            'message': f'User "{user_info.get_username()}" '
+                                                       f'has role "{user_info.get_role()}" '
+                                                       f'and is not allowed to access this '
+                                                       f'API. Required role "{role_name}"'},
+                                           code=403)
 
             ensure_role_wrapper_wrapper.__name__ = func.__name__
             ensure_role_wrapper_wrapper.__doc__ = func.__doc__

@@ -38,12 +38,13 @@ class Subcampaign(ModelBase):
         'step': 'DR',
     }
 
+    __runs_json_regex = '[a-zA-Z0-9/\\-_]{0,150}(\\.json|\\.txt)?'
     lambda_checks = {
         'prepid': ModelBase.lambda_check('subcampaign'),
         'cmssw_release': ModelBase.lambda_check('cmssw_release'),
         'energy': ModelBase.lambda_check('energy'),
         'memory': ModelBase.lambda_check('memory'),
-        'runs_json_path': lambda rjp: ModelBase.matches_regex(rjp, '[a-zA-Z0-9/\\-_]{0,150}(\\.json|\\.txt)?'),
+        'runs_json_path': lambda rjp: ModelBase.matches_regex(rjp, Subcampaign.__runs_json_regex),
         'scram_arch': ModelBase.lambda_check('scram_arch'),
         '__sequences': lambda s: isinstance(s, Sequence),
         'step': ModelBase.lambda_check('step'),
@@ -53,7 +54,7 @@ class Subcampaign(ModelBase):
         if json_input:
             json_input['runs_json_path'] = json_input.get('runs_json_path', '').strip().lstrip('/')
             sequence_objects = []
-            for index, sequence_json in enumerate(json_input.get('sequences', [])):
+            for sequence_json in json_input.get('sequences', []):
                 sequence_objects.append(Sequence(json_input=sequence_json))
 
             json_input['sequences'] = sequence_objects

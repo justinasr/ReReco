@@ -90,13 +90,14 @@ class ObjectsInfoAPI(APIBase):
         Get number of requests with each status and processing strings of submitted requests
         """
         request_db = Database('requests')
-        by_status = request_db.db.aggregate([{'$group': {'_id': '$status',
-                                                         'count': {'$sum': 1}}}])
+        database = request_db.database
+        by_status = database.aggregate([{'$group': {'_id': '$status',
+                                                    'count': {'$sum': 1}}}])
 
-        by_processing_string = request_db.db.aggregate([{'$match': {'status': 'submitted'}},
-                                                        {'$group': {'_id': '$processing_string',
-                                                                    'count': {'$sum': 1}}},
-                                                        {'$sort': {'count': -1}}])
+        by_processing_string = database.aggregate([{'$match': {'status': 'submitted'}},
+                                                   {'$group': {'_id': '$processing_string',
+                                                               'count': {'$sum': 1}}},
+                                                   {'$sort': {'count': -1}}])
 
         statuses = ['new', 'approved', 'submitting', 'submitted', 'done']
         by_status = sorted(list(by_status), key=lambda x: statuses.index(x['_id']))

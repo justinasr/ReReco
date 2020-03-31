@@ -42,10 +42,10 @@ class ConnectionWrapper():
                                                cert_file=self.cert_file,
                                                key_file=self.key_file,
                                                timeout=self.timeout)
-        else:
-            return http.client.HTTPConnection(url,
-                                              port=self.port,
-                                              timeout=self.timeout)
+
+        return http.client.HTTPConnection(url,
+                                          port=self.port,
+                                          timeout=self.timeout)
 
     def __refresh_connection(self, url):
         """

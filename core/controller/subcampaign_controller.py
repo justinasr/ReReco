@@ -67,6 +67,7 @@ class SubcampaignController(ControllerBase):
         """
         Internal method for getting scram arch for given release out of given XML string
         """
+        self.logger.debug('Getting scram arch for %s', cmssw_release)
         root = XMLet.fromstring(xml)
         for architecture in root:
             if architecture.tag != 'architecture':
@@ -76,8 +77,10 @@ class SubcampaignController(ControllerBase):
             scram_arch = architecture.attrib.get('name')
             for release in architecture:
                 if release.attrib.get('label') == cmssw_release:
+                    self.logger.debug('Scram arch for %s is %s', cmssw_release, scram_arch)
                     return scram_arch
 
+        self.logger.warning('Could not find scram arch for %s', cmssw_release)
         return None
 
     def get_scram_arch(self, cmssw_release):

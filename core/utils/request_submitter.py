@@ -124,19 +124,19 @@ class RequestSubmitter:
         """
         Return size of submission queue
         """
-        return RequestSubmitter.__task_queue.qsize()
+        return self.__task_queue.qsize()
 
     def get_worker_status(self):
         """
         Return dictionary of all worker statuses
         """
-        return RequestSubmitter.__worker_pool.get_worker_status()
+        return self.__worker_pool.get_worker_status()
 
     def get_names_in_queue(self):
         """
         Return a list of names that are waiting in the queue
         """
-        return [x[1] for x in RequestSubmitter.__task_queue.queue]
+        return [x[1] for x in self.__task_queue.queue]
 
     def update_sequences_with_hashes(self, request, hashes):
         """
@@ -156,7 +156,8 @@ class RequestSubmitter:
         prepid = request.get_prepid()
         subject = f'Request {prepid} submission failed'
         body = f'Hello,\n\nUnfortunately submission of {prepid} failed.\n'
-        body += f'You can find this request at https://pdmv-dev-proxy.web.cern.ch/rereco/requests?prepid={prepid}\n'
+        body += (f'You can find this request at '
+                 f'https://pdmv-dev-proxy.web.cern.ch/rereco/requests?prepid={prepid}\n')
         body += f'Error message:\n\n{error_message}'
         recipients = emailer.get_recipients(request)
         emailer.send(subject, body, recipients)
@@ -168,11 +169,12 @@ class RequestSubmitter:
         prepid = request.get_prepid()
         last_workflow = request.get('workflows')[-1]['name']
         cmsweb_url = Settings().get('cmsweb_url')
-        self.logger.info(f'Submission of {prepid} succeeded')
+        self.logger.info('Submission of %s succeeded', prepid)
         emailer = Emailer()
         subject = f'Request {prepid} submission succeeded'
         body = f'Hello,\n\nSubmission of {prepid} succeeded.\n'
-        body += f'You can find this request at https://pdmv-dev-proxy.web.cern.ch/rereco/requests?prepid={prepid}\n'
+        body += (f'You can find this request at '
+                 f'https://pdmv-dev-proxy.web.cern.ch/rereco/requests?prepid={prepid}\n')
         body += f'Workflow in ReqMgr2 {cmsweb_url}/reqmgr2/fetch?rid={last_workflow}'
         recipients = emailer.get_recipients(request)
         emailer.send(subject, body, recipients)
@@ -214,35 +216,46 @@ class RequestSubmitter:
                                      f'rereco_submission/{prepid}/config_uploader.py')
             # Start executing commands
             # Create configs
-            config_gen_output, config_gen_error = ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
-                                                                                f'chmod +x {prepid}.sh',
-                                                                                f'voms-proxy-init -voms cms --valid 4:00',
-                                                                                f'export X509_USER_PROXY=$(voms-proxy-info --path)',
-                                                                                f'./{prepid}.sh'])
+            config_gen_command = [f'cd rereco_submission/{prepid}',
+                                  f'chmod +x {prepid}.sh',
+                                  f'voms-proxy-init -voms cms --valid 4:00',
+                                  f'export X509_USER_PROXY=$(voms-proxy-info --path)',
+                                  f'./{prepid}.sh']
+            _, config_gen_error = ssh_executor.execute_command(config_gen_command)
             # Ignore in stderr:
-            # "WARNING: In non-interactive mode release checks e.g. deprecated releases, production architectures are disabled."
-            config_gen_error = '\n'.join([x for x in config_gen_error.split('\n') if 'WARNING: In non-interactive mode' not in x])
-            config_gen_error = config_gen_error.strip()
+            # "WARNING: In non-interactive mode release checks e.g.
+            # deprecated releases, production architectures are disabled."
+            config_gen_error = config_gen_error.split('\n')
+            config_gen_error = [x for x in config_gen_error
+                                if 'WARNING: In non-interactive mode' not in x]
+            config_gen_error = '\n'.join(config_gen_error).strip()
             if config_gen_error:
-                self.__handle_error(request, f'Error generating configs for {prepid}.\n{config_gen_error}')
+                self.__handle_error(request,
+                                    f'Error generating configs for {prepid}.\n{config_gen_error}')
                 return
 
             # Upload configs
-            upload_output, upload_error = ssh_executor.execute_command([f'cd rereco_submission/{prepid}',
-                                                                        f'chmod +x {prepid}_upload.sh',
-                                                                        f'./{prepid}_upload.sh'])
+            config_upload_command = [f'cd rereco_submission/{prepid}',
+                                     f'chmod +x {prepid}_upload.sh',
+                                     f'./{prepid}_upload.sh']
+            upload_output, upload_error = ssh_executor.execute_command(config_upload_command)
 
             upload_error = upload_error.strip()
             if upload_error:
-                self.__handle_error(request, f'Error uploading configs for {prepid}.\n{upload_error}')
+                self.__handle_error(request,
+                                    f'Error uploading configs for {prepid}.\n{upload_error}')
                 return
 
-            upload_output = [tuple(x.strip() for x in x.split(' ') if x.strip()) for x in upload_output.split('\n') if 'DocID' in x]
+            upload_output = upload_output.split('\n')
+            # Get all lines that have DocID as tuples split by space
+            upload_output = [tuple(x.strip() for x in x.split(' ') if x.strip())
+                             for x in upload_output if 'DocID' in x]
             expected_config_file_names = request.get_config_file_names()
             for docid, config_name, config_hash in upload_output:
                 if docid != 'DocID':
                     self.__handle_error(request,
-                                        f'Output is different than expected for {prepid}: {docid} {config_name} {config_hash}')
+                                        f'Output is different than expected for {prepid}: '
+                                        f'{docid} {config_name} {config_hash}')
                     return
 
                 for sequence_index, sequence_configs in enumerate(expected_config_file_names):
@@ -250,30 +263,33 @@ class RequestSubmitter:
                         self.logger.debug('Set hash %s as config id for sequence %s',
                                           config_hash,
                                           sequence_index)
-                        request.get('sequences')[sequence_index].set('config_id', config_hash)
+                        request.get('sequences')[sequence_index].set('config_id',
+                                                                     config_hash)
                         sequence_configs['config'] = None
                         break
                     elif sequence_configs.get('harvest') == config_name:
                         self.logger.debug('Set hash %s as harvesting config id for sequence %s',
                                           config_hash,
                                           sequence_index)
-                        request.get('sequences')[sequence_index].set('harvesting_config_id', config_hash)
+                        request.get('sequences')[sequence_index].set('harvesting_config_id',
+                                                                     config_hash)
                         sequence_configs['harvest'] = None
                         break
                 else:
                     self.__handle_error(request,
-                                        f'Unexpected DocID for {prepid}: {config_name} {config_name} {config_hash}')
+                                        f'Unexpected DocID for {prepid}: {config_name} '
+                                        f'{config_name} {config_hash}')
                     return
 
             for sequence_configs in expected_config_file_names:
                 if sequence_configs['config'] is not None:
                     self.__handle_error(request,
-                                        'Missing DocID: %s', sequence_configs['config'])
+                                        f'Missing DocID: {sequence_configs["config"]}')
                     return
 
                 if sequence_configs.get('harvest') is not None:
                     self.__handle_error(request,
-                                        'Missing DocID: %s', sequence_configs['harvest'])
+                                        f'Missing DocID: {sequence_configs["harvest"]}')
                     return
 
             job_dict = controller.get_job_dict(request)
@@ -294,7 +310,7 @@ class RequestSubmitter:
                 request.set('status', 'submitted')
                 request.add_history('submission', 'succeeded', 'automatic')
                 request_db.save(request.get_json())
-            except ValueError as ve:
+            except ValueError:
                 self.__handle_error(request,
                                     f'Error submitting {prepid} to ReqMgr2:\n{reqmgr_response}')
                 return
