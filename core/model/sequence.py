@@ -165,6 +165,9 @@ class Sequence(ModelBase):
             command += f' {extra_value}'
             comment += f'# <extra> {extra_value}\n'
 
+        # Exit the script with error of cmsDriver.py
+        command += ' || exit $?'
+
         return comment + '\n' + command
 
     def get_cmsdriver(self, overwrite_input=None):

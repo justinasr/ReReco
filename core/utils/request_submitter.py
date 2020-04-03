@@ -221,37 +221,30 @@ class RequestSubmitter:
                                   f'voms-proxy-init -voms cms --valid 4:00',
                                   f'export X509_USER_PROXY=$(voms-proxy-info --path)',
                                   f'./{prepid}.sh']
-            _, config_gen_error = ssh_executor.execute_command(config_gen_command)
-            # Ignore in stderr:
-            # "WARNING: In non-interactive mode release checks e.g.
-            # deprecated releases, production architectures are disabled."
-            config_gen_error = config_gen_error.split('\n')
-            config_gen_error = [x for x in config_gen_error
-                                if 'WARNING: In non-interactive mode' not in x]
-            config_gen_error = '\n'.join(config_gen_error).strip()
-            if config_gen_error:
+            config_get_output = ssh_executor.execute_command(config_gen_command)
+            _, config_gen_stderr, config_gen_exit_code = config_get_output
+            if config_gen_exit_code != 0:
                 self.__handle_error(request,
-                                    f'Error generating configs for {prepid}.\n{config_gen_error}')
+                                    f'Error generating configs for {prepid}.\n{config_gen_stderr}')
                 return
 
             # Upload configs
             config_upload_command = [f'cd rereco_submission/{prepid}',
                                      f'chmod +x {prepid}_upload.sh',
                                      f'./{prepid}_upload.sh']
-            upload_output, upload_error = ssh_executor.execute_command(config_upload_command)
-
-            upload_error = upload_error.strip()
-            if upload_error:
+            config_upload_output = ssh_executor.execute_command(config_upload_command)
+            upload_stdout, upload_stderr, upload_exit_code = config_upload_output
+            if upload_exit_code:
                 self.__handle_error(request,
-                                    f'Error uploading configs for {prepid}.\n{upload_error}')
+                                    f'Error uploading configs for {prepid}.\n{upload_stderr}')
                 return
 
-            upload_output = upload_output.split('\n')
+            upload_stdout = upload_stdout.split('\n')
             # Get all lines that have DocID as tuples split by space
-            upload_output = [tuple(x.strip() for x in x.split(' ') if x.strip())
-                             for x in upload_output if 'DocID' in x]
+            upload_stdout = [tuple(x.strip() for x in x.split(' ') if x.strip())
+                             for x in upload_stdout if 'DocID' in x]
             expected_config_file_names = request.get_config_file_names()
-            for docid, config_name, config_hash in upload_output:
+            for docid, config_name, config_hash in upload_stdout:
                 if docid != 'DocID':
                     self.__handle_error(request,
                                         f'Output is different than expected for {prepid}: '
@@ -310,7 +303,7 @@ class RequestSubmitter:
                 request.set('status', 'submitted')
                 request.add_history('submission', 'succeeded', 'automatic')
                 request_db.save(request.get_json())
-            except ValueError:
+            except Exception:
                 self.__handle_error(request,
                                     f'Error submitting {prepid} to ReqMgr2:\n{reqmgr_response}')
                 return

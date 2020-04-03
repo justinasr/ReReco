@@ -75,17 +75,20 @@ class SSHExecutor():
         for line in stderr.readlines():
             stderr_list.append(line[0:256])
 
+        exit_code = stdout.channel.recv_exit_status()
         stdout = ''.join(stdout_list).strip()
         stderr = ''.join(stderr_list).strip()
 
         # Read output from stdout and stderr streams
+        self.logger.debug('Exit code %s of %s', exit_code, command)
+
         if stdout:
             self.logger.debug('STDOUT (%s): %s', command, stdout)
 
         if stderr:
             self.logger.error('STDERR (%s): %s', command, stderr)
 
-        return stdout, stderr
+        return stdout, stderr, exit_code
 
     def upload_file(self, copy_from, copy_to):
         """
