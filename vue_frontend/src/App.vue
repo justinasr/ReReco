@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-app-bar app>
+    <v-app-bar app style="background-color: white;">
       <a href="" style="text-decoration: none; color: rgba(0, 0, 0, 0.87);">
         <v-toolbar-title class="headline">
           <span>Re</span>
@@ -44,9 +44,13 @@
         <span class="mr-2">Dashboard</span>
       </v-btn>
       <v-spacer></v-spacer>
-      <span v-if="userInfo" :title="'Username: ' + userInfo.username + '\nRole: ' + userInfo.role"><small>Logged in as</small> {{userInfo.fullname}}</span>
+      <div v-if="userInfo" style="text-align: right; line-height: 28px;">
+        <span :title="'Username: ' + userInfo.username + '\nRole: ' + userInfo.role"><small>Logged in as</small> {{userInfo.fullname}} </span>
+        <img style="width: 16px; height: 16px;" v-if="userInfo.role_index == 1" src="static/star.png"/>
+        <img style="width: 16px; height: 16px;" v-if="userInfo.role_index == 2" src="static/admin_star.png"/>
+      </div>
     </v-app-bar>
-    <v-content>
+    <v-content style="background-color: #fafafa;">
       <router-view/>
     </v-content>
   </v-app>
