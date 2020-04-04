@@ -182,6 +182,13 @@ class RequestController(ControllerBase):
                 command += '\n'
                 command += common_upload_part % (configs['harvest'], configs['harvest'])
 
+        # Remove WMCore in order not to run out of space
+        command += '\n'
+        command += 'rm -rf WMCore'
+        command += '\n'
+        cmssw_release = request.get('cmssw_release')
+        command += f'rm -rf {cmssw_release}'
+
         return command
 
     def get_job_dict(self, request):
