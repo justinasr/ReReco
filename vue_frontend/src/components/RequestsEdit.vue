@@ -233,6 +233,9 @@ export default {
       this.errorDialog.visible = true;
     },
     listLength(l) {
+      if (!l) {
+        return 0;
+      }
       return l.split('\n').filter(Boolean).length;
     },
   }
