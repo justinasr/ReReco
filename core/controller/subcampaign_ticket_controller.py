@@ -99,10 +99,11 @@ class SubcampaignTicketController(ControllerBase):
             connection_wrapper = ConnectionWrapper(host='cmsweb.cern.ch', max_attempts=1)
             response = connection_wrapper.api('POST',
                                               '/dbs/prod/global/DBSReader/datasetlist',
-                                              {'dataset': query})
+                                              {'dataset': query, 'detail': 1})
 
         response = json.loads(response.decode('utf-8'))
-        datasets = [x['dataset'] for x in response]
+        valid_types = ('VALID', 'PRODUCTION')
+        datasets = [x['dataset'] for x in response if x['dataset_access_type'] in valid_types]
         dataset_blacklist = set(Settings().get('dataset_blacklist'))
         datasets = [x for x in datasets if x.split('/')[1] not in dataset_blacklist]
         end_time = time.time()
