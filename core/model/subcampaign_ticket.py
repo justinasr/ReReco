@@ -25,6 +25,8 @@ class SubcampaignTicket(ModelBase):
         'input_datasets': [],
         # User notes
         'notes': '',
+        # Priority in computing
+        'priority': 110000,
         # Processing string for this ticket
         'processing_string': '',
         # Size per event
@@ -40,6 +42,7 @@ class SubcampaignTicket(ModelBase):
     lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9_\\-]{1,75}'),
         '__input_datasets': ModelBase.lambda_check('dataset'),
+        'priority': lambda priority: 1000 <= priority <= 1000000,
         'processing_string': ModelBase.lambda_check('processing_string'),
         'size_per_event': lambda spe: spe > 0.0,
         'status': lambda status: status in ('new', 'done'),

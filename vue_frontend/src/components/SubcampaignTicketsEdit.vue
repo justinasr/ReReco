@@ -25,6 +25,10 @@
           <td><input type="number" v-model="editableObject.time_per_event" :disabled="!editingInfo.time_per_event">s</td>
         </tr>
         <tr>
+          <td>Priority</td>
+          <td><input type="number" v-model="editableObject.priority" :disabled="!editingInfo.priority"></td>
+        </tr>
+        <tr>
           <td>Notes</td>
           <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
         </tr>

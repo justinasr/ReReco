@@ -131,6 +131,7 @@ export default {
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
         {'dbName': 'size_per_event', 'displayName': 'Size per Event', 'visible': 0},
         {'dbName': 'time_per_event', 'displayName': 'Time per Event', 'visible': 0},
+        {'dbName': 'priority', 'displayName': 'Priority', 'visible': 0},
       ],
       headers: [],
       dataItems: [],

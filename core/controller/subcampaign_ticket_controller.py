@@ -127,6 +127,7 @@ class SubcampaignTicketController(ControllerBase):
             editing_info['input_datasets'] = False
             editing_info['size_per_event'] = False
             editing_info['time_per_event'] = False
+            editing_info['priority'] = False
 
         return editing_info
 
@@ -158,10 +159,12 @@ class SubcampaignTicketController(ControllerBase):
             processing_string = subcampaign_ticket.get('processing_string')
             time_per_event = subcampaign_ticket.get('time_per_event')
             size_per_event = subcampaign_ticket.get('size_per_event')
+            priority = subcampaign_ticket.get('priority')
             try:
                 for input_dataset in subcampaign_ticket.get('input_datasets'):
                     new_request_json = {'subcampaign': subcampaign_name,
                                         'input_dataset': input_dataset,
+                                        'priority': priority,
                                         'processing_string': processing_string,
                                         'time_per_event': time_per_event,
                                         'size_per_event': size_per_event}
