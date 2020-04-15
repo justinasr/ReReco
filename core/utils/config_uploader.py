@@ -5,9 +5,11 @@ Credit and less than optimal code has to be spreaded among lots of people.
 import os
 import imp
 import argparse
-
+#pylint: disable=import-error
+# Supplied by CMSSW environment
 from PSetTweaks.WMTweak import makeTweak
 from WMCore.Cache.WMConfigCache import ConfigCache
+#pylint: enable=import-error
 
 
 def __load_config_file(file_path):

@@ -1,3 +1,6 @@
+"""
+Main module that starts flask web server
+"""
 import logging
 import argparse
 from flask_restful import Api
@@ -80,7 +83,9 @@ def api_documentation(_path):
 
         class_name = view_class.__name__
         class_doc = view_class.__doc__.strip()
+        #pylint: disable=protected-access
         urls = sorted([r.rule for r in app.url_map._rules_by_endpoint[endpoint]])
+        #pylint: enable=protected-access
         category = [x for x in urls[0].split('/') if x][1]
         if category not in docs:
             docs[category] = {}

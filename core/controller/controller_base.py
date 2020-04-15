@@ -226,6 +226,10 @@ class ControllerBase():
         return changed_values
 
     def get_highest_serial_number(self, database, query):
+        """
+        Return highest sequence number of existing object
+        If object does not exist return 0
+        """
         serial_numbers = database.query(f'prepid={query}',
                                         limit=1,
                                         sort_asc=False)
@@ -235,4 +239,5 @@ class ControllerBase():
             serial_number = serial_numbers[0]['prepid']
             serial_number = int(serial_number.split('-')[-1])
 
+        self.logger.debug('Highest serial number for %s is %s', query, serial_number)
         return serial_number
