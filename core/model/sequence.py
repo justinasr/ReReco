@@ -197,6 +197,12 @@ class Sequence(ModelBase):
                 input_file = f'{previous_sequence.get_name()}.root'
                 arguments_dict['filein'] = f'"file:{input_file}"'
 
+        # Update ALCA and SKIM steps to ALCA:@Dataset and SKIM:@Dataset
+        for step_index, step in enumerate(arguments_dict['step']):
+            if step in ('ALCA', 'SKIM'):
+                dataset = self.parent().get_dataset()
+                arguments_dict['step'][step_index] = f'{step}:@{dataset}'
+
         # Build argument dictionary
         sequence_name = self.get_name()
         config_names = self.get_config_file_names()

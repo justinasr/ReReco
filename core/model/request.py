@@ -139,3 +139,10 @@ class Request(ModelBase):
             built_command += '\n\n'
 
         return built_command.strip()
+
+    def get_dataset(self):
+        """
+        Return primary dataset based on input dataset
+        """
+        input_dataset_parts = [x for x in self.get('input_dataset').split('/') if x]
+        return input_dataset_parts[0]
