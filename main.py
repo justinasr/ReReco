@@ -166,7 +166,7 @@ def main():
     args = vars(parser.parse_args())
     debug = args.get('debug', False)
     app.run(host='0.0.0.0',
-            port=8005,
+            port=8002,
             threaded=True,
             debug=debug)
 
