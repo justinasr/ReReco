@@ -198,10 +198,26 @@ class Sequence(ModelBase):
                 arguments_dict['filein'] = f'"file:{input_file}"'
 
         # Update ALCA and SKIM steps to ALCA:@Dataset and SKIM:@Dataset
+        # if dataset name is in "auto" dictionary in CMSSW
+        dynamic_steps = ''
         for step_index, step in enumerate(arguments_dict['step']):
-            if step in ('ALCA', 'SKIM'):
-                dataset = self.parent().get_dataset()
-                arguments_dict['step'][step_index] = f'{step}:@{dataset}'
+            if step not in ('ALCA', 'SKIM'):
+                continue
+
+            dataset = self.parent().get_dataset()
+            arguments_dict['step'][step_index] = f'${step}_STEP'
+            # Build a small python program to get value from CMSSW on the go
+            step_var = f'{step}_STEP=$(python -c "'
+            if step == 'ALCA':
+                step_var += f'from Configuration.AlCa.autoAlca import AlCaRecoMatrix as ds;'
+            elif step == 'SKIM':
+                step_var += f'from Configuration.Skimming.autoSkim import autoSkim as ds;'
+
+            step_var += f'print(\'{step}:@{dataset}\' if \'{dataset}\' in ds.keys() else \'\')")'
+            dynamic_steps += f'{step_var}\n'
+
+        if dynamic_steps:
+            dynamic_steps = f'# Steps based on dataset name\n{dynamic_steps}\n'
 
         # Build argument dictionary
         sequence_name = self.get_name()
@@ -210,7 +226,7 @@ class Sequence(ModelBase):
         arguments_dict['python_filename'] = f'"{config_names["config"]}.py"'
         arguments_dict['no_exec'] = True
         cms_driver_command = self.__build_cmsdriver('RECO', arguments_dict)
-        return cms_driver_command
+        return dynamic_steps + cms_driver_command
 
     def get_harvesting_cmsdriver(self):
         """
