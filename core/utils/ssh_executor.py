@@ -2,6 +2,7 @@
 Module that handles all SSH operations - both ssh and ftp
 """
 import json
+import time
 import logging
 import paramiko
 
@@ -18,6 +19,7 @@ class SSHExecutor():
         self.remote_host = host
         self.credentials_file_path = credentials_path
         self.timeout = 3600
+        self.max_retries = 3
 
     def setup_ssh(self):
         """
@@ -65,19 +67,28 @@ class SSHExecutor():
             command = '; '.join(command)
 
         self.logger.debug('Executing %s', command)
-        (_, stdout, stderr) = self.ssh_client.exec_command(command, timeout=self.timeout)
-        self.logger.debug('Executed %s. Reading response', command)
-        stdout_list = []
-        stderr_list = []
-        for line in stdout.readlines():
-            stdout_list.append(line[0:256])
+        retries = 0
+        while retries <= self.max_retries:
+            (_, stdout, stderr) = self.ssh_client.exec_command(command, timeout=self.timeout)
+            self.logger.debug('Executed %s. Reading response', command)
+            stdout_list = []
+            stderr_list = []
+            for line in stdout.readlines():
+                stdout_list.append(line[0:256])
 
-        for line in stderr.readlines():
-            stderr_list.append(line[0:256])
+            for line in stderr.readlines():
+                stderr_list.append(line[0:256])
 
-        exit_code = stdout.channel.recv_exit_status()
-        stdout = ''.join(stdout_list).strip()
-        stderr = ''.join(stderr_list).strip()
+            exit_code = stdout.channel.recv_exit_status()
+            stdout = ''.join(stdout_list).strip()
+            stderr = ''.join(stderr_list).strip()
+            # Retry if AFS error occured
+            if '.bashrc: Permission denied' in stderr:
+                retries += 1
+                self.logger.warning('SSH execution failed, will do a retry number %s', retries)
+                time.sleep(3)
+            else:
+                break
 
         # Read output from stdout and stderr streams
         self.logger.debug('Exit code %s of %s', exit_code, command)
