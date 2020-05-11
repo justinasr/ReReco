@@ -74,8 +74,6 @@ export default {
         }
       });
       axios.get('api/search?db_name=chained_campaigns' + queryParams).then(response => {
-        console.log(response.data);
-
         component.dataItems = response.data.response.results.map(function (x) { x._actions = undefined; return x});
         component.totalItems = response.data.response.total_rows;
         component.loading = false;
