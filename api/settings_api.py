@@ -14,6 +14,7 @@ class SettingsAPI(APIBase):
         APIBase.__init__(self)
 
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
     def get(self, name=None):
         """
         Get a value from settings with given name

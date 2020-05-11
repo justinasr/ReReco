@@ -51,6 +51,7 @@ class LockerStatusAPI(APIBase):
         APIBase.__init__(self)
 
     @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('administrator')
     def get(self):
         """
         Get status of all locks in the system
