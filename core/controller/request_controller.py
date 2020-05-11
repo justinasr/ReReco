@@ -654,8 +654,9 @@ class RequestController(ControllerBase):
         """
         Force Stats2 to update workflows with given workflow names
         """
+        credentials_path = Settings().get('credentials_path')
         with self.locker.get_lock('refresh-stats'):
-            ssh_executor = SSHExecutor('vocms074.cern.ch', '/home/jrumsevi/pdmvserv_auth.txt')
+            ssh_executor = SSHExecutor('vocms074.cern.ch', credentials_path)
             workflow_update_commands = ['cd /home/pdmvserv/Stats2',
                                         'export USERKEY=/home/pdmvserv/private/hostkey.pem',
                                         'export USERCRT=/home/pdmvserv/private/hostcert.pem']

@@ -152,12 +152,13 @@ class RequestSubmitter:
         request.set('status', 'new')
         request.add_history('submission', 'failed', 'automatic')
         request_db.save(request.get_json())
+        service_url = Settings().get('service_url')
         emailer = Emailer()
         prepid = request.get_prepid()
         subject = f'Request {prepid} submission failed'
         body = f'Hello,\n\nUnfortunately submission of {prepid} failed.\n'
         body += (f'You can find this request at '
-                 f'https://pdmv-dev-proxy.web.cern.ch/rereco/requests?prepid={prepid}\n')
+                 f'{service_url}/rereco/requests?prepid={prepid}\n')
         body += f'Error message:\n\n{error_message}'
         recipients = emailer.get_recipients(request)
         emailer.send(subject, body, recipients)
@@ -170,11 +171,12 @@ class RequestSubmitter:
         last_workflow = request.get('workflows')[-1]['name']
         cmsweb_url = Settings().get('cmsweb_url')
         self.logger.info('Submission of %s succeeded', prepid)
+        service_url = Settings().get('service_url')
         emailer = Emailer()
         subject = f'Request {prepid} submission succeeded'
         body = f'Hello,\n\nSubmission of {prepid} succeeded.\n'
         body += (f'You can find this request at '
-                 f'https://pdmv-dev-proxy.web.cern.ch/rereco/requests?prepid={prepid}\n')
+                 f'{service_url}/rereco/requests?prepid={prepid}\n')
         body += f'Workflow in ReqMgr2 {cmsweb_url}/reqmgr2/fetch?rid={last_workflow}'
         recipients = emailer.get_recipients(request)
         emailer.send(subject, body, recipients)
@@ -183,7 +185,8 @@ class RequestSubmitter:
         """
         Method that is used by submission workers. This is where the actual submission happens
         """
-        ssh_executor = SSHExecutor('lxplus.cern.ch', '/home/jrumsevi/pdmvserv_auth.txt')
+        credentials_path = Settings().get('credentials_path')
+        ssh_executor = SSHExecutor('lxplus.cern.ch', credentials_path)
         prepid = request.get_prepid()
         with Locker().get_lock(prepid):
             request_db = Database('requests')
