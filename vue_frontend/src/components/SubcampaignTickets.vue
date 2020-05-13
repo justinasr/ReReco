@@ -209,7 +209,7 @@ export default {
       this.dialog.description = "Are you sure you want to delete " + subcampaign_ticket.prepid + " subcampaign ticket?";
       this.dialog.ok = function() {
         component.loading = true;
-        axios.delete('api/subcampaign_tickets/delete', {data: {'prepid': subcampaign_ticket.prepid, '_rev': subcampaign_ticket._rev}}).then(() => {
+        axios.delete('api/subcampaign_tickets/delete', {data: {'prepid': subcampaign_ticket.prepid}}).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {

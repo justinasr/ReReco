@@ -12,10 +12,8 @@ class Subcampaign(ModelBase):
     """
 
     _ModelBase__schema = {
-        # Database id (required by CouchDB)
+        # Database id (required by DB)
         '_id': '',
-        # Document revision (required by CouchDB)
-        '_rev': '',
         # PrepID
         'prepid': '',
         # CMSSW version

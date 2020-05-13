@@ -27,9 +27,6 @@ class ControllerBase():
         Create a new object from given json_data
         """
         json_data['history'] = []
-        if '_rev' in json_data:
-            del json_data['_rev']
-
         if '_id' in json_data:
             del json_data['_id']
 

@@ -1,5 +1,5 @@
 """
-Module that contains all request APIs
+Module that contains all settings APIs
 """
 from api.api_base import APIBase
 from core.utils.settings import Settings

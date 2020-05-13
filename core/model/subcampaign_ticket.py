@@ -1,5 +1,5 @@
 """
-Module that contains CampaignTicket class
+Module that contains SubcampaignTicket class
 """
 from core.model.model_base import ModelBase
 
@@ -11,10 +11,8 @@ class SubcampaignTicket(ModelBase):
     """
 
     _ModelBase__schema = {
-        # Database id (required by CouchDB)
+        # Database id (required by DB)
         '_id': '',
-        # Document revision (required by CouchDB)
-        '_rev': '',
         # PrepID
         'prepid': '',
         # List of prepids of requests that were created from this ticket

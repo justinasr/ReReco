@@ -6,196 +6,79 @@ Web based tool for Data ReReco bookkeeping and submission
 ### Subcampaigns
 
 Structure in database:
-* `_id` - unique document identifier in database (required by CouchDB)
-* `_rev` - document revision (required by CouchDB)
+* `_id` - unique document identifier in database (required by DB)
 * `cmssw_release` - CMSSW release
 * `energy` - energy in TeV. Unused, but nice to have
 * `history` - action history of this object
-* `memory` - memory in magabytes
+* `memory` - memory in megabytes
 * `notes` - user notes
 * `prepid` - unique identifier in the system
+* `runs_json_path` - path to json that contains all runs
+* `scram_arch` - scram architecture of CMSSW release
 * `sequences` - list of dictionaries that hold attributes for cmsDriver commands (see Sequences)
 * `step` - DR, MiniAOD or NanoAOD. Indicates which step of chained request is this
 
 ### Requests
 
 Structure in database:
-* `_id` - unique document identifier in database (required by CouchDB)
-* `_rev` - document revision (required by CouchDB)
+* `_id` - unique document identifier in database (required by DB)
 * `cmssw_release` - CMSSW release
+* `completed_events` - completed (produced) events
 * `energy` - energy in TeV. Unused, but nice to have
 * `history` - action history of this object
 * `input_dataset` - dataset name that is used as an input
-* `subcampaign` - name of subcampaign (see Subcampaigns) that was used as a template for this request
-* `memory` - memory in magabytes
+* `memory` - memory in megabytes
 * `notes` - user notes
 * `output_datasets` - list of dataset names that are produced and saved by this request. This information is received after request is submitted to computing
 * `prepid` - unique identifier in the system
 * `priority` - priority of the job in computing
-* `processing_string` - TO BE FILLED
-* `runs` - TO BE FILLED
+* `processing_string` - processing string
+* `runs` - list of runs to be processed
 * `sequences` - list of dictionaries that hold attributes for cmsDriver commands (see Sequences)
 * `size_per_event` - required disk space for one event in kilobytes
 * `status` - status of this request. Can be new, approved, submitted or done
 * `step` - DR, MiniAOD or NanoAOD. Indicates which step of chained request is this
+* `subcampaign` - name of subcampaign (see Subcampaigns) that was used as a template for this request
 * `time_per_event` - required time for one event in seconds
-* `workflows` - TO BE FILLED
+* `total_events` - total events to be processed (number from ReqMgr2)
+* `workflows` - list of dictionaries that represent workflows in computing. Each dictionary has these values:
+  * `name` - workflow name
+  * `output_datasets` - list of dictionaries that represent output datasets of workflow. Each dictionary has these values:
+    * `events` - number of events in dataset
+    * `name` - dataset name
+    * `type` - dataset access type - NONE, PRODUCTION, VALID, etc.
+  * `status_history` - list of dictionaries that represent workflow status change. Each dictionary has these values:
+    * `status` - new status
+    * `time` - timestamp
+  * `type` - workflow type, only ReReco at the moment
 
 ### Subcampaign tickets
 
 Structure in database:
-* `_id` - unique document identifier in database (required by CouchDB)
-* `_rev` - document revision (required by CouchDB)
-* `subcampaign` - name of subcampaign that is used as template for requests
+* `_id` - unique document identifier in database (required by DB)
 * `created_requests` - list of prepids of requests that were created from this ticket
 * `history` - action history of this object
 * `input_datasets` - list of datasets that will be used as inputs. Each input dataset will result in a new request
 * `notes` - user notes
+* `priority`
 * `prepid` - unique identifier in the system
-* `processing_string` - TO BE FILLED
+* `processing_string` - processing string that will be added to created requests
+* `size_per_event` - size per event that will be set to created requests
 * `status` - status is either new or done
+* `subcampaign` - name of subcampaign that is used as template for requests
+* `time_per_event` - time per event that will be set to created requests
 
 ### Sequences
 
 Structure in database:
-
 * `conditions` - what conditions to use, this has to be specified
-* `datatier` - list of datatiers to use
+* `config_id` - id of configuration in ReqMgr2's config cache
 * `customise` - inline customization
+* `datatier` - list of datatiers to use
 * `era` - specify which era to use
 * `eventcontent` - list of what event content to write out
-* `extra` - TO BE FILLED
+* `extra` - freeform text appended to the end of cmsDriver.py command
+* `harvesting_config_id` - id of harvesting configuration (if needed) in ReqMgr2's config cache
 * `nThreads` - how many threads should CMSSW use
 * `scenario` - scenario overriding standard settings: 'pp', 'cosmics', 'nocoll', 'HeavyIons'
 * `step` - list of desired steps
-
-# Database index
-
-## CouchDB Views
-
-### Subcampaigns
-
-##### subcampaigns
-
-all:
-```
-function(doc) {
-  if (doc._id.indexOf('_') === 0) {
-    return null;
-  }
-  if (doc.prepid) {
-    emit(doc.prepid, doc._id);
-  }
-}
-```
-
-### Requests
-
-##### requests
-
-all:
-```
-function(doc) {
-  if (doc._id.indexOf('_') === 0) {
-    return null;
-  }
-  if (doc.prepid) {
-    emit(doc.prepid, doc._id);
-  }
-}
-```
-
-##### serial_number
-
-map:
-```
-function(doc) {
-  if (doc.prepid) {
-    var parts = doc._id.split('-');
-    var number = parseInt(parts[parts.length - 1], 10);
-    parts.shift();
-    parts.pop();
-    emit(parts.join('-'), number);
-  };
-}
-```
-reduce:
-```
-function(keys, values, rereduce) {
-  return Math.max.apply({}, values);
-}
-```
-
-## couchdb-lucence Views
-
-### Subcampaigns
-
-```
-function(doc) {
-  if (doc._id.indexOf('_') === 0) {
-    return null;
-  }
-  var res = new Document();
-  res.add(doc._id, {field:'_id', store:'yes', type:'string'});
-  res.add(doc.prepid, {field:'prepid', store:'yes', type:'string'});
-  res.add(doc.step, {field:'step', store:'yes', type:'string'});
-  res.add(doc.cmssw_release, {field:'cmssw_release', store:'yes', type:'string'});
-  res.add(doc.memory, {field:'memory', store:'yes', type:'int'});
-  res.add(doc.energy, {field:'energy', store:'yes', type:'float'});
-  log.info(doc.prepid);
-  return res;
-}
-```
-
-### Subcampaign tickets
-
-```
-function(doc) {
-  log.info('Starting ' + doc._id);
-  if (doc._id.indexOf('_') === 0) {
-    return null;
-  }
-  var res = new Document();
-  res.add(doc._id, {field:'_id', store:'yes', type:'string'});
-  res.add(doc.prepid, {field:'prepid', store:'yes', type:'string'});
-  res.add(doc.status, {field:'status', store:'yes', type:'string'});
-  res.add(doc.subcampaign, {field:'subcampaign', store:'yes', type:'string'});
-  res.add(doc.processing_string, {field:'processing_string', store:'yes', type:'string'});
-  for (var i = 0; i < doc.input_datasets.length; i++) {
-    res.add(doc.input_datasets[i], {field:'input_datasets', store:'yes'});
-  }
-  for (var i = 0; i < doc.created_requests.length; i++) {
-    res.add(doc.created_requests[i], {field:'created_requests', store:'yes'});
-  }
-  log.info('Done ' + doc.prepid);
-  return res;
-}
-```
-
-### Requests
-
-```
-function(doc) {
-  log.info('Starting ' + doc._id);
-  if (doc._id.indexOf('_') === 0) {
-    return null;
-  }
-  var res = new Document();
-  res.add(doc._id, {field:'_id', store:'yes', type:'string'});
-  res.add(doc.prepid, {field:'prepid', store:'yes', type:'string'});
-  res.add(doc.step, {field:'step', store:'yes', type:'string'});
-  res.add(doc.input_dataset, {field:'input_dataset', store:'yes', type:'string'});
-  res.add(doc.subcampaign, {field:'subcampaign', store:'yes', type:'string'});
-  res.add(doc.status, {field:'status', store:'yes', type:'string'});
-  res.add(doc.cmssw_release, {field:'cmssw_release', store:'yes', type:'string'});
-  res.add(doc.memory, {field:'memory', store:'yes', type:'int'});
-  res.add(doc.priority, {field:'priority', store:'yes', type:'int'});
-  res.add(doc.energy, {field:'energy', store:'yes', type:'float'});
-  res.add(doc.processing_string, {field:'processing_string', store:'yes', type:'string'});
-  for (var i = 0; i < doc.output_datasets.length; i++) {
-    res.add(doc.output_datasets[i], {field:'output_datasets', store:'yes'});
-  }
-  log.info('Done ' + doc.prepid);
-  return res;
-}
-```
