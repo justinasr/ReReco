@@ -15,24 +15,14 @@
       </v-btn>
       <v-btn
         text
-        href="subcampaign_tickets">
-        <span class="mr-2">Subcampaign Tickets</span>
-      </v-btn>
-<!--       <v-btn
-        text
-        href="flows">
-        <span class="mr-2">Flows</span>
-      </v-btn>
-      <v-btn
-        text
-        href="chained_subcampaigns">
-        <span class="mr-2">Chained Subcampaigns</span>
+        href="tickets">
+        <span class="mr-2">Tickets</span>
       </v-btn>
       <v-btn
         text
         href="chained_requests">
         <span class="mr-2">Chained Requests</span>
-      </v-btn> -->
+      </v-btn>
       <v-btn
         text
         href="requests">
@@ -58,27 +48,14 @@
 
 <script>
 
-import axios from 'axios'
+import { roleMixin } from './mixins/UserRoleMixin.js'
 
 export default {
   name: 'App',
 
-  components: {
-  },
-  data: () => ({
-    userInfo: undefined
-  }),
-  created () {
-    this.getUserInfo();
-  },
-  methods: {
-    getUserInfo () {
-      let component = this;
-      axios.get('api/system/user_info').then(response => {
-        component.userInfo = response.data.response;
-      });
-    },
-  }
+  mixins: [
+    roleMixin
+  ]
 };
 </script>
 

@@ -123,11 +123,15 @@
 
 import axios from 'axios'
 import SequencesEdit from './SequencesEdit'
+import { listLengthMixin } from '../mixins/ListLengthMixin.js'
 
 export default {
   components: {
     SequencesEdit
   },
+  mixins: [
+    listLengthMixin
+  ],
   data () {
     return {
       prepid: undefined,
@@ -231,13 +235,7 @@ export default {
       this.errorDialog.title = title;
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
-    },
-    listLength(l) {
-      if (!l) {
-        return 0;
-      }
-      return l.split('\n').filter(Boolean).length;
-    },
+    }
   }
 }
 </script>

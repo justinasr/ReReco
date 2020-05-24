@@ -12,14 +12,14 @@ from api.subcampaign_api import (CreateSubcampaignAPI,
                                  GetSubcampaignAPI,
                                  GetEditableSubcampaignAPI,
                                  GetDefaultSubcampaignSequenceAPI)
-from api.subcampaign_ticket_api import (CreateSubcampaignTicketAPI,
-                                        DeleteSubcampaignTicketAPI,
-                                        UpdateSubcampaignTicketAPI,
-                                        GetSubcampaignTicketAPI,
-                                        GetSubcampaignTicketDatasetsAPI,
-                                        GetEditableSubcampaignTicketAPI,
-                                        CreateRequestsForSubcampaignTicketAPI,
-                                        GetSubcampaignTicketTwikiAPI)
+from api.ticket_api import (CreateTicketAPI,
+                            DeleteTicketAPI,
+                            UpdateTicketAPI,
+                            GetTicketAPI,
+                            GetTicketDatasetsAPI,
+                            GetEditableTicketAPI,
+                            CreateRequestsForTicketAPI,
+                            GetTicketTwikiAPI)
 from api.request_api import (CreateRequestAPI,
                              DeleteRequestAPI,
                              UpdateRequestAPI,
@@ -33,6 +33,11 @@ from api.request_api import (CreateRequestAPI,
                              GetRequestRunsAPI,
                              UpdateRequestWorkflowsAPI,
                              RequestOptionResetAPI)
+from api.chained_request_api import (CreateChainedRequestAPI,
+                                     DeleteChainedRequestAPI,
+                                     UpdateChainedRequestAPI,
+                                     GetChainedRequestAPI,
+                                     GetEditableChainedRequestAPI)
 from api.search_api import SearchAPI
 from api.settings_api import SettingsAPI
 from api.system_api import (SubmissionWorkerStatusAPI,
@@ -124,18 +129,18 @@ api.add_resource(GetDefaultSubcampaignSequenceAPI,
                  '/api/subcampaigns/get_default_sequence',
                  '/api/subcampaigns/get_default_sequence/<string:prepid>')
 
-api.add_resource(CreateSubcampaignTicketAPI, '/api/subcampaign_tickets/create')
-api.add_resource(DeleteSubcampaignTicketAPI, '/api/subcampaign_tickets/delete')
-api.add_resource(UpdateSubcampaignTicketAPI, '/api/subcampaign_tickets/update')
-api.add_resource(GetSubcampaignTicketAPI, '/api/subcampaign_tickets/get/<string:prepid>')
-api.add_resource(GetEditableSubcampaignTicketAPI,
-                 '/api/subcampaign_tickets/get_editable',
-                 '/api/subcampaign_tickets/get_editable/<string:prepid>')
-api.add_resource(GetSubcampaignTicketDatasetsAPI, '/api/subcampaign_tickets/get_datasets')
-api.add_resource(CreateRequestsForSubcampaignTicketAPI,
-                 '/api/subcampaign_tickets/create_requests')
-api.add_resource(GetSubcampaignTicketTwikiAPI,
-                 '/api/subcampaign_tickets/twiki_snippet/<string:prepid>')
+api.add_resource(CreateTicketAPI, '/api/tickets/create')
+api.add_resource(DeleteTicketAPI, '/api/tickets/delete')
+api.add_resource(UpdateTicketAPI, '/api/tickets/update')
+api.add_resource(GetTicketAPI, '/api/tickets/get/<string:prepid>')
+api.add_resource(GetEditableTicketAPI,
+                 '/api/tickets/get_editable',
+                 '/api/tickets/get_editable/<string:prepid>')
+api.add_resource(GetTicketDatasetsAPI, '/api/tickets/get_datasets')
+api.add_resource(CreateRequestsForTicketAPI,
+                 '/api/tickets/create_requests')
+api.add_resource(GetTicketTwikiAPI,
+                 '/api/tickets/twiki_snippet/<string:prepid>')
 
 api.add_resource(CreateRequestAPI, '/api/requests/create')
 api.add_resource(DeleteRequestAPI, '/api/requests/delete')
@@ -152,6 +157,14 @@ api.add_resource(RequestPreviousStatus, '/api/requests/previous_status')
 api.add_resource(GetRequestRunsAPI, '/api/requests/get_runs/<string:prepid>')
 api.add_resource(UpdateRequestWorkflowsAPI, '/api/requests/update_workflows')
 api.add_resource(RequestOptionResetAPI, '/api/requests/option_reset')
+
+api.add_resource(CreateChainedRequestAPI, '/api/chained_requests/create')
+api.add_resource(DeleteChainedRequestAPI, '/api/chained_requests/delete')
+api.add_resource(UpdateChainedRequestAPI, '/api/chained_requests/update')
+api.add_resource(GetChainedRequestAPI, '/api/chained_requests/get/<string:prepid>')
+api.add_resource(GetEditableChainedRequestAPI,
+                 '/api/chained_requests/get_editable',
+                 '/api/chained_requests/get_editable/<string:prepid>')
 
 
 def main():

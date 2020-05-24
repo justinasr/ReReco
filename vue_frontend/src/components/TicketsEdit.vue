@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 v-if="creatingNew">Creating new Subcampaign Ticket</h1>
+    <h1 v-if="creatingNew">Creating new Ticket</h1>
     <h1 v-else>Editing {{editableObject.prepid}}</h1>
     <v-card raised class="editPageCard">
       <table v-if="editableObject">
@@ -9,20 +9,29 @@
           <td><input type="text" v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
         </tr>
         <tr>
-          <td>Subcampaign</td>
-          <td><input type="text" v-model="editableObject.subcampaign" :disabled="!editingInfo.subcampaign"></td>
-        </tr>
-        <tr>
-          <td>Processing String</td>
-          <td><input type="text" v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
-        </tr>
-        <tr>
-          <td>Size per event</td>
-          <td><input type="number" v-model="editableObject.size_per_event" :disabled="!editingInfo.size_per_event">kB</td>
-        </tr>
-        <tr>
-          <td>Time per event</td>
-          <td><input type="number" v-model="editableObject.time_per_event" :disabled="!editingInfo.time_per_event">s</td>
+          <td>Steps ({{listLength(editableObject.steps)}})</td>
+          <td>
+            <div v-for="(step, index) in editableObject.steps" :key="index">
+              <h3>Step {{index + 1}}</h3>
+              <table>
+                <tr>
+                  <td>Subcampaign</td><td><input type="text" v-model="step.subcampaign" :disabled="!editingInfo.steps"></td>
+                </tr>
+                <tr>
+                  <td>Processing String</td><td><input type="text" v-model="step.processing_string" :disabled="!editingInfo.steps"></td>
+                </tr>
+                <tr>
+                  <td>Size per event</td><td><input type="number" v-model="step.size_per_event" :disabled="!editingInfo.steps">kB</td>
+                </tr>
+                <tr>
+                  <td>Time per event</td><td><input type="number" v-model="step.time_per_event" :disabled="!editingInfo.steps">s</td>
+                </tr>
+              </table>
+              <v-btn small class="mr-1 mb-1" color="error" @click="deleteStep(index)">Delete step {{index + 1}}</v-btn>
+              <hr>
+            </div>
+            <v-btn small class="mr-1 mb-1 mt-1" color="primary" @click="addStep()">Add step {{listLength(editableObject.steps) + 1}}</v-btn>
+          </td>
         </tr>
         <tr>
           <td>Priority</td>
@@ -86,11 +95,15 @@
 <script>
 
 import axios from 'axios'
+import { listLengthMixin } from '../mixins/ListLengthMixin.js'
 
 export default {
   components: {
 
   },
+  mixins: [
+    listLengthMixin
+  ],
   data () {
     return {
       prepid: undefined,
@@ -115,9 +128,8 @@ export default {
     this.prepid = query['prepid'];
     this.creatingNew = this.prepid === undefined;
     let component = this;
-    axios.get('api/subcampaign_tickets/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
+    axios.get('api/tickets/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
       component.editableObject = response.data.response.object;
-      component.editableObject.sequences = JSON.stringify(component.editableObject.sequences, null, 4);
       component.editableObject.input_datasets = component.editableObject.input_datasets.filter(Boolean).join('\n')
       component.editingInfo = response.data.response.editing_info;
       component.loading = false;
@@ -132,29 +144,29 @@ export default {
       let httpRequest;
       this.loading = true;
       if (this.creatingNew) {
-        httpRequest = axios.put('api/subcampaign_tickets/create', editableObject)
+        httpRequest = axios.put('api/tickets/create', editableObject)
       } else {
-        httpRequest = axios.post('api/subcampaign_tickets/update', editableObject)
+        httpRequest = axios.post('api/tickets/update', editableObject)
       }
       httpRequest.then(response => {
         component.loading = false;
-        window.location = 'subcampaign_tickets?prepid=' + response.data.response.prepid;
+        window.location = 'tickets?prepid=' + response.data.response.prepid;
       }).catch(error => {
         component.loading = false;
-        this.showError('Error saving subcampaign ticket', error.response.data.message)
+        this.showError('Error saving ticket', error.response.data.message)
       });
     },
     getDatasets: function() {
       this.loading = true;
       let component = this;
       // Timeout 120000ms is 2 minutes
-      let httpRequest = axios.get('api/subcampaign_tickets/get_datasets?q=' + this.getDatasetsDialog.input, {timeout: 120000});
+      let httpRequest = axios.get('api/tickets/get_datasets?q=' + this.getDatasetsDialog.input, {timeout: 120000});
       this.closeGetDatasetsDialog();
       httpRequest.then(response => {
         component.editableObject['input_datasets'] = response.data.response.filter(Boolean).join('\n');
         component.loading = false;
       }).catch(error => {
-        this.showError('Error getting datasets for subcampaign ticket', error.response.data.message)
+        this.showError('Error getting datasets for ticket', error.response.data.message)
         component.loading = false;
       });
     },
@@ -177,12 +189,15 @@ export default {
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
     },
-    listLength(l) {
-      if (!l) {
-        return 0;
-      }
-      return l.split('\n').filter(Boolean).length;
+    addStep: function() {
+      this.editableObject['steps'].push({'subcampaign': '',
+                                         'processing_string': '',
+                                         'size_per_event': 1.0,
+                                         'time_per_event': 1.0});
     },
+    deleteStep: function(index) {
+      this.editableObject['steps'].splice(index, 1);
+    }
   }
 }
 </script>

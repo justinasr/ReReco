@@ -1,39 +1,41 @@
 """
-Module that contains SubcampaignTicketController class
+Module that contains TicketController class
 """
 import json
 import time
 from core.controller.controller_base import ControllerBase
-from core.model.subcampaign_ticket import SubcampaignTicket
+from core.model.ticket import Ticket
 from core.utils.connection_wrapper import ConnectionWrapper
 from core.utils.settings import Settings
 from core.database.database import Database
 from core.controller.request_controller import RequestController
+from core.controller.chained_request_controller import ChainedRequestController
 
 
-class SubcampaignTicketController(ControllerBase):
+class TicketController(ControllerBase):
     """
-    Controller that has all actions related to a subcampaign ticket
+    Controller that has all actions related to a ticket
     """
 
     def __init__(self):
         ControllerBase.__init__(self)
-        self.database_name = 'subcampaign_tickets'
-        self.model_class = SubcampaignTicket
+        self.database_name = 'tickets'
+        self.model_class = Ticket
 
     def create(self, json_data):
-        # Clean up the request input
-        subcampaign_ticket_db = Database(self.database_name)
-        json_data['prepid'] = 'SubcampaignTemp00001'
-        subcampaign_ticket = SubcampaignTicket(json_input=json_data)
-        subcampaign_name = subcampaign_ticket.get('subcampaign')
-        processing_string = subcampaign_ticket.get('processing_string')
+        # Clean up the input
+        ticket_db = Database(self.database_name)
+        json_data['prepid'] = 'Temp00001'
+        ticket = Ticket(json_input=json_data)
+        # Use first subcampaign name for prepid
+        subcampaign_name = ticket.get('steps')[0]['subcampaign']
+        processing_string = ticket.get('steps')[0]['processing_string']
         prepid_middle_part = f'{subcampaign_name}-{processing_string}'
-        with self.locker.get_lock(f'generate-subcampaign-ticket-prepid-{prepid_middle_part}'):
+        with self.locker.get_lock(f'generate-ticket-prepid-{prepid_middle_part}'):
             # Get a new serial number
-            serial_numbers = subcampaign_ticket_db.query(f'prepid={prepid_middle_part}-*',
-                                                         limit=1,
-                                                         sort_asc=False)
+            serial_numbers = ticket_db.query(f'prepid={prepid_middle_part}-*',
+                                             limit=1,
+                                             sort_asc=False)
             if not serial_numbers:
                 serial_number = 0
             else:
@@ -48,9 +50,10 @@ class SubcampaignTicketController(ControllerBase):
 
     def check_for_create(self, obj):
         subcampaign_database = Database('subcampaigns')
-        subcampaign_name = obj.get('subcampaign')
-        if not subcampaign_database.document_exists(subcampaign_name):
-            raise Exception('Subcampaign %s does not exist' % (subcampaign_name))
+        subcampaign_names = [x['subcampaign'] for x in obj.get('steps')]
+        for subcampaign_name in subcampaign_names:
+            if not subcampaign_database.document_exists(subcampaign_name):
+                raise Exception('Subcampaign %s does not exist' % (subcampaign_name))
 
         dataset_blacklist = set(Settings().get('dataset_blacklist'))
         for input_dataset in obj.get('input_datasets'):
@@ -62,11 +65,12 @@ class SubcampaignTicketController(ControllerBase):
         return True
 
     def check_for_update(self, old_obj, new_obj, changed_values):
-        if 'subcampaign' in changed_values:
+        if 'subcampaigns' in changed_values:
             subcampaign_database = Database('subcampaigns')
-            subcampaign_name = new_obj.get('subcampaign')
-            if not subcampaign_database.document_exists(subcampaign_name):
-                raise Exception('Subcampaign %s does not exist' % (subcampaign_name))
+            subcampaign_names = [x['subcampaign'] for x in new_obj.get('steps')]
+            for subcampaign_name in subcampaign_names:
+                if not subcampaign_database.document_exists(subcampaign_name):
+                    raise Exception('Subcampaign %s does not exist' % (subcampaign_name))
 
         if 'input_datasets' in changed_values:
             dataset_blacklist = set(Settings().get('dataset_blacklist'))
@@ -94,7 +98,7 @@ class SubcampaignTicketController(ControllerBase):
         if not query:
             return []
 
-        with self.locker.get_lock('get-subcampaign-datasets'):
+        with self.locker.get_lock('get-ticket-datasets'):
             start_time = time.time()
             connection_wrapper = ConnectionWrapper(host='cmsweb.cern.ch', max_attempts=1)
             response = connection_wrapper.api('POST',
@@ -120,93 +124,102 @@ class SubcampaignTicketController(ControllerBase):
         status = obj.get('status')
         editing_info['prepid'] = False
         editing_info['history'] = False
-        editing_info['subcampaign'] = new
-        editing_info['processing_string'] = new
+        editing_info['steps'] = True
         editing_info['created_requests'] = False
         if status == 'done':
-            editing_info['input_datasets'] = False
-            editing_info['size_per_event'] = False
-            editing_info['time_per_event'] = False
+            editing_info['steps'] = False
             editing_info['priority'] = False
 
         return editing_info
 
-    def create_requests_for_ticket(self, subcampaign_ticket):
+    def create_requests_for_ticket(self, ticket):
         """
-        Create requests from given subcampaign ticket. Return list of request prepids
+        Create requests from given ticket. Return list of request prepids
         """
-        database = Database('subcampaign_tickets')
-        ticket_prepid = subcampaign_ticket.get_prepid()
-        newly_created_request_jsons = []
+        database = Database(self.database_name)
+        ticket_prepid = ticket.get_prepid()
+        created_chained_requests = []
         request_controller = RequestController()
+        chained_request_controller = ChainedRequestController()
         dataset_blacklist = set(Settings().get('dataset_blacklist'))
         with self.locker.get_lock(ticket_prepid):
-            subcampaign_ticket = SubcampaignTicket(json_input=database.get(ticket_prepid))
-            created_requests = subcampaign_ticket.get('created_requests')
-            status = subcampaign_ticket.get('status')
+            ticket = Ticket(json_input=database.get(ticket_prepid))
+            created_requests = ticket.get('created_requests')
+            status = ticket.get('status')
             if status != 'new':
                 raise Exception(f'Ticket is not new, it already has '
                                 f'{len(created_requests)} requests created')
 
             # In case black list was updated after ticket was created
-            for input_dataset in subcampaign_ticket.get('input_datasets'):
+            for input_dataset in ticket.get('input_datasets'):
                 dataset = input_dataset.split('/')[1]
                 if dataset in dataset_blacklist:
                     raise Exception(f'Input dataset {input_dataset} is not '
                                     f'allowed because {dataset} is in blacklist')
 
-            subcampaign_name = subcampaign_ticket.get('subcampaign')
-            processing_string = subcampaign_ticket.get('processing_string')
-            time_per_event = subcampaign_ticket.get('time_per_event')
-            size_per_event = subcampaign_ticket.get('size_per_event')
-            priority = subcampaign_ticket.get('priority')
+            priority = ticket.get('priority')
             try:
-                for input_dataset in subcampaign_ticket.get('input_datasets'):
-                    new_request_json = {'subcampaign': subcampaign_name,
-                                        'input_dataset': input_dataset,
-                                        'priority': priority,
-                                        'processing_string': processing_string,
-                                        'time_per_event': time_per_event,
-                                        'size_per_event': size_per_event}
-                    try:
-                        runs = request_controller.get_runs(subcampaign_name, input_dataset)
-                        new_request_json['runs'] = runs
-                    except Exception as ex:
-                        self.logger.error('Error getting runs for %s %s %s request. '
-                                          'Will leave empty. Error:\n%s',
-                                          subcampaign_name,
-                                          input_dataset,
-                                          processing_string,
-                                          ex)
+                for input_dataset in ticket.get('input_datasets'):
+                    created_requests = []
+                    for step in ticket.get('steps'):
+                        subcampaign_name = step['subcampaign']
+                        processing_string = step['processing_string']
+                        time_per_event = step['time_per_event']
+                        size_per_event = step['size_per_event']
+                        new_request_json = {'subcampaign': subcampaign_name,
+                                            'input_dataset': input_dataset,
+                                            'priority': priority,
+                                            'processing_string': processing_string,
+                                            'time_per_event': time_per_event,
+                                            'size_per_event': size_per_event}
+                        try:
+                            runs = request_controller.get_runs(subcampaign_name, input_dataset)
+                            new_request_json['runs'] = runs
+                        except Exception as ex:
+                            self.logger.error('Error getting runs for %s %s %s request. '
+                                              'Will leave empty. Error:\n%s',
+                                              subcampaign_name,
+                                              input_dataset,
+                                              processing_string,
+                                              ex)
 
-                    created_request_json = request_controller.create(new_request_json)
-                    newly_created_request_jsons.append(created_request_json)
+                        request_json = request_controller.create(new_request_json)
+                        created_requests.append(request_json)
 
-                created_requests.extend(r.get('prepid') for r in newly_created_request_jsons)
-                subcampaign_ticket.set('created_requests', created_requests)
-                subcampaign_ticket.set('status', 'done')
-                subcampaign_ticket.add_history('create_requests', created_requests, None)
-                database.save(subcampaign_ticket.get_json())
+                    new_chained_request = {'requests': [x['prepid'] for x in created_requests]}
+                    chained_request = chained_request_controller.create(new_chained_request)
+                    created_chained_requests.append(chained_request)
+
+                created_requests = []
+                self.logger.info(json.dumps(created_chained_requests, indent=2, sort_keys=True))
+                for created_chained_request in created_chained_requests:
+                    created_requests.append({'chained_request': created_chained_request['prepid'],
+                                             'requests': created_chained_request['requests']})
+
+                ticket.set('created_requests', created_requests)
+                ticket.set('status', 'done')
+                ticket.add_history('create_requests', created_requests, None)
+                database.save(ticket.get_json())
             except Exception as ex:
                 # Delete created requests if there was an Exception
-                for newly_created_request_json in newly_created_request_jsons:
-                    request_controller.delete(newly_created_request_json)
+                for created_chained_request in created_chained_requests:
+                    chained_request_controller.delete(created_chained_request)
 
                 # And reraise the exception
                 raise ex
 
         return created_requests
 
-    def get_twiki_snippet(self, subcampaign_ticket):
+    def get_twiki_snippet(self, ticket):
         """
         Generate tables for TWiki
         Requests are grouped by acquisition eras in input datasets
         """
-        prepid = subcampaign_ticket.get_prepid()
+        prepid = ticket.get_prepid()
         self.logger.debug('Returning TWiki snippet for %s', prepid)
         acquisition_eras = {}
         request_controller = RequestController()
-        for request_prepid in subcampaign_ticket.get('created_requests'):
+        for request_prepid in ticket.get('created_requests'):
             request = request_controller.get(request_prepid)
             input_dataset = request.get('input_dataset')
             input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]

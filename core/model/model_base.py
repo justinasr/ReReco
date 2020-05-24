@@ -150,7 +150,8 @@ class ModelBase():
         indicates that this is a list of values
         """
         if attribute_name in self.lambda_checks:
-            return self.lambda_checks.get(attribute_name)(attribute_value)
+            if not self.lambda_checks.get(attribute_name)(attribute_value):
+                return False
 
         if f'__{attribute_name}' in self.lambda_checks and isinstance(attribute_value, list):
             lambda_check = self.lambda_checks.get(f'__{attribute_name}')

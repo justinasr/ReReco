@@ -7,7 +7,7 @@ from core.controller.controller_base import ControllerBase
 from core.model.request import Request
 from core.model.subcampaign import Subcampaign
 from core.database.database import Database
-from core.model.subcampaign_ticket import SubcampaignTicket
+from core.model.ticket import Ticket
 from core.utils.request_submitter import RequestSubmitter
 from core.utils.connection_wrapper import ConnectionWrapper
 from core.utils.settings import Settings
@@ -88,21 +88,21 @@ class RequestController(ControllerBase):
 
     def before_delete(self, obj):
         prepid = obj.get_prepid()
-        subcampaign_tickets_db = Database('subcampaign_tickets')
-        subcampaign_tickets = subcampaign_tickets_db.query(f'created_requests={prepid}')
-        self.logger.debug(json.dumps(subcampaign_tickets, indent=2))
-        for subcampaign_ticket_json in subcampaign_tickets:
-            ticket_prepid = subcampaign_ticket_json['prepid']
+        tickets_db = Database('tickets')
+        tickets = tickets_db.query(f'created_requests={prepid}')
+        self.logger.debug(json.dumps(tickets, indent=2))
+        for ticket_json in tickets:
+            ticket_prepid = ticket_json['prepid']
             with self.locker.get_lock(ticket_prepid):
-                subcampaign_ticket_json = subcampaign_tickets_db.get(ticket_prepid)
-                subcampaign_ticket = SubcampaignTicket(json_input=subcampaign_ticket_json)
-                created_requests = subcampaign_ticket.get('created_requests')
+                ticket_json = tickets_db.get(ticket_prepid)
+                ticket = Ticket(json_input=ticket_json)
+                created_requests = ticket.get('created_requests')
                 if prepid in created_requests:
                     created_requests.remove(prepid)
 
-                subcampaign_ticket.set('created_requests', created_requests)
-                subcampaign_ticket.add_history('remove_request', prepid, None)
-                subcampaign_tickets_db.save(subcampaign_ticket.get_json())
+                ticket.set('created_requests', created_requests)
+                ticket.add_history('remove_request', prepid, None)
+                tickets_db.save(ticket.get_json())
 
         return True
 
@@ -153,10 +153,10 @@ class RequestController(ControllerBase):
         self.logger.debug('Getting config upload script for %s', request.get_prepid())
         database_url = Settings().get('cmsweb_url') + '/couchdb'
         command = '#!/bin/bash\n'
-        common_check_part = f'if [ ! -s "%s.py" ]; then\n'
-        common_check_part += f'  echo "File %s.py is missing" >&2\n'
-        common_check_part += f'  exit 1\n'
-        common_check_part += f'fi\n'
+        common_check_part = 'if [ ! -s "%s.py" ]; then\n'
+        common_check_part += '  echo "File %s.py is missing" >&2\n'
+        common_check_part += '  exit 1\n'
+        common_check_part += 'fi\n'
         for configs in request.get_config_file_names():
             # Run config uploader
             command += '\n'
@@ -170,9 +170,9 @@ class RequestController(ControllerBase):
         command += '\n\n'
         # Add path to WMCore
         # This should be done in a smarter way
-        command += '\n'.join([f'git clone --quiet https://github.com/dmwm/WMCore.git',
-                              f'export PYTHONPATH=$(pwd)/WMCore/src/python/:$PYTHONPATH'])
-        common_upload_part = (f'python config_uploader.py --file %s.py --label %s '
+        command += '\n'.join(['git clone --quiet https://github.com/dmwm/WMCore.git',
+                              'export PYTHONPATH=$(pwd)/WMCore/src/python/:$PYTHONPATH'])
+        common_upload_part = ('python config_uploader.py --file %s.py --label %s '
                               f'--group ppd --user $(echo $USER) --db {database_url}')
         for configs in request.get_config_file_names():
             # Run config uploader

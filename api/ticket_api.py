@@ -1,20 +1,20 @@
 """
-Module that contains all subcampaign ticket APIs
+Module that contains all ticket APIs
 """
 import json
 import flask
 from flask import request
 from api.api_base import APIBase
-from core.controller.subcampaign_ticket_controller import SubcampaignTicketController
-from core.model.subcampaign_ticket import SubcampaignTicket
+from core.controller.ticket_controller import TicketController
+from core.model.ticket import Ticket
 
 
-subcampaign_ticket_controller = SubcampaignTicketController()
+ticket_controller = TicketController()
 
 
-class CreateSubcampaignTicketAPI(APIBase):
+class CreateTicketAPI(APIBase):
     """
-    Endpoint for creating subcampaign ticket
+    Endpoint for creating ticket
     """
 
     def __init__(self):
@@ -25,17 +25,17 @@ class CreateSubcampaignTicketAPI(APIBase):
     @APIBase.ensure_role('manager')
     def put(self):
         """
-        Create a subcampaign ticket with the provided JSON content
+        Create a ticket with the provided JSON content
         """
         data = flask.request.data
-        subcampaign_ticket_json = json.loads(data.decode('utf-8'))
-        obj = subcampaign_ticket_controller.create(subcampaign_ticket_json)
+        ticket_json = json.loads(data.decode('utf-8'))
+        obj = ticket_controller.create(ticket_json)
         return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
-class DeleteSubcampaignTicketAPI(APIBase):
+class DeleteTicketAPI(APIBase):
     """
-    Endpoint for deleting subcampaigns tickets
+    Endpoint for deleting tickets
     """
 
     def __init__(self):
@@ -46,17 +46,17 @@ class DeleteSubcampaignTicketAPI(APIBase):
     @APIBase.ensure_role('manager')
     def delete(self):
         """
-        Delete a subcampaign with the provided JSON content
+        Delete a with the provided JSON content
         """
         data = flask.request.data
-        subcampaign_ticket_json = json.loads(data.decode('utf-8'))
-        obj = subcampaign_ticket_controller.delete(subcampaign_ticket_json)
+        ticket_json = json.loads(data.decode('utf-8'))
+        obj = ticket_controller.delete(ticket_json)
         return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
-class UpdateSubcampaignTicketAPI(APIBase):
+class UpdateTicketAPI(APIBase):
     """
-    Endpoint for updating subcampaign tickets
+    Endpoint for updating tickets
     """
 
     def __init__(self):
@@ -67,17 +67,17 @@ class UpdateSubcampaignTicketAPI(APIBase):
     @APIBase.ensure_role('manager')
     def post(self):
         """
-        Update a subcampaign with the provided JSON content
+        Update a with the provided JSON content
         """
         data = flask.request.data
-        subcampaign_ticket_json = json.loads(data.decode('utf-8'))
-        obj = subcampaign_ticket_controller.update(subcampaign_ticket_json)
+        ticket_json = json.loads(data.decode('utf-8'))
+        obj = ticket_controller.update(ticket_json)
         return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
-class GetSubcampaignTicketAPI(APIBase):
+class GetTicketAPI(APIBase):
     """
-    Endpoint for retrieving a single subcampaign ticket
+    Endpoint for retrieving a single ticket
     """
 
     def __init__(self):
@@ -86,15 +86,15 @@ class GetSubcampaignTicketAPI(APIBase):
     @APIBase.exceptions_to_errors
     def get(self, prepid):
         """
-        Get a single subcampaign with given prepid
+        Get a single with given prepid
         """
-        obj = subcampaign_ticket_controller.get(prepid)
+        obj = ticket_controller.get(prepid)
         return self.output_text({'response': obj.get_json(), 'success': True, 'message': ''})
 
 
-class GetSubcampaignTicketDatasetsAPI(APIBase):
+class GetTicketDatasetsAPI(APIBase):
     """
-    Endpoint for getting list of datasets from DBS for subcampaign ticket
+    Endpoint for getting list of datasets from DBS for ticket
     """
 
     def __init__(self):
@@ -104,19 +104,19 @@ class GetSubcampaignTicketDatasetsAPI(APIBase):
     @APIBase.ensure_role('manager')
     def get(self):
         """
-        Get a single subcampaign with given prepid
+        Get a single with given prepid
         """
         query = request.args.get('q')
         if not query:
             raise Exception('No input was supplied')
 
-        obj = subcampaign_ticket_controller.get_datasets(query)
+        obj = ticket_controller.get_datasets(query)
         return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
-class GetEditableSubcampaignTicketAPI(APIBase):
+class GetEditableTicketAPI(APIBase):
     """
-    Endpoint for getting information on which subcampaign ticket fields are editable
+    Endpoint for getting information on which ticket fields are editable
     """
 
     def __init__(self):
@@ -125,23 +125,23 @@ class GetEditableSubcampaignTicketAPI(APIBase):
     @APIBase.exceptions_to_errors
     def get(self, prepid=None):
         """
-        Get a single subcampaign with given prepid
+        Get a single with given prepid
         """
         if prepid:
-            subcampaign_ticket = subcampaign_ticket_controller.get(prepid)
+            ticket = ticket_controller.get(prepid)
         else:
-            subcampaign_ticket = SubcampaignTicket()
+            ticket = Ticket()
 
-        editing_info = subcampaign_ticket_controller.get_editing_info(subcampaign_ticket)
-        return self.output_text({'response': {'object': subcampaign_ticket.get_json(),
+        editing_info = ticket_controller.get_editing_info(ticket)
+        return self.output_text({'response': {'object': ticket.get_json(),
                                               'editing_info': editing_info},
                                  'success': True,
                                  'message': ''})
 
 
-class CreateRequestsForSubcampaignTicketAPI(APIBase):
+class CreateRequestsForTicketAPI(APIBase):
     """
-    Endpoing for creating requests from a subcampaign ticket
+    Endpoing for creating requests from a ticket
     """
 
     def __init__(self):
@@ -152,7 +152,7 @@ class CreateRequestsForSubcampaignTicketAPI(APIBase):
     @APIBase.ensure_role('manager')
     def post(self):
         """
-        Create requests for give subcampaign ticket
+        Create requests for given ticket
         """
         data = flask.request.data
         request_data = json.loads(data.decode('utf-8'))
@@ -161,17 +161,17 @@ class CreateRequestsForSubcampaignTicketAPI(APIBase):
             self.logger.error('No prepid in given data: %s', json.dumps(request_data, indent=2))
             raise Exception('No prepid in submitted data')
 
-        ticket = subcampaign_ticket_controller.get(prepid)
+        ticket = ticket_controller.get(prepid)
         if not ticket:
-            raise Exception(f'Subcampaign ticket "{prepid}" does not exist')
+            raise Exception(f'Ticket "{prepid}" does not exist')
 
-        result = subcampaign_ticket_controller.create_requests_for_ticket(ticket)
+        result = ticket_controller.create_requests_for_ticket(ticket)
         return self.output_text({'response': result, 'success': True, 'message': ''})
 
 
-class GetSubcampaignTicketTwikiAPI(APIBase):
+class GetTicketTwikiAPI(APIBase):
     """
-    Endpoing for getting a twiki snippet for given subcampaign ticket
+    Endpoing for getting a twiki snippet for given ticket
     """
 
     def __init__(self):
@@ -180,8 +180,8 @@ class GetSubcampaignTicketTwikiAPI(APIBase):
     @APIBase.exceptions_to_errors
     def get(self, prepid):
         """
-        Get twiki snippet for subcampaign ticket
+        Get twiki snippet for ticket
         """
-        subcampaign_ticket = subcampaign_ticket_controller.get(prepid)
-        twiki = subcampaign_ticket_controller.get_twiki_snippet(subcampaign_ticket)
+        ticket = ticket_controller.get(prepid)
+        twiki = ticket_controller.get_twiki_snippet(ticket)
         return self.output_text(twiki, content_type='text/plain')
