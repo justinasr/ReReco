@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <BaseEdit>
     <h1 v-if="creatingNew">Creating new Ticket</h1>
-    <h1 v-else>Editing {{editableObject.prepid}}</h1>
+    <h1 v-else>Editing ticket {{editableObject.prepid}}</h1>
     <v-card raised class="editPageCard">
       <table v-if="editableObject">
         <tr>
@@ -12,6 +12,18 @@
           <td>Steps ({{listLength(editableObject.steps)}})</td>
           <td>
             <div v-for="(step, index) in editableObject.steps" :key="index">
+              <table v-if="index != 0">
+                <tr>
+                  <td>Submit</td>
+                  <td>
+                    <select v-model="step.join_type">
+                      <option value="on_done">Step {{index + 1}} after Step {{index}} is done</option>
+                      <option value="together">Step {{index + 1}} together with Step {{index}}</option>
+                    </select>
+                  </td>
+                </tr>
+              </table>
+              <hr v-if="index != 0">
               <h3>Step {{index + 1}}</h3>
               <table>
                 <tr>
@@ -26,16 +38,15 @@
                 <tr>
                   <td>Time per event</td><td><input type="number" v-model="step.time_per_event" :disabled="!editingInfo.steps">s</td>
                 </tr>
+                <tr>
+                  <td>Priority</td><td><input type="number" v-model="step.priority" :disabled="!editingInfo.steps"></td>
+                </tr>
               </table>
               <v-btn small class="mr-1 mb-1" color="error" @click="deleteStep(index)">Delete step {{index + 1}}</v-btn>
               <hr>
             </div>
             <v-btn small class="mr-1 mb-1 mt-1" color="primary" @click="addStep()">Add step {{listLength(editableObject.steps) + 1}}</v-btn>
           </td>
-        </tr>
-        <tr>
-          <td>Priority</td>
-          <td><input type="number" v-model="editableObject.priority" :disabled="!editingInfo.priority"></td>
         </tr>
         <tr>
           <td>Notes</td>
@@ -64,97 +75,45 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-overlay :absolute="false"
-               :opacity="0.95"
-               :z-index="3"
-               :value="loading"
-               style="text-align: center">
-      <v-progress-circular indeterminate color="primary"></v-progress-circular>
-      <br>Please wait...
-    </v-overlay>
-    <v-dialog v-model="errorDialog.visible"
-              max-width="50%">
-      <v-card>
-        <v-card-title class="headline">
-          {{errorDialog.title}}
-        </v-card-title>
-        <v-card-text>
-          {{errorDialog.description}}
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn small class="mr-1 mb-1" color="primary" @click="clearErrorDialog()">
-            Dismiss
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-  </div>
+    <LoadingOverlay :visible="loading"/>
+  </BaseEdit>
 </template>
 
 <script>
 
 import axios from 'axios'
 import { listLengthMixin } from '../mixins/ListLengthMixin.js'
+import BaseEdit from './BaseEdit.vue'
+import LoadingOverlay from './LoadingOverlay.vue'
 
 export default {
-  components: {
+  extends: BaseEdit,
 
+  name: 'TicketsEdit',
+  components: {
+    BaseEdit,
+    LoadingOverlay
   },
   mixins: [
     listLengthMixin
   ],
   data () {
     return {
-      prepid: undefined,
-      editableObject: {},
-      editingInfo: {},
-      loading: true,
-      creatingNew: true,
+      databaseName: 'tickets',
       getDatasetsDialog: {
         visible: false,
         input: '',
-      },
-      errorDialog: {
-        visible: false,
-        title: '',
-        description: '',
       }
     }
   },
   created () {
-    this.loading = true;
-    let query = Object.assign({}, this.$route.query);
-    this.prepid = query['prepid'];
-    this.creatingNew = this.prepid === undefined;
-    let component = this;
-    axios.get('api/tickets/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
-      component.editableObject = response.data.response.object;
-      component.editableObject.input_datasets = component.editableObject.input_datasets.filter(Boolean).join('\n')
-      component.editingInfo = response.data.response.editing_info;
-      component.loading = false;
-    });
+    this.fetchEditable();
   },
   methods: {
     save: function() {
       let editableObject = JSON.parse(JSON.stringify(this.editableObject))
-      let component = this;
-      editableObject['notes'] = editableObject['notes'].trim();
       editableObject['input_datasets'] = editableObject['input_datasets'].split('\n').map(function(s) { return s.trim() }).filter(Boolean);
-      let httpRequest;
-      this.loading = true;
-      if (this.creatingNew) {
-        httpRequest = axios.put('api/tickets/create', editableObject)
-      } else {
-        httpRequest = axios.post('api/tickets/update', editableObject)
-      }
-      httpRequest.then(response => {
-        component.loading = false;
-        window.location = 'tickets?prepid=' + response.data.response.prepid;
-      }).catch(error => {
-        component.loading = false;
-        this.showError('Error saving ticket', error.response.data.message)
-      });
+      this.baseSave(editableObject);
     },
     getDatasets: function() {
       this.loading = true;
@@ -178,20 +137,11 @@ export default {
       this.getDatasetsDialog.visible = false;
       this.getDatasetsDialog.input = '';
     },
-    clearErrorDialog: function() {
-      this.errorDialog.visible = false;
-      this.errorDialog.title = '';
-      this.errorDialog.description = '';
-    },
-    showError: function(title, description) {
-      this.clearErrorDialog();
-      this.errorDialog.title = title;
-      this.errorDialog.description = description;
-      this.errorDialog.visible = true;
-    },
     addStep: function() {
-      this.editableObject['steps'].push({'subcampaign': '',
+      this.editableObject['steps'].push({'join_type': 'on_done',
+                                         'subcampaign': '',
                                          'processing_string': '',
+                                         'priority': 110000,
                                          'size_per_event': 1.0,
                                          'time_per_event': 1.0});
     },
@@ -204,20 +154,5 @@ export default {
 
 <style scoped>
 
-h1 {
-  margin: 8px;
-}
-
-td {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-right: 4px;
-}
-
-.editPageCard {
-  margin: auto;
-  padding: 16px;
-  max-width: 750px;
-}
 
 </style>

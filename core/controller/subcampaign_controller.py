@@ -2,12 +2,11 @@
 Module that contains SubcampaignController class
 """
 import xml.etree.ElementTree as XMLet
-from core.controller.controller_base import ControllerBase
 from core.model.subcampaign import Subcampaign
 from core.model.sequence import Sequence
 from core.database.database import Database
 from core.utils.connection_wrapper import ConnectionWrapper
-
+from core.controller.controller_base import ControllerBase
 
 class SubcampaignController(ControllerBase):
     """
@@ -91,7 +90,7 @@ class SubcampaignController(ControllerBase):
 
         self.logger.debug('Downloading releases XML')
         conn = ConnectionWrapper(host='cmssdt.cern.ch')
-        response = conn.api('GET', f'/SDT/cgi-bin/ReleasesXML?anytype=1')
+        response = conn.api('GET', '/SDT/cgi-bin/ReleasesXML?anytype=1')
         scram_arch = self.__get_scram_arch(cmssw_release, response)
         if not scram_arch:
             raise Exception(f'Could not find SCRAM arch for {cmssw_release}')

@@ -2,9 +2,8 @@
 Module that contains ChainedRequestController class
 """
 from core.database.database import Database
-from core.controller.controller_base import ControllerBase
-from core.controller.request_controller import RequestController
 from core.model.chained_request import ChainedRequest
+from core.controller.controller_base import ControllerBase
 
 
 class ChainedRequestController(ControllerBase):
@@ -24,10 +23,11 @@ class ChainedRequestController(ControllerBase):
         chained_request = ChainedRequest(json_input=json_data)
         # Use first subcampaign name for prepid
         subcampaign_names = []
-        request_controller = RequestController()
-        for request_prepid in chained_request.get('requests'):
-            request = request_controller.get(request_prepid)
+        request_controller = self.get_request_controller()
+        for step in chained_request.get('requests'):
+            request = request_controller.get(step['request'])
             subcampaign_names.append(request.get('subcampaign'))
+            subcampaign_names.append(request.get('processing_string'))
 
         prepid_middle_part = '_'.join(subcampaign_names)
         with self.locker.get_lock(f'generate-chained-request-prepid-{prepid_middle_part}'):
@@ -47,6 +47,22 @@ class ChainedRequestController(ControllerBase):
             json_data['prepid'] = prepid
             return super().create(json_data)
 
+    def check_for_delete(self, obj):
+        request_controller = self.get_request_controller()
+        for step in obj.get('requests'):
+            request = request_controller.get(step['request'])
+            if request.get('status') != 'new':
+                raise Exception('All requests must be in status "new" before chaiend request can be deleted')
+
+        return True
+
+    def before_delete(self, obj):
+        request_controller = self.get_request_controller()
+        for step in reversed(obj.get('requests')):
+            request_controller.delete({'prepid': step['request']})
+
+        return True
+
     def get_editing_info(self, obj):
         editing_info = super().get_editing_info(obj)
         prepid = obj.get_prepid()
@@ -54,3 +70,7 @@ class ChainedRequestController(ControllerBase):
         editing_info['prepid'] = new
 
         return editing_info
+
+    def get_request_controller(self):
+        from core.controller.request_controller import RequestController
+        return RequestController()

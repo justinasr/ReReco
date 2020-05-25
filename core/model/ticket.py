@@ -23,8 +23,6 @@ class Ticket(ModelBase):
         'input_datasets': [],
         # User notes
         'notes': '',
-        # Priority in computing
-        'priority': 110000,
         # Status is either new or done
         'status': 'new',
         # List of dicts that have subcampaign, processing_string, size/time per event values
@@ -34,7 +32,6 @@ class Ticket(ModelBase):
     lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9_\\-]{1,75}'),
         '__input_datasets': ModelBase.lambda_check('dataset'),
-        'priority': lambda priority: 1000 <= priority <= 1000000,
         'status': lambda status: status in ('new', 'done'),
         'steps': lambda s: len(s) > 0,
     }

@@ -3,7 +3,6 @@ Module that contains RequestController class
 """
 import json
 import time
-from core.controller.controller_base import ControllerBase
 from core.model.request import Request
 from core.model.subcampaign import Subcampaign
 from core.database.database import Database
@@ -12,18 +11,21 @@ from core.utils.request_submitter import RequestSubmitter
 from core.utils.connection_wrapper import ConnectionWrapper
 from core.utils.settings import Settings
 from core.utils.ssh_executor import SSHExecutor
-from core.controller.subcampaign_controller import SubcampaignController
+import core.controller.controller_base as controller_base
 
 
-class RequestController(ControllerBase):
+class RequestController(controller_base.ControllerBase):
     """
     Controller that has all actions related to a request
     """
 
     def __init__(self):
-        ControllerBase.__init__(self)
+        import core.controller.chained_request_controller as chained_request_controller
+
+        controller_base.ControllerBase.__init__(self)
         self.database_name = 'requests'
         self.model_class = Request
+        self.chained_request_controller = chained_request_controller.ChainedRequestController()
 
     def create(self, json_data):
         # Get a subcampaign
@@ -51,9 +53,16 @@ class RequestController(ControllerBase):
             new_request.set('energy', subcampaign.get('energy'))
 
         input_dataset = new_request.get('input_dataset')
-        input_dataset_parts = [x for x in input_dataset.split('/') if x]
-        era = input_dataset_parts[1].split('-')[0]
-        dataset = input_dataset_parts[0]
+        # Prepid is made of era, dataset and processing string
+        # Either they are taken from input dataset or provided separately
+        if input_dataset:
+            input_dataset_parts = [x for x in input_dataset.split('/') if x]
+            era = input_dataset_parts[1].split('-')[0]
+            dataset = input_dataset_parts[0]
+        else:
+            era = json_data['era']
+            dataset = json_data['dataset']
+
         processing_string = new_request.get('processing_string')
         prepid_middle_part = f'{era}-{dataset}-{processing_string}'
         with self.locker.get_lock(f'create-request-{prepid_middle_part}'):
@@ -77,6 +86,9 @@ class RequestController(ControllerBase):
     def check_for_delete(self, obj):
         if obj.get('status') != 'new':
             raise Exception('Request must be in status "new" before it is deleted')
+
+        if self.chained_request_controller.get():
+            return False
 
         return True
 
@@ -300,6 +312,9 @@ class RequestController(ControllerBase):
         prepid = request.get_prepid()
         if not request.get('runs'):
             raise Exception(f'No runs are specified in {prepid}')
+
+        if not request.get('input_dataset'):
+            raise Exception(f'No input dataset is specified in {prepid}')
 
         self.update_status(request, 'approved')
         return request
@@ -601,9 +616,9 @@ class RequestController(ControllerBase):
                 raise Exception('It is not allowed to option reset '
                                 'requests that are not in status "new"')
 
+            subcampaign_db = Database('subcampaigns')
             subcampaign_name = request.get('subcampaign')
-            subcampaign_controller = SubcampaignController()
-            subcampaign = subcampaign_controller.get(subcampaign_name)
+            subcampaign = subcampaign_db.get(subcampaign_name)
             if not subcampaign:
                 raise Exception(f'Subcampaign "{subcampaign_name}" does not exist')
 

@@ -53,8 +53,8 @@
               <li v-for="chained_request in item.created_requests" :key="chained_request.chained_request">
                 <a :href="'chained_requests?prepid=' + chained_request.chained_request">{{chained_request.chained_request}}</a>
                 <ul>
-                  <li v-for="request in chained_request.requests" :key="request">
-                    <a :href="'requests?prepid=' + request">{{request}}</a>
+                  <li v-for="request in chained_request.requests" :key="request.request">
+                    <a :href="'requests?prepid=' + request.request">{{request.request}}</a>
                   </li>
                 </ul>
               </li>

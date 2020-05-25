@@ -22,15 +22,15 @@
                       v-model="selectedItems">
           <template v-slot:item._actions="{ item }">
             <a v-if="role('manager')" :href="'chained_requests/edit?prepid=' + item.prepid">Edit</a>&nbsp;
-            <a style="text-decoration: underline;" @click="deleteRequest(item)" v-if="role('manager') && item.status == 'new'">Delete</a>&nbsp;
+            <a style="text-decoration: underline;" @click="deleteChainedRequest(item)" v-if="role('manager')">Delete</a>&nbsp;
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
           </template>
           <template v-slot:item.requests="{ item }">
             <ul>
-              <li v-for="request in item.requests" :key="request">
-                <a :href="'requests?prepid=' + request">{{request}}</a>
+              <li v-for="request in item.requests" :key="request.request">
+                <a :href="'requests?prepid=' + request.request">{{request.request}}</a>
               </li>
             </ul>
           </template>
@@ -184,7 +184,7 @@ export default {
     deleteChainedRequest: function(chainedRequest) {
       let component = this;
       this.dialog.title = "Delete " + chainedRequest.prepid + "?";
-      this.dialog.description = "Are you sure you want to delete " + chainedRequest.prepid + " chained request?";
+      this.dialog.description = "Are you sure you want to delete " + chainedRequest.prepid + " chained request? This will also delete all requests that are in this chained request!";
       this.dialog.ok = function() {
         component.loading = true;
         axios.delete('api/chained_requests/delete', {data: {'prepid': chainedRequest.prepid}}).then(() => {

@@ -20,14 +20,14 @@ class ChainedRequest(ModelBase):
         'history': [],
         # User notes
         'notes': '',
-        # List of request prepids
+        # List of dicts that have prepids and join types
         'requests': []
     }
 
     lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-_]{1,100}'),
         'requests': lambda r: len(r) > 0,
-        '__requests': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-_]{1,100}'),
+        '__requests': lambda pair: isinstance(pair, dict) and ModelBase.matches_regex(pair['request'], '[a-zA-Z0-9\\-_]{1,100}') and ('join_type' not in pair or pair['join_type'] in ('on_done', 'together')),
     }
 
     def __init__(self, json_input=None):

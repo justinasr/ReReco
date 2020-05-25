@@ -3,11 +3,11 @@ Module that contains TicketController class
 """
 import json
 import time
-from core.controller.controller_base import ControllerBase
 from core.model.ticket import Ticket
 from core.utils.connection_wrapper import ConnectionWrapper
 from core.utils.settings import Settings
 from core.database.database import Database
+from core.controller.controller_base import ControllerBase
 from core.controller.request_controller import RequestController
 from core.controller.chained_request_controller import ChainedRequestController
 
@@ -120,7 +120,6 @@ class TicketController(ControllerBase):
     def get_editing_info(self, obj):
         editing_info = super().get_editing_info(obj)
         prepid = obj.get_prepid()
-        new = not bool(prepid)
         status = obj.get('status')
         editing_info['prepid'] = False
         editing_info['history'] = False
@@ -139,8 +138,6 @@ class TicketController(ControllerBase):
         database = Database(self.database_name)
         ticket_prepid = ticket.get_prepid()
         created_chained_requests = []
-        request_controller = RequestController()
-        chained_request_controller = ChainedRequestController()
         dataset_blacklist = set(Settings().get('dataset_blacklist'))
         with self.locker.get_lock(ticket_prepid):
             ticket = Ticket(json_input=database.get(ticket_prepid))
@@ -157,37 +154,9 @@ class TicketController(ControllerBase):
                     raise Exception(f'Input dataset {input_dataset} is not '
                                     f'allowed because {dataset} is in blacklist')
 
-            priority = ticket.get('priority')
             try:
                 for input_dataset in ticket.get('input_datasets'):
-                    created_requests = []
-                    for step in ticket.get('steps'):
-                        subcampaign_name = step['subcampaign']
-                        processing_string = step['processing_string']
-                        time_per_event = step['time_per_event']
-                        size_per_event = step['size_per_event']
-                        new_request_json = {'subcampaign': subcampaign_name,
-                                            'input_dataset': input_dataset,
-                                            'priority': priority,
-                                            'processing_string': processing_string,
-                                            'time_per_event': time_per_event,
-                                            'size_per_event': size_per_event}
-                        try:
-                            runs = request_controller.get_runs(subcampaign_name, input_dataset)
-                            new_request_json['runs'] = runs
-                        except Exception as ex:
-                            self.logger.error('Error getting runs for %s %s %s request. '
-                                              'Will leave empty. Error:\n%s',
-                                              subcampaign_name,
-                                              input_dataset,
-                                              processing_string,
-                                              ex)
-
-                        request_json = request_controller.create(new_request_json)
-                        created_requests.append(request_json)
-
-                    new_chained_request = {'requests': [x['prepid'] for x in created_requests]}
-                    chained_request = chained_request_controller.create(new_chained_request)
+                    chained_request = self.create_chained_request(ticket, input_dataset)
                     created_chained_requests.append(chained_request)
 
                 created_requests = []
@@ -202,6 +171,7 @@ class TicketController(ControllerBase):
                 database.save(ticket.get_json())
             except Exception as ex:
                 # Delete created requests if there was an Exception
+                chained_request_controller = ChainedRequestController()
                 for created_chained_request in created_chained_requests:
                     chained_request_controller.delete(created_chained_request)
 
@@ -209,6 +179,71 @@ class TicketController(ControllerBase):
                 raise ex
 
         return created_requests
+
+    def create_chained_request(self, ticket, input_dataset):
+        """
+        Create chained request for given ticket and input dataset
+        """
+        chained_request_json = {'requests': []}
+        # dataset and era will be overwritten after first request is created
+        dataset = None
+        era = None
+        created_requests = []
+
+        request_controller = RequestController()
+        chained_request_controller = ChainedRequestController()
+        try:
+            for step_index, step in enumerate(ticket.get('steps')):
+                subcampaign_name = step['subcampaign']
+                processing_string = step['processing_string']
+                time_per_event = step['time_per_event']
+                size_per_event = step['size_per_event']
+                priority = step['priority']
+                new_request_json = {'subcampaign': subcampaign_name,
+                                    'priority': priority,
+                                    'processing_string': processing_string,
+                                    'time_per_event': time_per_event,
+                                    'size_per_event': size_per_event}
+                if step_index == 0:
+                    new_request_json['input_dataset'] = input_dataset
+                else:
+                    new_request_json['dataset'] = dataset
+                    new_request_json['era'] = era
+
+                try:
+                    runs = request_controller.get_runs(subcampaign_name, input_dataset)
+                    new_request_json['runs'] = runs
+                except Exception as ex:
+                    self.logger.error('Error getting runs for %s %s %s request. '
+                                      'Will leave empty. Error:\n%s',
+                                      subcampaign_name,
+                                      input_dataset,
+                                      processing_string,
+                                      ex)
+
+                request_json = request_controller.create(new_request_json)
+                created_requests.append(request_json)
+
+                if step_index == 0:
+                    request = request_controller.get(request_json['prepid'])
+                    dataset = request.get_dataset()
+                    era = request.get_era()
+                    chained_request_json['requests'].append({'request': request_json['prepid']})
+                else:
+                    join_type = step['join_type']
+                    chained_request_json['requests'].append({'request': request_json['prepid'],
+                                                             'join_type': join_type})
+
+            chained_request = chained_request_controller.create(chained_request_json)
+        except Exception as ex:
+            # Delete created requests if there was an Exception
+            for created_request in reversed(created_requests):
+                request_controller.delete(created_request)
+
+            # And reraise the exception
+            raise ex
+
+        return chained_request
 
     def get_twiki_snippet(self, ticket):
         """

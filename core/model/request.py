@@ -63,7 +63,7 @@ class Request(ModelBase):
         'cmssw_release': ModelBase.lambda_check('cmssw_release'),
         'completed_events': lambda ce: ce >= 0,
         'energy': ModelBase.lambda_check('energy'),
-        'input_dataset': ModelBase.lambda_check('dataset'),
+        'input_dataset': lambda ds: not ds or ModelBase.lambda_check('dataset')(ds),
         'memory': ModelBase.lambda_check('memory'),
         '__output_datasets': ModelBase.lambda_check('dataset'),
         'priority': lambda priority: 1000 <= priority <= 1000000,
@@ -137,6 +137,13 @@ class Request(ModelBase):
             built_command += '\n\n'
 
         return built_command.strip()
+
+    def get_era(self):
+        """
+        Return era based on input dataset
+        """
+        input_dataset_parts = [x for x in self.get('input_dataset').split('/') if x]
+        return input_dataset_parts[1].split('-')[0]
 
     def get_dataset(self):
         """
