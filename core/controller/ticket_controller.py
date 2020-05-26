@@ -180,9 +180,8 @@ class TicketController(ControllerBase):
                             new_request_json['era'] = era
 
                         try:
-                            # runs = request_controller.get_runs(subcampaign_name, input_dataset)
-                            # new_request_json['runs'] = runs
-                            # TODO: Fetch runs on creation
+                            runs = request_controller.get_runs(subcampaign_name, input_dataset)
+                            new_request_json['runs'] = runs
                             pass
                         except Exception as ex:
                             self.logger.error('Error getting runs for %s %s %s request. '
