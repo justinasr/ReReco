@@ -29,7 +29,7 @@ class CreateSubcampaignAPI(APIBase):
         data = flask.request.data
         subcampaign_json = json.loads(data.decode('utf-8'))
         obj = subcampaign_controller.create(subcampaign_json)
-        return self.output_text({'response': obj, 'success': True, 'message': ''})
+        return self.output_text({'response': obj.get_json(), 'success': True, 'message': ''})
 
 
 class DeleteSubcampaignAPI(APIBase):

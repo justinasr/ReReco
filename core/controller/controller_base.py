@@ -48,7 +48,7 @@ class ControllerBase():
             self.before_create(new_object)
             database.save(new_object.get_json())
 
-        return new_object.get_json()
+        return new_object
 
     def get(self, prepid):
         """

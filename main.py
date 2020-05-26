@@ -33,11 +33,6 @@ from api.request_api import (CreateRequestAPI,
                              GetRequestRunsAPI,
                              UpdateRequestWorkflowsAPI,
                              RequestOptionResetAPI)
-from api.chained_request_api import (CreateChainedRequestAPI,
-                                     DeleteChainedRequestAPI,
-                                     UpdateChainedRequestAPI,
-                                     GetChainedRequestAPI,
-                                     GetEditableChainedRequestAPI)
 from api.search_api import SearchAPI
 from api.settings_api import SettingsAPI
 from api.system_api import (SubmissionWorkerStatusAPI,
@@ -157,14 +152,6 @@ api.add_resource(RequestPreviousStatus, '/api/requests/previous_status')
 api.add_resource(GetRequestRunsAPI, '/api/requests/get_runs/<string:prepid>')
 api.add_resource(UpdateRequestWorkflowsAPI, '/api/requests/update_workflows')
 api.add_resource(RequestOptionResetAPI, '/api/requests/option_reset')
-
-api.add_resource(CreateChainedRequestAPI, '/api/chained_requests/create')
-api.add_resource(DeleteChainedRequestAPI, '/api/chained_requests/delete')
-api.add_resource(UpdateChainedRequestAPI, '/api/chained_requests/update')
-api.add_resource(GetChainedRequestAPI, '/api/chained_requests/get/<string:prepid>')
-api.add_resource(GetEditableChainedRequestAPI,
-                 '/api/chained_requests/get_editable',
-                 '/api/chained_requests/get_editable/<string:prepid>')
 
 
 def main():

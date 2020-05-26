@@ -12,20 +12,17 @@
           <td>Steps ({{listLength(editableObject.steps)}})</td>
           <td>
             <div v-for="(step, index) in editableObject.steps" :key="index">
-              <table v-if="index != 0">
-                <tr>
-                  <td>Submit</td>
+              <h3>Step {{index + 1}}</h3>
+              <table>
+                <tr v-if="index != 0">
+                  <td>Submission strategy: </td>
                   <td>
-                    <select v-model="step.join_type">
+                    <select v-model="step.submission_strategy">
                       <option value="on_done">Step {{index + 1}} after Step {{index}} is done</option>
-                      <option value="together">Step {{index + 1}} together with Step {{index}}</option>
+                      <option value="taskchain">Step {{index + 1}} together with Step {{index}}</option>
                     </select>
                   </td>
                 </tr>
-              </table>
-              <hr v-if="index != 0">
-              <h3>Step {{index + 1}}</h3>
-              <table>
                 <tr>
                   <td>Subcampaign</td><td><input type="text" v-model="step.subcampaign" :disabled="!editingInfo.steps"></td>
                 </tr>
@@ -138,7 +135,7 @@ export default {
       this.getDatasetsDialog.input = '';
     },
     addStep: function() {
-      this.editableObject['steps'].push({'join_type': 'on_done',
+      this.editableObject['steps'].push({'submission_strategy': 'on_done',
                                          'subcampaign': '',
                                          'processing_string': '',
                                          'priority': 110000,

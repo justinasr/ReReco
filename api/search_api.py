@@ -7,7 +7,6 @@ from core.database.database import Database
 from core.model.subcampaign import Subcampaign
 from core.model.ticket import Ticket
 from core.model.request import Request
-from core.model.chained_request import ChainedRequest
 
 
 class SearchAPI(APIBase):
@@ -19,8 +18,7 @@ class SearchAPI(APIBase):
         APIBase.__init__(self)
         self.classes = {'subcampaigns': Subcampaign,
                         'requests': Request,
-                        'tickets': Ticket,
-                        'chained_requests': ChainedRequest}
+                        'tickets': Ticket}
 
     @APIBase.exceptions_to_errors
     def get(self):

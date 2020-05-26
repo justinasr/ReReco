@@ -7,7 +7,7 @@ from core.model.model_base import ModelBase
 class Ticket(ModelBase):
     """
     Ticket has a list of input datasets and a list of steps specifications
-    Ticket can be used to create requests or chains for each input dataset
+    Ticket can be used to create requests each input dataset
     """
 
     _ModelBase__schema = {
@@ -31,6 +31,7 @@ class Ticket(ModelBase):
 
     lambda_checks = {
         'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9_\\-]{1,75}'),
+        '__created_requests': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-_]{1,100}'),
         '__input_datasets': ModelBase.lambda_check('dataset'),
         'status': lambda status: status in ('new', 'done'),
         'steps': lambda s: len(s) > 0,

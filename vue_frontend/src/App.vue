@@ -20,11 +20,6 @@
       </v-btn>
       <v-btn
         text
-        href="chained_requests">
-        <span class="mr-2">Chained Requests</span>
-      </v-btn>
-      <v-btn
-        text
         href="requests">
         <span class="mr-2">Requests</span>
       </v-btn>

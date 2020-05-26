@@ -62,9 +62,6 @@
           <template v-slot:item.notes="{ item }">
             <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
           </template>
-          <template v-slot:item.dataset_name="{ item }">
-            {{item.input_dataset.split('/').filter(Boolean)[0]}}
-          </template>
           <template v-slot:item.time_per_event="{ item }">
             {{item.time_per_event}}s
           </template>
@@ -77,8 +74,8 @@
           <template v-slot:item.runs="{ item }">
             <span v-if="item.runs.length">{{item.runs.length}} runs: <small>{{item.runs.join(', ')}}</small></span>
           </template>
-          <template v-slot:item.input_dataset="{ item }">
-            <a target="_blank" title="Open dataset in DAS" :href="'https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D' + item.input_dataset">{{item.input_dataset}}</a>
+          <template v-slot:item.input="{ item }">
+            <pre>{{JSON.stringify(item.input, null, 2)}}</pre>
           </template>
           <template v-slot:item.workflows="{ item }">
             <ol>
@@ -177,13 +174,12 @@ export default {
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'status', 'displayName': 'Status', 'visible': 1},
-        {'dbName': 'input_dataset', 'displayName': 'Input dataset', 'visible': 1},
+        {'dbName': 'input', 'displayName': 'Input', 'visible': 1},
         {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 1},
         {'dbName': 'subcampaign', 'displayName': 'Subcampaign', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
         {'dbName': 'cmssw_release', 'displayName': 'CMSSW Version', 'visible': 0},
         {'dbName': 'completed_events', 'displayName': 'Completed Events', 'visible': 0},
-        {'dbName': 'dataset_name', 'displayName': 'Dataset Name', 'visible': 0},
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
         {'dbName': 'memory', 'displayName': 'Memory', 'visible': 0},

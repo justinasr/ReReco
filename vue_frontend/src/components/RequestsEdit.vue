@@ -55,8 +55,26 @@
           </td>
         </tr>
         <tr>
-          <td>Input dataset</td>
-          <td><input type="text" v-model="editableObject.input_dataset" :disabled="!editingInfo.input_dataset"></td>
+          <td>Input</td>
+          <td>
+            <table v-if="editableObject.input">
+              <tr>
+                <td>Dataset:</td><td><input type="text" v-model="editableObject.input.dataset" :disabled="!editingInfo.input"></td>
+              </tr>
+              <tr>
+                <td>Request:</td><td><input type="text" v-model="editableObject.input.request" :disabled="!editingInfo.input"></td>
+              </tr>
+              <tr>
+                <td>Submit strategy:</td>
+                <td>
+                  <select v-model="editableObject.input.submission_strategy" :disabled="!editingInfo.input">
+                    <option value="on_done">On Done</option>
+                    <option value="taskchain">TaskChain</option>
+                  </select>
+                </td>
+              </tr>
+            </table>
+          </td>
         </tr>
         <tr>
           <td>Priority</td>

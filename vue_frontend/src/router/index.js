@@ -5,7 +5,6 @@ import Subcampaigns from '@/components/Subcampaigns'
 import Tickets from '@/components/Tickets'
 import TicketsEdit from '@/components/TicketsEdit'
 import SubcampaignsEdit from '@/components/SubcampaignsEdit'
-import ChainedRequests from '@/components/ChainedRequests'
 import Requests from '@/components/Requests'
 import RequestsEdit from '@/components/RequestsEdit'
 import Dashboard from '@/components/Dashboard'
@@ -39,11 +38,6 @@ const routes = [
     path: '/tickets',
     name: 'tickets',
     component: Tickets
-  },
-  {
-    path: '/chained_requests',
-    name: 'chained_requests',
-    component: ChainedRequests
   },
   {
     path: '/requests/edit',

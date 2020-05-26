@@ -20,12 +20,9 @@ class RequestController(controller_base.ControllerBase):
     """
 
     def __init__(self):
-        import core.controller.chained_request_controller as chained_request_controller
-
         controller_base.ControllerBase.__init__(self)
         self.database_name = 'requests'
         self.model_class = Request
-        self.chained_request_controller = chained_request_controller.ChainedRequestController()
 
     def create(self, json_data):
         # Get a subcampaign
@@ -52,14 +49,14 @@ class RequestController(controller_base.ControllerBase):
         if not json_data.get('energy'):
             new_request.set('energy', subcampaign.get('energy'))
 
-        input_dataset = new_request.get('input_dataset')
+        request_input = new_request.get('input')
         # Prepid is made of era, dataset and processing string
         # Either they are taken from input dataset or provided separately
-        if input_dataset:
-            input_dataset_parts = [x for x in input_dataset.split('/') if x]
+        if request_input.get('dataset'):
+            input_dataset_parts = [x for x in request_input['dataset'].split('/') if x]
             era = input_dataset_parts[1].split('-')[0]
             dataset = input_dataset_parts[0]
-        else:
+        elif json_data.get('era') and json_data.get('dataset'):
             era = json_data['era']
             dataset = json_data['dataset']
 
@@ -86,9 +83,6 @@ class RequestController(controller_base.ControllerBase):
     def check_for_delete(self, obj):
         if obj.get('status') != 'new':
             raise Exception('Request must be in status "new" before it is deleted')
-
-        if self.chained_request_controller.get():
-            return False
 
         return True
 
@@ -125,7 +119,7 @@ class RequestController(controller_base.ControllerBase):
         editing_info['history'] = False
         editing_info['cmssw_release'] = False
         editing_info['step'] = False
-        editing_info['input_dataset'] = new
+        editing_info['input'] = True
         editing_info['processing_string'] = new
         editing_info['subcampaign'] = new
         editing_info['energy'] = True
@@ -137,6 +131,7 @@ class RequestController(controller_base.ControllerBase):
             editing_info['sequences'] = False
             editing_info['time_per_event'] = False
             editing_info['size_per_event'] = False
+            editing_info['input'] = False
 
         return editing_info
 
@@ -210,7 +205,7 @@ class RequestController(controller_base.ControllerBase):
         prepid = request.get_prepid()
         self.logger.debug('Getting job dict for %s', prepid)
         sequences = request.get('sequences')
-        input_dataset = request.get('input_dataset')
+        input_dataset = request.get('input')['dataset']
         input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
         acquisition_era = input_dataset_parts[1].split('-')[0]
         subcampaigns_db = Database('subcampaigns')
@@ -312,9 +307,6 @@ class RequestController(controller_base.ControllerBase):
         prepid = request.get_prepid()
         if not request.get('runs'):
             raise Exception(f'No runs are specified in {prepid}')
-
-        if not request.get('input_dataset'):
-            raise Exception(f'No input dataset is specified in {prepid}')
 
         self.update_status(request, 'approved')
         return request
@@ -442,7 +434,7 @@ class RequestController(controller_base.ControllerBase):
         Return a list of runs for given request
         """
         subcampaign_name = request.get('subcampaign')
-        input_dataset = request.get('input_dataset')
+        input_dataset = request.get('input')['dataset']
         return self.get_runs(subcampaign_name, input_dataset)
 
     def __pick_workflows(self, all_workflows, output_datasets):
