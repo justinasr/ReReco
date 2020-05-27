@@ -35,19 +35,51 @@
           <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
         </tr>
         <tr>
-          <td>Sequences</td>
+          <td>Sequences ({{listLength(editableObject.sequences)}})</td>
           <td>
-            <ul>
-              <li v-for="(sequence, index) in editableObject.sequences" :key="index">
-                Sequence {{index + 1}}
-                <v-btn v-if="editingInfo.sequences" small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(index, true)">Edit</v-btn>
-                <v-btn v-if="editingInfo.sequences" small class="mr-1 mb-1" color="error" @click="deleteSequence(index)">Delete</v-btn>
-                <v-btn v-if="!editingInfo.sequences" small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(index, false)">View</v-btn>
-              </li>
-              <li v-if="editingInfo.sequences">
-                <v-btn small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(-1, true)">Add sequence</v-btn>
-              </li>
-            </ul>
+            <div v-for="(sequence, index) in editableObject.sequences" :key="index">
+              <h3>Sequence {{index + 1}}</h3>
+              <table>
+                <tr>
+                  <td>conditions</td><td><input type="text" v-model="sequence.conditions" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>customise</td><td><input type="text" v-model="sequence.customise" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>datatier</td><td><input type="text" v-model="sequence.datatier" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>era</td><td><input type="text" v-model="sequence.era" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>eventcontent</td><td><input type="text" v-model="sequence.eventcontent" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>extra</td><td><input type="text" v-model="sequence.extra" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>nThreads</td><td><input type="number" v-model="sequence.nThreads" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>scenario</td>
+                  <td>
+                    <select v-model="sequence.scenario" :disabled="!editableObject.sequences">
+                      <option>pp</option>
+                      <option>cosmics</option>
+                      <option>nocoll</option>
+                      <option>HeavyIons</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <td>step</td><td><input type="text" v-model="sequence.step" :disabled="!editableObject.sequences"></td>
+                </tr>
+              </table>
+              <v-btn small class="mr-1 mb-1" color="error" @click="deleteSequence(index)">Delete sequence {{index + 1}}</v-btn>
+              <hr>
+            </div>
+            <v-btn small class="mr-1 mb-1 mt-1" color="primary" @click="addSequence()">Add sequence {{listLength(editableObject.sequences) + 1}}</v-btn>
           </td>
         </tr>
         <tr>
@@ -56,20 +88,14 @@
         </tr>
         <tr>
           <td>Runs JSON</td>
-          <td>Get a list of runs from JSON, for example:<pre>Collisions16/13TeV/DCSOnly/json_DCSONLY.txt</pre><input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path"></td>
+          <td style="white-space: break-spaces; line-break: anywhere;">Get a list of runs from JSON, for example:<br>
+            <span style="font-family: monospace;">Collisions16/13TeV/DCSOnly/json_DCSONLY.txt</span>
+            <input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path">
+          </td>
         </tr>
       </table>
       <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
     </v-card>
-    <v-dialog v-model="sequenceEditDialog.visible"
-              max-width="50%">
-      <v-card style="padding: 16px;">
-        <SequencesEdit :sequenceObject="sequenceEditDialog.sequence"
-                       :sequenceIndex="sequenceEditDialog.index"
-                       :editable="sequenceEditDialog.editable"
-                       v-on:saveSequence="onSeqenceSave"/>
-      </v-card>
-    </v-dialog>
     <v-overlay :absolute="false"
                :opacity="0.95"
                :z-index="3"
@@ -101,12 +127,12 @@
 <script>
 
 import axios from 'axios'
-import SequencesEdit from './SequencesEdit'
+import { listLengthMixin } from '../mixins/ListLengthMixin.js'
 
 export default {
-  components: {
-    SequencesEdit
-  },
+  mixins: [
+    listLengthMixin
+  ],
   data () {
     return {
       prepid: undefined,
@@ -114,12 +140,6 @@ export default {
       editingInfo: {},
       loading: true,
       creatingNew: true,
-      sequenceEditDialog: {
-        visible: false,
-        index: -1,
-        sequence: undefined,
-        editable: false,
-      },
       errorDialog: {
         visible: false,
         title: '',
@@ -159,34 +179,11 @@ export default {
         this.showError('Error saving subcampaign', error.response.data.message);
       });
     },
-    showSequenceDialog: function(index, editable) {
-      if (index < 0) {
-        let component = this;
-        axios.get('api/subcampaigns/get_default_sequence' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
-          component.sequenceEditDialog.visible = true;
-          component.sequenceEditDialog.index = index;
-          component.sequenceEditDialog.sequence = response.data.response;
-          component.sequenceEditDialog.editable = editable;
-        }).catch(error => {
-          component.loading = false;
-          this.showError('Error saving subcampaign', error.response.data.message);
-        });
-      } else {
-        this.sequenceEditDialog.visible = true;
-        this.sequenceEditDialog.index = index;
-        this.sequenceEditDialog.sequence = this.editableObject.sequences[index];
-        this.sequenceEditDialog.editable = editable;
-      }
-    },
-    onSeqenceSave: function(index, sequence) {
-      if (sequence !== undefined) {
-        if (index < 0) {
-          this.editableObject['sequences'].push(sequence);
-        } else {
-          this.editableObject['sequences'][index] = sequence;
-        }
-      }
-      this.sequenceEditDialog.visible = false;
+    addSequence: function() {
+      let component = this;
+      axios.get('api/subcampaigns/get_default_sequence' + (this.creatingNew ? '' : ('/' + this.editableObject.subcampaign))).then(response => {
+        component.editableObject['sequences'].push(response.data.response);
+      });
     },
     deleteSequence: function(index) {
       this.editableObject['sequences'].splice(index, 1);

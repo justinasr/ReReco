@@ -62,24 +62,28 @@ html {
 
 select, textarea {
   border-style: inset !important;
-  min-width: 400px;
+  width: 100%;
+  padding: 2px;
 }
 
 select {
-  min-width: 200px;
+  min-width: 45%;
+}
+
+input {
+  padding: 2px 6px;
 }
 
 input[type="number"] {
   border-style: inset !important;
-  width: 100px;
-  min-width: 100px;
+  width: 45%;
   text-align: right;
 }
 
 input[type="text"] {
   border-style: inset !important;
   -webkit-appearance: textfield !important;
-  min-width: 400px;
+  width: 100%;
 }
 
 textarea {
@@ -105,6 +109,7 @@ footer {
 
 table {
   white-space: nowrap;
+  width: 100%;
 }
 
 .notes {
