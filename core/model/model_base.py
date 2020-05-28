@@ -40,10 +40,12 @@ class ModelBase():
         self.logger = ModelBase.__logger
         self.__class_name = self.__class__.__name__
 
+        self.initialized = False
         self.logger.debug('Creating %s object. JSON input present: %s',
                           self.__class_name,
                           'YES' if json_input else 'NO')
         self.__fill_values(json_input)
+        self.initialized = True
         self.logger.debug('%s', str(self))
 
     def __fill_values(self, json_input):
@@ -153,7 +155,8 @@ class ModelBase():
         indicates that this is a list of values
         """
         if attribute_name in self.lambda_checks:
-            return self.lambda_checks.get(attribute_name)(attribute_value)
+            if not self.lambda_checks.get(attribute_name)(attribute_value):
+                return False
 
         if f'__{attribute_name}' in self.lambda_checks and isinstance(attribute_value, list):
             lambda_check = self.lambda_checks.get(f'__{attribute_name}')
