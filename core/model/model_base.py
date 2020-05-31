@@ -40,10 +40,12 @@ class ModelBase():
         self.logger = ModelBase.__logger
         self.__class_name = self.__class__.__name__
 
+        self.initialized = False
         self.logger.debug('Creating %s object. JSON input present: %s',
                           self.__class_name,
                           'YES' if json_input else 'NO')
         self.__fill_values(json_input)
+        self.initialized = True
         self.logger.debug('%s', str(self))
 
     def __fill_values(self, json_input):

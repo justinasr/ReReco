@@ -34,7 +34,8 @@ class Sequence(ModelBase):
         # Scenario overriding standard settings: 'pp', 'cosmics', 'nocoll', 'HeavyIons'
         'scenario': 'pp',
         # The desired step. The possible values are:
-        # RAW2DIGI, L1Reco, RECO, EI, PAT, NANO, ALCA[:@...], DQM[:@...], SKIM[:@...]
+        # RAW2DIGI, L1Reco, RECO, EI, PAT, NANO, ALCA[:@...], DQM[:@...], SKIM[:@...],
+        # HARVESTING:@...
         'step': []}
 
     lambda_checks = {
@@ -58,10 +59,12 @@ class Sequence(ModelBase):
         'harvesting_config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
         'nThreads': lambda n: 0 < n < 64,
         'scenario': lambda s: s in ('pp', 'cosmics', 'nocoll', 'HeavyIons'),
+        'step': lambda s: len(s) > 0,
         '__step': lambda s: (s in ('RAW2DIGI', 'L1Reco', 'RECO', 'EI', 'PAT', 'NANO') or
                              s.startswith('ALCA') or
                              s.startswith('DQM') or
-                             s.startswith('SKIM'))
+                             s.startswith('SKIM') or
+                             s.startswith('HARVESTING:@'))
     }
 
     def __init__(self, json_input=None, parent=None):
@@ -70,6 +73,9 @@ class Sequence(ModelBase):
         if parent:
             self.parent = weakref.ref(parent)
 
+        self.check_attribute('eventcontent', self.get('eventcontent'))
+        self.check_attribute('datatier', self.get('datatier'))
+
     def get_prepid(self):
         if not self.parent:
             return 'Sequence'
@@ -77,6 +83,23 @@ class Sequence(ModelBase):
         parent = self.parent()
         index = self.get_index_in_parent()
         return f'Sequence_{parent}_{index}'
+
+    def check_attribute(self, attribute_name, attribute_value):
+        if not self.initialized or attribute_name not in ('eventcontent', 'datatier'):
+            return super().check_attribute(attribute_name, attribute_value)
+
+        has_harvesting_step = bool([s for s in self.get('step') if s.startswith('HARVESTING:@')])
+        if has_harvesting_step:
+            return super().check_attribute(attribute_name, attribute_value)
+
+        # If sequence does not have HARVESTING step, eventcontent and datatier cannot be empty
+        if not self.get('eventcontent'):
+            raise Exception('No eventcontent is allowed only with HARVESTING step')
+
+        if not self.get('datatier'):
+            raise Exception('No datatier is allowed only with HARVESTING step')
+
+        return super().check_attribute(attribute_name, attribute_value)
 
     def needs_harvesting(self):
         """
