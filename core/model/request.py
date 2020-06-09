@@ -26,10 +26,10 @@ class Request(ModelBase):
         'energy': 0.0,
         # Action history
         'history': [],
-        # Input dataset name
+        # Input dataset name or request name
         'input': {'dataset': '',
                   'request': '',
-                  'submit_strategy': 'on_done'},
+                  'submission_strategy': 'on_done'},
         # Memory in MB
         'memory': 2300,
         # User notes
@@ -60,24 +60,27 @@ class Request(ModelBase):
         'workflows': []
     }
 
+    __prepid_regex = '[a-zA-Z0-9\\-_]{1,100}'
     lambda_checks = {
-        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9\\-_]{1,100}'),
+        'prepid': lambda prepid: ModelBase.matches_regex(prepid, Request.__prepid_regex),
         'cmssw_release': ModelBase.lambda_check('cmssw_release'),
-        'completed_events': lambda ce: ce >= 0,
+        'completed_events': lambda events: events >= 0,
         'energy': ModelBase.lambda_check('energy'),
+        '_input': {'dataset': lambda ds: not ds or ModelBase.lambda_check('dataset')(ds),
+                   'request': lambda req: not req or ModelBase.matches_regex(req, Request.__prepid_regex),
+                   'submission_strategy': lambda s: s in {'on_done'}},
         'memory': ModelBase.lambda_check('memory'),
         '__output_datasets': ModelBase.lambda_check('dataset'),
-        'priority': lambda priority: 1000 <= priority <= 1000000,
+        'priority': ModelBase.lambda_check('priority'),
         'processing_string': ModelBase.lambda_check('processing_string'),
         '__runs': lambda r: isinstance(r, int) and r > 0,
         '__sequences': lambda s: isinstance(s, Sequence),
         'size_per_event': lambda spe: spe > 0.0,
-        'status': lambda status: status in ('new', 'approved', 'submitting', 'submitted', 'done'),
+        'status': lambda status: status in {'new', 'approved', 'submitting', 'submitted', 'done'},
         'step': ModelBase.lambda_check('step'),
         'subcampaign': ModelBase.lambda_check('subcampaign'),
         'time_per_event': lambda tpe: tpe > 0.0,
-        'total_events': lambda te: te >= 0,
-        'type': lambda step: step in ['Prod', 'MCReproc', 'LHE'],
+        'total_events': lambda events: events >= 0,
     }
 
     def __init__(self, json_input=None):
@@ -91,6 +94,13 @@ class Request(ModelBase):
             json_input['sequences'] = sequence_objects
 
         ModelBase.__init__(self, json_input)
+
+    def check_attribute(self, attribute_name, attribute_value):
+        if attribute_name == 'input':
+            if not attribute_value.get('dataset') and not attribute_value.get('request'):
+                raise Exception('Either input dataset or input request must be provided')
+
+        return super().check_attribute(attribute_name, attribute_value)
 
     def get_cmssw_setup(self):
         """

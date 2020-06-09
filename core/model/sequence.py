@@ -41,26 +41,26 @@ class Sequence(ModelBase):
     lambda_checks = {
         'conditions': lambda c: ModelBase.matches_regex(c, '[a-zA-Z0-9_]{0,50}'),
         'config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
-        '__datatier': lambda s: s in ('AOD',
+        '__datatier': lambda s: s in {'AOD',
                                       'MINIAOD',
                                       'NANOAOD',
                                       'DQMIO',
                                       'USER',
                                       'ALCARECO',
-                                      'RECO'),
+                                      'RECO'},
         'era': lambda e: ModelBase.matches_regex(e, '[a-zA-Z0-9_\\,]{0,50}'),
-        '__eventcontent': lambda s: s in ('AOD',
+        '__eventcontent': lambda s: s in {'AOD',
                                           'MINIAOD',
                                           'NANOAOD',
                                           'DQM',
                                           'NANOEDMAOD',
                                           'ALCARECO',
-                                          'RECO'),
+                                          'RECO'},
         'harvesting_config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
         'nThreads': lambda n: 0 < n < 64,
-        'scenario': lambda s: s in ('pp', 'cosmics', 'nocoll', 'HeavyIons'),
+        'scenario': lambda s: s in {'pp', 'cosmics', 'nocoll', 'HeavyIons'},
         'step': lambda s: len(s) > 0,
-        '__step': lambda s: (s in ('RAW2DIGI', 'L1Reco', 'RECO', 'EI', 'PAT', 'NANO') or
+        '__step': lambda s: (s in {'RAW2DIGI', 'L1Reco', 'RECO', 'EI', 'PAT', 'NANO'} or
                              s.startswith('ALCA') or
                              s.startswith('DQM') or
                              s.startswith('SKIM') or

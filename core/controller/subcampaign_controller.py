@@ -59,7 +59,7 @@ class SubcampaignController(ControllerBase):
         Return a default sequence for a subcampaign
         """
         self.logger.debug('Creating a default sequence for %s', subcampaign.get_prepid())
-        sequence = Sequence()
+        sequence = Sequence.schema()
         return sequence
 
     def __get_scram_arch(self, cmssw_release, xml):

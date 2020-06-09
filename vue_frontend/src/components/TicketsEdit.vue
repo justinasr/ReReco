@@ -14,15 +14,14 @@
             <div v-for="(step, index) in editableObject.steps" :key="index">
               <h3>Step {{index + 1}}</h3>
               <table>
-                <tr v-if="index != 0">
+                <!-- <tr v-if="index != 0">
                   <td>Submission strategy: </td>
                   <td>
                     <select v-model="step.submission_strategy">
                       <option value="on_done">Step {{index + 1}} after Step {{index}} is done</option>
-                      <option value="taskchain">Step {{index + 1}} together with Step {{index}}</option>
                     </select>
                   </td>
-                </tr>
+                </tr> -->
                 <tr>
                   <td>Subcampaign</td><td><input type="text" v-model="step.subcampaign" :disabled="!editingInfo.steps"></td>
                 </tr>
@@ -54,7 +53,7 @@
           <td><textarea v-model="editableObject.input_datasets" :disabled="!editingInfo.input_datasets"></textarea></td>
         </tr>
       </table>
-      <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
+      <v-btn small class="mr-1 mb-1" color="primary" @click="save()" :disabled="!listLength(editableObject.steps) || !listLength(editableObject.input_datasets)">Save</v-btn>
       <v-btn v-if="editingInfo.input_datasets" small class="mr-1 mb-1" color="primary" @click="showGetDatasetsDialog()">Get dataset list from DBS</v-btn>
     </v-card>
     <v-dialog v-model="getDatasetsDialog.visible"

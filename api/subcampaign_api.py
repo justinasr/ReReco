@@ -135,6 +135,6 @@ class GetDefaultSubcampaignSequenceAPI(APIBase):
             subcampaign = Subcampaign()
 
         sequence = subcampaign_controller.get_default_sequence(subcampaign)
-        return self.output_text({'response': sequence.get_json(),
+        return self.output_text({'response': sequence,
                                  'success': True,
                                  'message': ''})

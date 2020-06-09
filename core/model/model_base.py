@@ -7,6 +7,7 @@ import re
 import time
 from copy import deepcopy
 from core.utils.user_info import UserInfo
+from core.utils.exceptions import BadAttribute
 
 
 class ModelBase():
@@ -29,6 +30,7 @@ class ModelBase():
         'energy': lambda energy: 0 <= energy <= 100,
         'memory': lambda mem: 0 <= mem <= 64000,
         'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{1,100}'),
+        'priority': lambda priority: 20000 <= priority <= 1000000,
         'scram_arch': lambda sa: ModelBase.matches_regex(sa, '[a-z0-9_]{0,30}'),
         'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
         'subcampaign': lambda sc: ModelBase.matches_regex(sc, ModelBase.__subcampaign_regex),
@@ -36,17 +38,12 @@ class ModelBase():
     lambda_checks = {}
 
     def __init__(self, json_input=None):
+        self.initialized = False
         self.__json = {}
         self.logger = ModelBase.__logger
         self.__class_name = self.__class__.__name__
-
-        self.initialized = False
-        self.logger.debug('Creating %s object. JSON input present: %s',
-                          self.__class_name,
-                          'YES' if json_input else 'NO')
         self.__fill_values(json_input)
         self.initialized = True
-        self.logger.debug('%s', str(self))
 
     def __fill_values(self, json_input):
         """
@@ -54,10 +51,10 @@ class ModelBase():
         Initialize default values from schema if any are missing
         """
         if json_input:
-            if ('prepid' in self.__schema or '_id' in self.__schema):
+            if 'prepid' in self.__schema or '_id' in self.__schema:
                 prepid = json_input.get('prepid')
                 if not prepid:
-                    raise Exception('PrepID cannot be empty')
+                    raise BadAttribute('PrepID cannot be empty')
 
                 self.set('prepid', prepid)
 
@@ -67,13 +64,13 @@ class ModelBase():
         ignore_keys = set(['_id', 'prepid'])
         keys = set(self.__schema.keys())
         if json_input:
-            # Just to show errors if any incorrect keys are passed
+            # Show errors if any incorrect keys are passed
             bad_keys = set(json_input.keys()) - keys - ignore_keys
             if bad_keys:
+                bad_keys = [str(key) for key in bad_keys]
                 self.logger.warning('Keys that are not in schema of %s: %s',
                                     self.__class_name,
                                     ', '.join(bad_keys))
-                # raise Exception(f'Invalid key "{", ".join(bad_keys)}" for {self.__class_name}')
 
         for key in keys - ignore_keys:
             if key not in json_input:
@@ -90,17 +87,19 @@ class ModelBase():
             prepid = self.__class_name
 
         if not attribute:
-            raise Exception('Attribute name not specified')
+            raise BadAttribute('Attribute name not specified')
 
         if attribute not in self.__schema:
-            raise Exception(f'Attribute {attribute} could not be '
-                            f'found in {self.__class_name} schema')
+            raise BadAttribute(f'Attribute {attribute} could not be '
+                               f'found in {self.__class_name} schema')
 
-        if not isinstance(value, type(self.__schema[attribute])):
-            self.logger.debug('%s of %s is not expected (%s) type (got %s). Will try to cast',
+        # Check value type and cast if needed
+        expected_type = type(self.__schema[attribute])
+        if not isinstance(value, expected_type):
+            self.logger.debug('%s of %s is not expected type. Expected %s, got %s. Try to cast',
                               attribute,
                               prepid,
-                              type(self.__schema[attribute]),
+                              expected_type,
                               type(value))
             value = self.cast_value_to_correct_type(attribute, value)
 
@@ -110,7 +109,7 @@ class ModelBase():
                               attribute,
                               prepid,
                               self.__class_name)
-            raise Exception(f'Invalid {attribute} value {value} for {prepid}')
+            raise BadAttribute(f'Invalid {attribute} value {value} for {prepid}')
 
         self.__json[attribute] = value
         if attribute == 'prepid':
@@ -152,14 +151,36 @@ class ModelBase():
         indicates that this is a list of values
         """
         if attribute_name in self.lambda_checks:
-            if not self.lambda_checks.get(attribute_name)(attribute_value):
+            self.logger.debug('Checking %s of %s', attribute_name, self.__class_name)
+            if not self.lambda_checks[attribute_name](attribute_value):
                 return False
 
-        if f'__{attribute_name}' in self.lambda_checks and isinstance(attribute_value, list):
-            lambda_check = self.lambda_checks.get(f'__{attribute_name}')
+        # List
+        if f'__{attribute_name}' in self.lambda_checks:
+            if not isinstance(attribute_value, list):
+                raise Exception(f'Expected {attribute_name} to be a list')
+
+            self.logger.debug('Checking %s elements of %s', attribute_name, self.__class_name)
+            lambda_check = self.lambda_checks[f'__{attribute_name}']
             for item in attribute_value:
                 if not lambda_check(item):
                     raise Exception(f'Bad {attribute_name} value "{item}"')
+
+        # Dict
+        if f'_{attribute_name}' in self.lambda_checks:
+            if not isinstance(attribute_value, dict):
+                raise Exception(f'Expected {attribute_name} to be a dict')
+
+            lambda_checks = self.lambda_checks[f'_{attribute_name}']
+            invalid_keys = set(attribute_value.keys()) - set(lambda_checks.keys())
+            if invalid_keys:
+                raise Exception(f'Keys {",".join(invalid_keys)} are not '
+                                f'allowed in {attribute_name}')
+
+            for key, lambda_check in lambda_checks.items():
+                self.logger.debug('Checking %s.%s of %s', attribute_name, key, self.__class_name)
+                if not lambda_check(attribute_value[key]):
+                    raise Exception(f'Bad {key} value "{item}" in {attribute_name} dictionary')
 
         return True
 

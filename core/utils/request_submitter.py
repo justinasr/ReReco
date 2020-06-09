@@ -4,6 +4,7 @@ Module that has all classes used for request submission to computing
 import logging
 import time
 import json
+import traceback
 from threading import Thread
 from queue import Queue, Empty
 from core.utils.ssh_executor import SSHExecutor
@@ -43,6 +44,7 @@ class Worker(Thread):
                 try:
                     func(*args, **kargs)
                 except Exception as ex:
+                    self.logger.error(traceback.format_exc())
                     self.logger.error(ex)
                 finally:
                     self.logger.debug('Worker "%s" has finished a task. Queue size %s',
@@ -99,7 +101,7 @@ class RequestSubmitter:
     # If maxsize is less than or equal to zero, the queue size is infinite.
     __task_queue = Queue(maxsize=0)
     # All worker threads
-    __worker_pool = WorkerPool(workers_count=4, task_queue=__task_queue)
+    __worker_pool = WorkerPool(workers_count=1, task_queue=__task_queue)
 
     def __init__(self):
         self.logger = logging.getLogger()

@@ -50,15 +50,29 @@ class RequestController(controller_base.ControllerBase):
             new_request.set('energy', subcampaign.get('energy'))
 
         request_input = new_request.get('input')
+        input_dataset = request_input.get('dataset')
+        input_request_prepid = request_input.get('request')
         # Prepid is made of era, dataset and processing string
-        # Either they are taken from input dataset or provided separately
-        if request_input.get('dataset'):
-            input_dataset_parts = [x for x in request_input['dataset'].split('/') if x]
+        # Either they are taken from input dataset or input request
+        # Only one must be provided
+        self.logger.info(request_input)
+        if input_dataset and input_request_prepid:
+            raise Exception(f'Request cannot have both input request and input dataset, only one')
+
+        if input_dataset and not input_request_prepid:
+            input_dataset_parts = [x for x in input_dataset.split('/') if x]
             era = input_dataset_parts[1].split('-')[0]
             dataset = input_dataset_parts[0]
-        elif json_data.get('era') and json_data.get('dataset'):
-            era = json_data['era']
-            dataset = json_data['dataset']
+        elif not input_dataset and input_request_prepid:
+            input_request_json = request_db.get(input_request_prepid)
+            if not input_request_json:
+                raise Exception(f'Request "{input_request_prepid}" does not exist')
+
+            input_request = Request(json_input=input_request_json)
+            era = input_request.get_era()
+            dataset = input_request.get_dataset()
+        else:
+            raise Exception(f'Request must have either a input request or input dataset')
 
         processing_string = new_request.get('processing_string')
         prepid_middle_part = f'{era}-{dataset}-{processing_string}'
@@ -83,6 +97,15 @@ class RequestController(controller_base.ControllerBase):
     def check_for_delete(self, obj):
         if obj.get('status') != 'new':
             raise Exception('Request must be in status "new" before it is deleted')
+
+        requests_db = Database('requests')
+        prepid = obj.get_prepid()
+        subsequent_requests_query = f'input.request={prepid}'
+        subsequent_requests = requests_db.query(subsequent_requests_query)
+        if subsequent_requests:
+            subsequent_requests_prepids = ', '.join([r['prepid'] for r in subsequent_requests])
+            raise Exception(f'Request cannot be deleted because it is input request'
+                            f'for {subsequent_requests_prepids}. Delete these requests first')
 
         return True
 
@@ -124,6 +147,7 @@ class RequestController(controller_base.ControllerBase):
         editing_info['subcampaign'] = new
         editing_info['energy'] = True
         editing_info['sequences'] = True
+        editing_info['input'] = new
         status = obj.get('status')
         if status != 'new':
             editing_info['memory'] = False
@@ -131,7 +155,6 @@ class RequestController(controller_base.ControllerBase):
             editing_info['sequences'] = False
             editing_info['time_per_event'] = False
             editing_info['size_per_event'] = False
-            editing_info['input'] = False
 
         return editing_info
 
@@ -345,10 +368,45 @@ class RequestController(controller_base.ControllerBase):
                                 f'{last_workflow_name} is not yet "completed"')
 
             self.update_status(request, 'done', completed_timestamp)
+            # Submit all subsequent requests
+            self.submit_subsequent_requests(request)
         else:
             raise Exception(f'{prepid} does not have any workflows in computing')
 
         return request
+
+    def submit_subsequent_requests(self, request):
+        """
+        Submit all requests that have given request as input
+        """
+        request_db = Database('requests')
+        prepid = request.get_prepid()
+        query = f'input.request={prepid}&&input.submission_strategy=on_done'
+        subsequent_requests = request_db.query(query)
+        self.logger.info('Found %s subsequent requests for %s: %s',
+                         len(subsequent_requests),
+                         prepid,
+                         [r['prepid'] for r in subsequent_requests])
+        for subsequent_request_json in subsequent_requests:
+            subsequent_request_prepid = subsequent_request_json.get('prepid', '')
+            try:
+                subsequent_request = self.get(subsequent_request_prepid)
+                subsequent_request_input = subsequent_request.get('input')
+                subsequent_request_input['dataset'] = request.get('output_datasets')[-1]
+                subsequent_request.set('input', subsequent_request_input)
+                subsequent_request.set('runs', request.get('runs'))
+                self.update(subsequent_request.get_json(), force_update=True)
+                subsequent_request = self.get(subsequent_request_prepid)
+                if subsequent_request.get('status') == 'new':
+                    self.next_status(subsequent_request)
+
+                if subsequent_request.get('status') == 'approved':
+                    self.next_status(subsequent_request)
+
+            except Exception as ex:
+                self.logger.error('Error moving %s to next status: %s',
+                                  subsequent_request_prepid,
+                                  ex)
 
     def move_request_back_to_new(self, request):
         """

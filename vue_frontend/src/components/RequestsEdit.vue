@@ -91,20 +91,31 @@
           <td>
             <table v-if="editableObject.input">
               <tr>
-                <td>Dataset:</td><td><input type="text" v-model="editableObject.input.dataset" :disabled="!editingInfo.input"></td>
+                <td>
+                  <input type="radio" id="inputTypeDataset" value="dataset" v-model="inputType" :disabled="!editingInfo.input">
+                  Dataset:
+                </td>
+                <td>
+                  <input type="text" v-model="editableObject.input.dataset" :disabled="inputType != 'dataset' || !editingInfo.input">
+                </td>
               </tr>
               <tr>
-                <td>Request:</td><td><input type="text" v-model="editableObject.input.request" :disabled="!editingInfo.input"></td>
+                <td>
+                  <input type="radio" id="inputTypeRequest" value="request" v-model="inputType" :disabled="!editingInfo.input">
+                  Request:
+                </td>
+                <td>
+                  <input type="text" v-model="editableObject.input.request" :disabled="inputType != 'request' || !editingInfo.input">
+                </td>
               </tr>
-              <tr>
-                <td>Submit strategy:</td>
+              <!-- <tr>
+                <td>Submission strategy:</td>
                 <td>
                   <select v-model="editableObject.input.submission_strategy" :disabled="!editingInfo.input">
                     <option value="on_done">On Done</option>
-                    <option value="taskchain">TaskChain</option>
                   </select>
                 </td>
-              </tr>
+              </tr> -->
             </table>
           </td>
         </tr>
@@ -176,6 +187,7 @@ export default {
       editingInfo: {},
       loading: true,
       creatingNew: true,
+      inputType: 'dataset',
       errorDialog: {
         visible: false,
         title: '',
@@ -202,6 +214,13 @@ export default {
       this.loading = true;
       let editableObject = JSON.parse(JSON.stringify(this.editableObject))
       let component = this;
+      if (this.creatingNew) {
+        if (this.inputType == 'dataset') {
+          editableObject['input']['request'] = '';
+        } else {
+          editableObject['input']['dataset'] = '';
+        }
+      }
       editableObject['notes'] = editableObject['notes'].trim();
       editableObject['runs'] = editableObject['runs'].replace(/,/g, '\n').split('\n').map(function(s) { return s.trim() }).filter(Boolean);
       let httpRequest;

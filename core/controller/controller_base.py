@@ -61,7 +61,7 @@ class ControllerBase():
 
         return None
 
-    def update(self, json_data):
+    def update(self, json_data, force_update=False):
         """
         Update a single object with given json
         """
@@ -84,11 +84,12 @@ class ControllerBase():
                 self.logger.info('Nothing was updated for %s', prepid)
                 return old_object.get_json()
 
-            self.edit_allowed(old_object, changed_values)
-            new_object.add_history('update', changed_values, None)
-            if not self.check_for_update(old_object, new_object, changed_values):
-                self.logger.error('Error while updating %s', prepid)
-                return None
+            if not force_update:
+                self.edit_allowed(old_object, changed_values)
+                new_object.add_history('update', changed_values, None)
+                if not self.check_for_update(old_object, new_object, changed_values):
+                    self.logger.error('Error while updating %s', prepid)
+                    return None
 
             self.before_update(new_object)
             database.save(new_object.get_json())

@@ -75,7 +75,11 @@
             <span v-if="item.runs.length">{{item.runs.length}} runs: <small>{{item.runs.join(', ')}}</small></span>
           </template>
           <template v-slot:item.input="{ item }">
-            <pre>{{JSON.stringify(item.input, null, 2)}}</pre>
+            <ul v-if="item.input">
+              <li v-if="item.input.dataset">Dataset: {{item.input.dataset}}</li>
+              <li v-if="item.input.request">Request: <a :href="'requests?prepid=' + item.input.request">{{item.input.request}}</a></li>
+              <!-- <li>Submission {{item.input.submission_strategy}}</li> -->
+            </ul>
           </template>
           <template v-slot:item.workflows="{ item }">
             <ol>

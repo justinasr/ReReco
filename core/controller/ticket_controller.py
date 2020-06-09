@@ -64,7 +64,7 @@ class TicketController(ControllerBase):
         return True
 
     def check_for_update(self, old_obj, new_obj, changed_values):
-        if 'subcampaigns' in changed_values:
+        if 'steps' in changed_values:
             subcampaign_database = Database('subcampaigns')
             subcampaign_names = [x['subcampaign'] for x in new_obj.get('steps')]
             for subcampaign_name in subcampaign_names:
@@ -163,26 +163,24 @@ class TicketController(ControllerBase):
                         time_per_event = step['time_per_event']
                         size_per_event = step['size_per_event']
                         priority = step['priority']
+                        submission_strategy = step['submission_strategy']
                         new_request_json = {'subcampaign': subcampaign_name,
                                             'priority': priority,
                                             'processing_string': processing_string,
                                             'time_per_event': time_per_event,
                                             'size_per_event': size_per_event,
                                             'input': {'dataset': '',
-                                                      'request': ''}}
+                                                      'request': '',
+                                                      'submission_strategy': submission_strategy}}
+
                         if step_index == 0:
                             new_request_json['input']['dataset'] = input_dataset
                         else:
-                            submission_strategy = step['submission_strategy']
                             new_request_json['input']['request'] = last_request_prepid
-                            new_request_json['input']['submission_strategy'] = submission_strategy
-                            new_request_json['dataset'] = dataset
-                            new_request_json['era'] = era
 
                         try:
                             runs = request_controller.get_runs(subcampaign_name, input_dataset)
                             new_request_json['runs'] = runs
-                            pass
                         except Exception as ex:
                             self.logger.error('Error getting runs for %s %s %s request. '
                                               'Will leave empty. Error:\n%s',
@@ -194,9 +192,6 @@ class TicketController(ControllerBase):
                         request = request_controller.create(new_request_json)
                         created_requests.append(request)
                         last_request_prepid = request.get('prepid')
-                        if step_index == 0:
-                            dataset = request.get_dataset()
-                            era = request.get_era()
 
                         self.logger.info('Created %s', last_request_prepid)
 
