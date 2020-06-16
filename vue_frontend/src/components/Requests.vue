@@ -139,17 +139,14 @@
     </v-dialog>
 
     <footer>
-      <div style="float: left; margin: 16px 4px 16px 16px">
-        <a :href="'requests/edit'" v-if="role('manager') && !selectedItems.length">New request</a>
-        <span v-if="role('manager') && selectedItems.length">Selected items ({{selectedItems.length}}) actions:</span>
-        <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="deleteManyRequests(selectedItems)">Delete</a>
-        <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="previousMany(selectedItems)">Previous</a>
-        <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="nextStatusMany(selectedItems)">Next</a>
-        <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="updateWorkflowsMany(selectedItems)">Update from Stats2</a>
-        <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="optionResetMany(selectedItems)">Option Reset</a>
-      </div>
-      <Paginator style="float: right;"
-                 :totalRows="totalItems"
+      <a :href="'requests/edit'" v-if="role('manager') && !selectedItems.length">New request</a>
+      <span v-if="role('manager') && selectedItems.length">Selected items ({{selectedItems.length}}) actions:</span>
+      <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="deleteManyRequests(selectedItems)">Delete</a>
+      <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="previousMany(selectedItems)">Previous</a>
+      <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="nextStatusMany(selectedItems)">Next</a>
+      <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="updateWorkflowsMany(selectedItems)">Update from Stats2</a>
+      <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="optionResetMany(selectedItems)">Option Reset</a>
+      <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
   </div>

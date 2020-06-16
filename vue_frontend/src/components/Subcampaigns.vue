@@ -93,9 +93,8 @@
     </v-dialog>
 
     <footer>
-      <a :href="'subcampaigns/edit'" style="float: left; margin: 16px;" v-if="role('manager')">New subcampaign</a>
-      <Paginator style="float: right;"
-                 :totalRows="totalItems"
+      <a :href="'subcampaigns/edit'" v-if="role('manager')">New subcampaign</a>
+      <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
   </div>

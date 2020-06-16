@@ -102,9 +102,8 @@
     </v-dialog>
 
     <footer>
-      <a :href="'tickets/edit'" style="float: left; margin: 16px;" v-if="role('manager')">New ticket</a>
-      <Paginator style="float: right;"
-                 :totalRows="totalItems"
+      <a :href="'tickets/edit'" v-if="role('manager')">New ticket</a>
+      <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
   </div>

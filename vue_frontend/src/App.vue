@@ -100,7 +100,6 @@ html {
 }
 
 footer {
-  line-height: 52px;
   padding: 0 12px;
   height: 52px;
   left: 0px;
@@ -113,6 +112,7 @@ footer {
 
 footer > a {
   margin-left: 4px;
+  line-height: 52px;
   text-decoration: underline;
 }
 
