@@ -1,7 +1,7 @@
 <template>
   <div>
     <div style="display: inline-block; margin: 10px;">
-      Showing {{page * pageSize + 1}} - {{Math.min(totalRows, page * pageSize + pageSize)}} of {{totalRows}}
+      Showing {{totalRows == 0 ? 0 : page * pageSize + 1}} - {{Math.min(totalRows, page * pageSize + pageSize)}} of {{totalRows}}
     </div>
     <div style="display: inline-block;">
       Page Size:

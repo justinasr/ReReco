@@ -1,7 +1,7 @@
 <template>
   <v-app>
-    <v-app-bar app style="background-color: white;">
-      <a href="" style="text-decoration: none; color: rgba(0, 0, 0, 0.87);">
+    <v-app-bar app>
+      <a href="" class="no-decoration">
         <v-toolbar-title class="headline">
           <span>Re</span>
           <span class="font-weight-light">Reco</span>
@@ -10,32 +10,35 @@
       <v-spacer></v-spacer>
       <v-btn
         text
+        class="mr-2"
         href="subcampaigns">
-        <span class="mr-2">Subcampaigns</span>
+        <span>Subcampaigns</span>
       </v-btn>
       <v-btn
         text
+        class="mr-2"
         href="tickets">
-        <span class="mr-2">Tickets</span>
+        <span>Tickets</span>
       </v-btn>
       <v-btn
         text
+        class="mr-2"
         href="requests">
-        <span class="mr-2">Requests</span>
+        <span>Requests</span>
       </v-btn>
       <v-btn
         text
+        class="mr-2"
         href="dashboard">
-        <span class="mr-2">Dashboard</span>
+        <span>Dashboard</span>
       </v-btn>
       <v-spacer></v-spacer>
-      <div v-if="userInfo" style="text-align: right; line-height: 28px;">
+      <div v-if="userInfo">
         <span :title="'Username: ' + userInfo.username + '\nRole: ' + userInfo.role"><small>Logged in as</small> {{userInfo.fullname}} </span>
-        <img style="width: 16px; height: 16px;" v-if="userInfo.role_index == 1" src="static/star.png"/>
-        <img style="width: 16px; height: 16px;" v-if="userInfo.role_index == 2" src="static/admin_star.png"/>
+        <img class="admin-star" :title="'User role: ' + userInfo.role" :src="userRolePicture"/>
       </div>
     </v-app-bar>
-    <v-content style="background-color: #fafafa;">
+    <v-content class="content-container">
       <router-view/>
     </v-content>
   </v-app>
@@ -50,9 +53,45 @@ export default {
 
   mixins: [
     roleMixin
-  ]
+  ],
+  computed: {
+    userRolePicture: function() {
+      if (this.userInfo.role_index == 1) {
+        return 'static/star.png';
+      }
+      if (this.userInfo.role_index == 2) {
+        return 'static/admin_star.png';
+      }
+      return 'static/invisible.png';
+    }
+  }
 };
 </script>
+
+<style scoped>
+
+header {
+  background: var(--v-background-base) !important;
+}
+
+.content-container {
+  background: var(--v-backBackground-base);
+}
+
+.headline {
+  color: rgba(0, 0, 0, 0.87) !important;
+}
+
+a.no-decoration {
+  text-decoration: none;
+}
+
+.admin-star {
+  width: 16px;
+  height: 16px;
+}
+
+</style>
 
 <style>
 
@@ -60,68 +99,33 @@ html {
   overflow: auto !important;
 }
 
-select, textarea {
-  border-style: inset !important;
-  width: 100%;
-  padding: 2px;
-}
-
-select {
-  min-width: 45%;
-}
-
-input {
-  padding: 2px 6px;
-}
-
-input[type="number"] {
-  border-style: inset !important;
-  width: 45%;
-  text-align: right;
-}
-
-input[type="text"] {
-  border-style: inset !important;
-  -webkit-appearance: textfield !important;
-  width: 100%;
-}
-
-textarea {
-  -webkit-appearance: textarea !important;
-  min-height: 200px;
-  font-family: monospace;
-  font-size: 0.8em;
-}
-
-select {
-  -webkit-appearance: menulist !important;
-}
-
 footer {
-  height: 56px;
+  line-height: 52px;
+  padding: 0 12px;
+  height: 52px;
   left: 0px;
   right: 0px;
   bottom: 0px;
   position: fixed;
-  background-color: white;
+  background: var(--v-background-base) !important;
   box-shadow: 0px -2px 4px -1px rgba(0, 0, 0, 0.2), 0px -4px 5px 0px rgba(0, 0, 0, 0.14), 0px -1px 10px 0px rgba(0, 0, 0, 0.12);
+}
+
+footer > a {
+  margin-left: 4px;
+  text-decoration: underline;
 }
 
 table {
   white-space: nowrap;
-  width: 100%;
 }
 
 .notes {
   font-size: 0.85em;
+  font-style: monospace;
   margin: 4px;
   padding: 4px;
   border: 1px solid rgba(0, 0, 0, 0.5);
-}
-
-input:disabled, select:disabled, textarea:disabled {
-  background: #dddddd !important;
-  cursor: not-allowed;
 }
 
 .v-data-table__wrapper {
@@ -131,6 +135,69 @@ input:disabled, select:disabled, textarea:disabled {
 
 .mdi-checkbox-marked::before {
   color: var(--v-accent-base) !important
+}
+
+h1.page-title {
+  text-align: center;
+  margin: 8px 16px;
+}
+
+.page-card {
+  margin: auto;
+  margin-bottom: 16px;
+  padding: 16px;
+  max-width: 777px !important;
+}
+
+.page-card table {
+  width: 100%;
+  border-spacing: 0;
+}
+
+.page-card th,
+.page-card td {
+  padding: 6px 0;
+}
+
+.page-card input,
+.page-card select,
+.page-card textarea {
+  border: 1px solid rgba(0, 0, 0, 0.87);
+  border-radius: 4px;
+  background: #fbfbfb;
+}
+
+.page-card input[type="text"],
+.page-card textarea {
+  width: 100%;
+  padding: 0 4px;
+}
+
+.page-card textarea {
+  min-height: 200px;
+}
+
+.page-card input[type="number"] {
+  width: 45%;
+  text-align: right;
+  direction: rtl;
+  padding: 0 4px 0 0;
+  margin-right: 4px;
+}
+
+.page-card select {
+  width: 45%;
+  height: 25.625px;
+  appearance: menulist;
+  padding: 0 4px;
+}
+
+.page-card input:disabled,
+.page-card select:disabled,
+.page-card textarea:disabled {
+  background: #eaeaea !important;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: not-allowed;
 }
 
 </style>

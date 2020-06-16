@@ -668,10 +668,11 @@ class RequestController(controller_base.ControllerBase):
 
             subcampaign_db = Database('subcampaigns')
             subcampaign_name = request.get('subcampaign')
-            subcampaign = subcampaign_db.get(subcampaign_name)
-            if not subcampaign:
+            subcampaign_json = subcampaign_db.get(subcampaign_name)
+            if not subcampaign_json:
                 raise Exception(f'Subcampaign "{subcampaign_name}" does not exist')
 
+            subcampaign = Subcampaign(json_input=subcampaign_json)
             request.set('memory', subcampaign.get('memory'))
             request.set('sequences', subcampaign.get('sequences'))
             request.set('energy', subcampaign.get('energy'))

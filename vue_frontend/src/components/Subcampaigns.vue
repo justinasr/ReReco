@@ -131,7 +131,6 @@ export default {
         {'dbName': 'runs_json_path', 'displayName': 'Runs JSON', 'visible': 0},
         {'dbName': 'scram_arch', 'displayName': 'SCRAM Arch', 'visible': 0},
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
-        {'dbName': 'step', 'displayName': 'Step', 'visible': 0},
       ],
       headers: [],
       dataItems: [],

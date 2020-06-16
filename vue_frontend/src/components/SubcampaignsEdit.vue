@@ -1,8 +1,8 @@
 <template>
   <div>
-    <h1 v-if="creatingNew">Creating new Subcampaign</h1>
-    <h1 v-else>Editing {{editableObject.prepid}}</h1>
-    <v-card raised style="margin: auto; padding: 16px; max-width: 750px;">
+    <h1 class="page-title" v-if="creatingNew"><span class="font-weight-light">Creating</span> new subcampaign</h1>
+    <h1 class="page-title" v-else><span class="font-weight-light">Editing</span> {{prepid}}</h1>
+    <v-card raised class="page-card">
       <table v-if="editableObject">
         <tr>
           <td>PrepID</td>
@@ -11,16 +11,6 @@
         <tr>
           <td>Energy</td>
           <td><input type="number" v-model="editableObject.energy" :disabled="!editingInfo.energy">TeV</td>
-        </tr>
-        <tr>
-          <td>Step</td>
-          <td>
-            <select v-model="editableObject.step" :disabled="!editingInfo.step">
-              <option>DR</option>
-              <option>MiniAOD</option>
-              <option>NanoAOD</option>
-            </select>
-          </td>
         </tr>
         <tr>
           <td>CMSSW Release</td>
@@ -88,22 +78,12 @@
         </tr>
         <tr>
           <td>Runs JSON</td>
-          <td style="white-space: break-spaces; line-break: anywhere;">Get a list of runs from JSON, for example:<br>
-            <span style="font-family: monospace;">Collisions16/13TeV/DCSOnly/json_DCSONLY.txt</span>
-            <input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path">
-          </td>
+          <td><input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path" placeholder="Example: Collisions16/13TeV/DCSOnly/json_DCSONLY.txt"></td>
         </tr>
       </table>
-      <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
+      <v-btn small class="mr-1 mt-2" color="primary" @click="save()">Save</v-btn>
     </v-card>
-    <v-overlay :absolute="false"
-               :opacity="0.95"
-               :z-index="3"
-               :value="loading"
-               style="text-align: center">
-      <v-progress-circular indeterminate color="primary"></v-progress-circular>
-      <br>Please wait...
-    </v-overlay>
+    <LoadingOverlay :visible="loading"/>
     <v-dialog v-model="errorDialog.visible"
               max-width="50%">
       <v-card>
@@ -127,12 +107,16 @@
 <script>
 
 import axios from 'axios'
-import { listLengthMixin } from '../mixins/ListLengthMixin.js'
+import { utilsMixin } from '../mixins/UtilsMixin.js'
+import LoadingOverlay from './LoadingOverlay.vue'
 
 export default {
   mixins: [
-    listLengthMixin
+    utilsMixin
   ],
+  components: {
+    LoadingOverlay
+  },
   data () {
     return {
       prepid: undefined,
@@ -149,28 +133,35 @@ export default {
   },
   created () {
     let query = Object.assign({}, this.$route.query);
-    this.prepid = query['prepid'];
-    this.creatingNew = this.prepid === undefined;
+    if (query.prepid && query.prepid.length) {
+      this.prepid = query.prepid;
+    } else {
+      this.prepid = '';
+    }
+    this.creatingNew = this.prepid.length == 0;
     this.loading = true;
     let component = this;
-    axios.get('api/subcampaigns/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
+    axios.get('api/subcampaigns/get_editable/' + this.prepid).then(response => {
       component.editableObject = response.data.response.object;
       component.editingInfo = response.data.response.editing_info;
       component.loading = false;
+    }).catch(error => {
+      component.loading = false;
+      this.showError('Error fetching editing information', error.response.data.message);
     });
   },
   methods: {
     save: function() {
       this.loading = true;
-      let editableObject = JSON.parse(JSON.stringify(this.editableObject))
-      let component = this;
-      editableObject['notes'] = editableObject['notes'].trim();
+      let editableObject = this.makeCopy(this.editableObject);
+      editableObject.notes = editableObject.notes.trim();
       let httpRequest;
       if (this.creatingNew) {
-        httpRequest = axios.put('api/subcampaigns/create', editableObject)
+        httpRequest = axios.put('api/subcampaigns/create', editableObject);
       } else {
-        httpRequest = axios.post('api/subcampaigns/update', editableObject)
+        httpRequest = axios.post('api/subcampaigns/update', editableObject);
       }
+      let component = this;
       httpRequest.then(response => {
         component.loading = false;
         window.location = 'subcampaigns?prepid=' + response.data.response.prepid;
@@ -180,13 +171,18 @@ export default {
       });
     },
     addSequence: function() {
+      this.loading = true;
       let component = this;
-      axios.get('api/subcampaigns/get_default_sequence' + (this.creatingNew ? '' : ('/' + this.editableObject.subcampaign))).then(response => {
-        component.editableObject['sequences'].push(response.data.response);
+      axios.get('api/subcampaigns/get_default_sequence/' + this.editableObject.subcampaign).then(response => {
+        component.editableObject.sequences.push(response.data.response);
+        component.loading = false;
+      }).catch(error => {
+        component.loading = false;
+        this.showError('Error getting sequence information', error.response.data.message);
       });
     },
     deleteSequence: function(index) {
-      this.editableObject['sequences'].splice(index, 1);
+      this.editableObject.sequences.splice(index, 1);
     },
     clearErrorDialog: function() {
       this.errorDialog.visible = false;
@@ -202,17 +198,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-h1 {
-  margin: 8px;
-}
-
-td {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-right: 4px;
-}
-
-</style>

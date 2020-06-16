@@ -1,8 +1,8 @@
 <template>
   <div>
-    <h1 v-if="creatingNew">Creating new Request</h1>
-    <h1 v-else>Editing {{editableObject.prepid}}</h1>
-    <v-card raised style="margin: auto; padding: 16px; max-width: 750px;">
+    <h1 class="page-title" v-if="creatingNew"><span class="font-weight-light">Creating</span> new request</h1>
+    <h1 class="page-title" v-else><span class="font-weight-light">Editing</span> {{prepid}}</h1>
+    <v-card raised class="page-card">
       <table v-if="editableObject">
         <tr>
           <td>PrepID</td>
@@ -15,76 +15,6 @@
         <tr>
           <td>CMSSW Version</td>
           <td><input type="text" v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
-        </tr>
-        <tr>
-          <td>Subcampaign</td>
-          <td><input type="text" v-model="editableObject.subcampaign" :disabled="!editingInfo.subcampaign"></td>
-        </tr>
-        <tr>
-          <td>Notes</td>
-          <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
-        </tr>
-        <tr>
-          <td>Sequences ({{listLength(editableObject.sequences)}})</td>
-          <td>
-            <div v-for="(sequence, index) in editableObject.sequences" :key="index">
-              <h3>Sequence {{index + 1}}</h3>
-              <table>
-                <tr>
-                  <td>--conditions</td><td><input type="text" v-model="sequence.conditions" :disabled="!editableObject.sequences"></td>
-                </tr>
-                <tr>
-                  <td>--customise</td><td><input type="text" v-model="sequence.customise" :disabled="!editableObject.sequences"></td>
-                </tr>
-                <tr>
-                  <td>--datatier</td><td><input type="text" v-model="sequence.datatier" :disabled="!editableObject.sequences"></td>
-                </tr>
-                <tr>
-                  <td>--era</td><td><input type="text" v-model="sequence.era" :disabled="!editableObject.sequences"></td>
-                </tr>
-                <tr>
-                  <td>--eventcontent</td><td><input type="text" v-model="sequence.eventcontent" :disabled="!editableObject.sequences"></td>
-                </tr>
-                <tr>
-                  <td>--extra</td><td><input type="text" v-model="sequence.extra" :disabled="!editableObject.sequences"></td>
-                </tr>
-                <tr>
-                  <td>--nThreads</td><td><input type="number" v-model="sequence.nThreads" :disabled="!editableObject.sequences"></td>
-                </tr>
-                <tr>
-                  <td>--scenario</td>
-                  <td>
-                    <select v-model="sequence.scenario" :disabled="!editableObject.sequences">
-                      <option>pp</option>
-                      <option>cosmics</option>
-                      <option>nocoll</option>
-                      <option>HeavyIons</option>
-                    </select>
-                  </td>
-                </tr>
-                <tr>
-                  <td>--step</td><td><input type="text" v-model="sequence.step" :disabled="!editableObject.sequences"></td>
-                </tr>
-              </table>
-              <v-btn small class="mr-1 mb-1" color="error" @click="deleteSequence(index)">Delete sequence {{index + 1}}</v-btn>
-              <hr>
-            </div>
-            <v-btn small class="mr-1 mb-1 mt-1" color="primary" @click="addSequence()">Add sequence {{listLength(editableObject.sequences) + 1}}</v-btn>
-          </td>
-        </tr>
-        <tr>
-          <td>Memory</td>
-          <td><input type="number" v-model="editableObject.memory" :disabled="!editingInfo.memory">MB</td>
-        </tr>
-        <tr>
-          <td>Step</td>
-          <td>
-            <select v-model="editableObject.step" :disabled="!editingInfo.step">
-              <option>DR</option>
-              <option>MiniAOD</option>
-              <option>NanoAOD</option>
-            </select>
-          </td>
         </tr>
         <tr>
           <td>Input</td>
@@ -108,16 +38,16 @@
                   <input type="text" v-model="editableObject.input.request" :disabled="inputType != 'request' || !editingInfo.input">
                 </td>
               </tr>
-              <!-- <tr>
-                <td>Submission strategy:</td>
-                <td>
-                  <select v-model="editableObject.input.submission_strategy" :disabled="!editingInfo.input">
-                    <option value="on_done">On Done</option>
-                  </select>
-                </td>
-              </tr> -->
             </table>
           </td>
+        </tr>
+        <tr>
+          <td>Memory</td>
+          <td><input type="number" v-model="editableObject.memory" :disabled="!editingInfo.memory">MB</td>
+        </tr>
+        <tr>
+          <td>Notes</td>
+          <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
         </tr>
         <tr>
           <td>Priority</td>
@@ -132,25 +62,70 @@
           <td><textarea v-model="editableObject.runs" :disabled="!editingInfo.runs"></textarea></td>
         </tr>
         <tr>
+          <td>Sequences ({{listLength(editableObject.sequences)}})</td>
+          <td>
+            <div v-for="(sequence, index) in editableObject.sequences" :key="index">
+              <h3>Sequence {{index + 1}}</h3>
+              <table>
+                <tr>
+                  <td>conditions</td><td><input type="text" v-model="sequence.conditions" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>customise</td><td><input type="text" v-model="sequence.customise" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>datatier</td><td><input type="text" v-model="sequence.datatier" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>era</td><td><input type="text" v-model="sequence.era" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>eventcontent</td><td><input type="text" v-model="sequence.eventcontent" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>extra</td><td><input type="text" v-model="sequence.extra" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>nThreads</td><td><input type="number" v-model="sequence.nThreads" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>scenario</td>
+                  <td>
+                    <select v-model="sequence.scenario" :disabled="!editableObject.sequences">
+                      <option>pp</option>
+                      <option>cosmics</option>
+                      <option>nocoll</option>
+                      <option>HeavyIons</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <td>step</td><td><input type="text" v-model="sequence.step" :disabled="!editableObject.sequences"></td>
+                </tr>
+              </table>
+              <v-btn small class="mr-1 mb-1" color="error" @click="deleteSequence(index)">Delete sequence {{index + 1}}</v-btn>
+              <hr>
+            </div>
+            <v-btn small class="mr-1 mb-1 mt-1" color="primary" @click="addSequence()">Add sequence {{listLength(editableObject.sequences) + 1}}</v-btn>
+          </td>
+        </tr>
+        <tr>
           <td>Size per event</td>
           <td><input type="number" v-model="editableObject.size_per_event" :disabled="!editingInfo.size_per_event">kB</td>
+        </tr>
+        <tr>
+          <td>Subcampaign</td>
+          <td><input type="text" v-model="editableObject.subcampaign" :disabled="!editingInfo.subcampaign"></td>
         </tr>
         <tr>
           <td>Time per event</td>
           <td><input type="number" v-model="editableObject.time_per_event" :disabled="!editingInfo.time_per_event">s</td>
         </tr>
       </table>
-      <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
-      <v-btn v-if="editingInfo.runs && !creatingNew" small class="mr-1 mb-1" color="primary" @click="getRuns()">Get runs from DBS and certification</v-btn>
+      <v-btn small class="mr-1 mt-2" color="primary" @click="save()">Save</v-btn>
+      <v-btn v-if="editingInfo.runs && !creatingNew" small class="mr-1 mt-2" color="primary" @click="getRuns()">Get runs from DBS and certification</v-btn>
     </v-card>
-    <v-overlay :absolute="false"
-               :opacity="0.95"
-               :z-index="3"
-               :value="loading"
-               style="text-align: center">
-      <v-progress-circular indeterminate color="primary"></v-progress-circular>
-      <br>Please wait...
-    </v-overlay>
+    <LoadingOverlay :visible="loading"/>
     <v-dialog v-model="errorDialog.visible"
               max-width="50%">
       <v-card>
@@ -174,12 +149,16 @@
 <script>
 
 import axios from 'axios'
-import { listLengthMixin } from '../mixins/ListLengthMixin.js'
+import { utilsMixin } from '../mixins/UtilsMixin.js'
+import LoadingOverlay from './LoadingOverlay.vue'
 
 export default {
   mixins: [
-    listLengthMixin
+    utilsMixin
   ],
+  components: {
+    LoadingOverlay
+  },
   data () {
     return {
       prepid: undefined,
@@ -197,28 +176,39 @@ export default {
   },
   created () {
     let query = Object.assign({}, this.$route.query);
-    this.prepid = query['prepid'];
-    this.creatingNew = this.prepid === undefined;
+    if (query.prepid && query.prepid.length) {
+      this.prepid = query.prepid;
+    } else {
+      this.prepid = '';
+    }
+    this.creatingNew = this.prepid.length == 0;
     this.loading = true;
     let component = this;
-    axios.get('api/requests/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
+    axios.get('api/requests/get_editable/' + this.prepid).then(response => {
       component.editableObject = response.data.response.object;
-      // component.editableObject.sequences = JSON.stringify(component.editableObject.sequences, null, 2);
-      component.editableObject.runs = component.editableObject.runs.join('\n')
+      component.editableObject.runs = component.editableObject.runs.join('\n');
+      if (component.editableObject.input.request != '') {
+        this.inputType = 'request';
+      } else {
+        this.inputType = 'dataset';
+      }
       component.editingInfo = response.data.response.editing_info;
       component.loading = false;
+    }).catch(error => {
+      component.loading = false;
+      this.showError('Error fetching editing information', error.response.data.message);
     });
   },
   methods: {
     save: function() {
       this.loading = true;
-      let editableObject = JSON.parse(JSON.stringify(this.editableObject))
+      let editableObject = this.makeCopy(this.editableObject);
       let component = this;
       if (this.creatingNew) {
         if (this.inputType == 'dataset') {
-          editableObject['input']['request'] = '';
+          editableObject.input.request = '';
         } else {
-          editableObject['input']['dataset'] = '';
+          editableObject.input.dataset = '';
         }
       }
       editableObject['notes'] = editableObject['notes'].trim();
@@ -238,13 +228,18 @@ export default {
       });
     },
     addSequence: function() {
+      this.loading = true;
       let component = this;
-      axios.get('api/subcampaigns/get_default_sequence' + (this.creatingNew ? '' : ('/' + this.editableObject.subcampaign))).then(response => {
-        component.editableObject['sequences'].push(response.data.response);
+      axios.get('api/subcampaigns/get_default_sequence/' + this.editableObject.subcampaign).then(response => {
+        component.editableObject.sequences.push(response.data.response);
+        component.loading = false;
+      }).catch(error => {
+        component.loading = false;
+        this.showError('Error getting sequence information', error.response.data.message);
       });
     },
     deleteSequence: function(index) {
-      this.editableObject['sequences'].splice(index, 1);
+      this.editableObject.sequences.splice(index, 1);
     },
     getRuns: function() {
       let component = this;
@@ -253,8 +248,8 @@ export default {
         component.editableObject.runs = response.data.response.filter(Boolean).map(function(s) { return s.toString() }).join('\n');
         this.loading = false;
       }).catch(error => {
-        this.showError('Error getting runs for request', error.response.data.message)
         component.loading = false;
+        this.showError('Error getting runs for request', error.response.data.message)
       });
     },
     clearErrorDialog: function() {
@@ -271,17 +266,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-h1 {
-  margin: 8px;
-}
-
-td {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-right: 4px;
-}
-
-</style>

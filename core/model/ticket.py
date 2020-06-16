@@ -48,7 +48,7 @@ class Ticket(ModelBase):
                               'time_per_event': float(step.get('time_per_event', 0)),
                               'size_per_event': float(step.get('size_per_event', 0)),
                               'submission_strategy': step.get('submission_strategy', 'on_done'),
-                              'priority': step.get('priority', 0)})
+                              'priority': int(step.get('priority', 0))})
 
             json_input['steps'] = steps
 

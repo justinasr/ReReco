@@ -76,9 +76,8 @@
           </template>
           <template v-slot:item.input="{ item }">
             <ul v-if="item.input">
-              <li v-if="item.input.dataset">Dataset: {{item.input.dataset}}</li>
+              <li v-if="item.input.dataset">Dataset: <a target="_blank" title="Open dataset in DAS" :href="'https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D' + item.input.dataset">{{item.input.dataset}}</a></li>
               <li v-if="item.input.request">Request: <a :href="'requests?prepid=' + item.input.request">{{item.input.request}}</a></li>
-              <!-- <li>Submission {{item.input.submission_strategy}}</li> -->
             </ul>
           </template>
           <template v-slot:item.workflows="{ item }">
@@ -192,7 +191,6 @@ export default {
         {'dbName': 'runs', 'displayName': 'Runs', 'visible': 0},
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
         {'dbName': 'size_per_event', 'displayName': 'Size per Event', 'visible': 0},
-        {'dbName': 'step', 'displayName': 'Step', 'visible': 0},
         {'dbName': 'time_per_event', 'displayName': 'Time per Event', 'visible': 0},
         {'dbName': 'total_events', 'displayName': 'Total Events', 'visible': 0},
         {'dbName': 'workflows', 'displayName': 'Workflows', 'visible': 0},
