@@ -273,6 +273,10 @@ class RequestController(controller_base.ControllerBase):
         return job_dict
 
     def update_input_dataset(self, request):
+        """
+        Update input dataset name from input request (if exists)
+        Update runs from input request if they are not specified yet
+        """
         prepid = request.get_prepid()
         input_request_prepid = request.get('input')['request']
         if input_request_prepid:
@@ -678,9 +682,9 @@ class RequestController(controller_base.ControllerBase):
                 query = f'input.request={prepid}'
                 subsequent_requests = request_db.query(query)
                 self.logger.info('Found %s subsequent requests for %s: %s',
-                                len(subsequent_requests),
-                                prepid,
-                                [r['prepid'] for r in subsequent_requests])
+                                 len(subsequent_requests),
+                                 prepid,
+                                 [r['prepid'] for r in subsequent_requests])
                 for subsequent_request_json in subsequent_requests:
                     subsequent_request_prepid = subsequent_request_json.get('prepid')
                     self.update_input_dataset(self.get(subsequent_request_prepid))

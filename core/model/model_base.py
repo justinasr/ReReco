@@ -178,8 +178,9 @@ class ModelBase():
 
             for key, lambda_check in lambda_checks.items():
                 self.logger.debug('Checking %s.%s of %s', attribute_name, key, self.__class_name)
-                if not lambda_check(attribute_value[key]):
-                    raise Exception(f'Bad {key} value "{item}" in {attribute_name} dictionary')
+                value = attribute_value[key]
+                if not lambda_check(value):
+                    raise Exception(f'Bad {key} value "{value}" in {attribute_name} dictionary')
 
         return True
 

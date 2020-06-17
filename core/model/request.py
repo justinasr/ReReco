@@ -64,7 +64,9 @@ class Request(ModelBase):
         'completed_events': lambda events: events >= 0,
         'energy': ModelBase.lambda_check('energy'),
         '_input': {'dataset': lambda ds: not ds or ModelBase.lambda_check('dataset')(ds),
-                   'request': lambda req: not req or ModelBase.matches_regex(req, Request.__prepid_regex)},
+                   'request': lambda r:
+                              not r
+                              or ModelBase.matches_regex(r, Request.__prepid_regex)},
         'memory': ModelBase.lambda_check('memory'),
         '__output_datasets': ModelBase.lambda_check('dataset'),
         'priority': ModelBase.lambda_check('priority'),
@@ -165,6 +167,9 @@ class Request(ModelBase):
         return input_dataset_parts[0]
 
     def get_request_string(self):
+        """
+        Return request string made of era, dataset and processing string
+        """
         processing_string = self.get('processing_string')
         era = self.get_era()
         dataset = self.get_dataset()
