@@ -41,16 +41,19 @@ class SubcampaignController(ControllerBase):
     def get_editing_info(self, obj):
         editing_info = super().get_editing_info(obj)
         prepid = obj.get_prepid()
-        new = not bool(prepid)
-        editing_info['prepid'] = new
-        editing_info['history'] = False
-        editing_info['scram_arch'] = False
-        if prepid:
+        creating_new = not bool(prepid)
+        editing_info['prepid'] = creating_new
+        editing_info['notes'] = True
+        editing_info['energy'] = True
+        editing_info['sequences'] = True
+        editing_info['memory'] = True
+        editing_info['runs_json_path'] = True
+        if not creating_new:
             requests_db = Database('requests')
             subcampaign_requests = requests_db.query(f'subcampaign={prepid}')
-            if subcampaign_requests:
-                editing_info['step'] = False
-                editing_info['cmssw_release'] = False
+            editing_info['cmssw_release'] = not bool(subcampaign_requests)
+        else:
+            editing_info['cmssw_release'] = True
 
         return editing_info
 

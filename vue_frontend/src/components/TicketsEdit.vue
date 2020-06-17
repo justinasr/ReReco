@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1 class="page-title" v-if="creatingNew"><span class="font-weight-light">Creating</span> new ticket</h1>
-    <h1 class="page-title" v-else><span class="font-weight-light">Editing</span> {{prepid}}</h1>
+    <h1 class="page-title" v-else><span class="font-weight-light">Editing ticket</span> {{prepid}}</h1>
     <v-card raised class="page-card">
       <table v-if="editableObject">
         <tr>
@@ -15,25 +15,48 @@
               <h3>Step {{index + 1}}</h3>
               <table>
                 <tr>
-                  <td>Subcampaign</td><td><input type="text" v-model="step.subcampaign" :disabled="!editingInfo.steps"></td>
+                  <td>Subcampaign</td>
+                  <td><input type="text"
+                             v-model="step.subcampaign"
+                             :disabled="!editingInfo.steps[index].subcampaign"></td>
                 </tr>
                 <tr>
-                  <td>Processing String</td><td><input type="text" v-model="step.processing_string" :disabled="!editingInfo.steps"></td>
+                  <td>Processing String</td>
+                  <td><input type="text"
+                             v-model="step.processing_string"
+                             :disabled="!editingInfo.steps[index].processing_string"></td>
                 </tr>
                 <tr>
-                  <td>Size per event</td><td><input type="number" v-model="step.size_per_event" :disabled="!editingInfo.steps">kB</td>
+                  <td>Size per event</td>
+                  <td><input type="number"
+                             v-model="step.size_per_event"
+                             :disabled="!editingInfo.steps[index].size_per_event">kB</td>
                 </tr>
                 <tr>
-                  <td>Time per event</td><td><input type="number" v-model="step.time_per_event" :disabled="!editingInfo.steps">s</td>
+                  <td>Time per event</td>
+                  <td><input type="number"
+                             v-model="step.time_per_event"
+                             :disabled="!editingInfo.steps[index].time_per_event">s</td>
                 </tr>
                 <tr>
-                  <td>Priority</td><td><input type="number" v-model="step.priority" :disabled="!editingInfo.steps"></td>
+                  <td>Priority</td>
+                  <td><input type="number"
+                             v-model="step.priority"
+                             :disabled="!editingInfo.steps[index].priority"></td>
                 </tr>
               </table>
-              <v-btn small class="mr-1 mb-1" color="error" @click="deleteStep(index)">Delete step {{index + 1}}</v-btn>
+              <v-btn small
+                     class="mr-1 mb-1"
+                     color="error"
+                     v-if="(creatingNew || index != 0) && editingInfo.__steps"
+                     @click="deleteStep(index)">Delete step {{index + 1}}</v-btn>
               <hr>
             </div>
-            <v-btn small class="mr-1 mb-1 mt-1" color="primary" @click="addStep()">Add step {{listLength(editableObject.steps) + 1}}</v-btn>
+            <v-btn small
+                   class="mr-1 mb-1 mt-1"
+                   color="primary"
+                   v-if="editingInfo.__steps && editableObject.steps.length < 5"
+                   @click="addStep()">Add step {{listLength(editableObject.steps) + 1}}</v-btn>
           </td>
         </tr>
         <tr>
@@ -192,15 +215,20 @@ export default {
       this.getDatasetsDialog.input = '';
     },
     addStep: function() {
-      this.editableObject.steps.push({'submission_strategy': 'on_done',
-                                      'subcampaign': '',
+      this.editableObject.steps.push({'subcampaign': '',
                                       'processing_string': '',
                                       'priority': 110000,
                                       'size_per_event': 1.0,
                                       'time_per_event': 1.0});
+      this.editingInfo.steps.push({'subcampaign': true,
+                                   'processing_string': true,
+                                   'priority': true,
+                                   'size_per_event': true,
+                                   'time_per_event': true});
     },
     deleteStep: function(index) {
       this.editableObject.steps.splice(index, 1);
+      this.editingInfo.steps.splice(index, 1);
     },
     clearErrorDialog: function() {
       this.errorDialog.visible = false;

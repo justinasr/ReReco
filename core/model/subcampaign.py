@@ -32,8 +32,6 @@ class Subcampaign(ModelBase):
         'scram_arch': '',
         # List of Sequences
         'sequences': [],
-        # Step type: DR, MiniAOD, NanoAOD, etc.
-        'step': 'DR',
     }
 
     __runs_json_regex = '[a-zA-Z0-9/\\-_]{0,150}(\\.json|\\.txt)?'
@@ -44,8 +42,8 @@ class Subcampaign(ModelBase):
         'memory': ModelBase.lambda_check('memory'),
         'runs_json_path': lambda rjp: ModelBase.matches_regex(rjp, Subcampaign.__runs_json_regex),
         'scram_arch': ModelBase.lambda_check('scram_arch'),
+        'sequences': lambda s: len(s) > 0,
         '__sequences': lambda s: isinstance(s, Sequence),
-        'step': ModelBase.lambda_check('step'),
     }
 
     def __init__(self, json_input=None):

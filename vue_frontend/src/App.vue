@@ -180,8 +180,7 @@ h1.page-title {
 .page-card input[type="number"] {
   width: 45%;
   text-align: right;
-  direction: rtl;
-  padding: 0 4px 0 0;
+  padding: 0 0 0 4px;
   margin-right: 4px;
 }
 
@@ -195,7 +194,7 @@ h1.page-title {
 .page-card input:disabled,
 .page-card select:disabled,
 .page-card textarea:disabled {
-  background: #eaeaea !important;
+  background: #dadada !important;
   color: rgba(0, 0, 0, 0.65);
   cursor: not-allowed;
 }

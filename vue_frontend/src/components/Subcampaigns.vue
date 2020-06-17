@@ -38,13 +38,16 @@
             {{item.energy}} TeV
           </template>
           <template v-slot:item.cmssw_release="{ item }">
-            {{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}
+            <a :href="'subcampaigns?cmssw_release=' + item.cmssw_release">{{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}</a>
+          </template>
+          <template v-slot:item.scram_arch="{ item }">
+            <a :href="'subcampaigns?scram_arch=' + item.scram_arch">{{item.scram_arch}}</a>
           </template>
           <template v-slot:item.notes="{ item }">
             <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
           </template>
           <template v-slot:item.campaign="{ item }">
-            {{item.prepid.split('-').filter(Boolean)[0]}}
+            <a :href="'subcampaigns?prepid=' + getCampaign(item.prepid) + '-*'">{{getCampaign(item.prepid)}}</a>
           </template>
           <template v-slot:item.runs_json_path="{ item }">
             <a target="_blank" :href="'https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/' + item.runs_json_path">{{item.runs_json_path}}</a>
@@ -220,6 +223,9 @@ export default {
         component.clearDialog();
       }
       this.dialog.visible = true;
+    },
+    getCampaign: function(prepid) {
+      return prepid.split('-').filter(Boolean)[0];
     }
   }
 }

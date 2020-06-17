@@ -47,7 +47,6 @@ class Ticket(ModelBase):
                               'processing_string': step.get('processing_string', ''),
                               'time_per_event': float(step.get('time_per_event', 0)),
                               'size_per_event': float(step.get('size_per_event', 0)),
-                              'submission_strategy': step.get('submission_strategy', 'on_done'),
                               'priority': int(step.get('priority', 0))})
 
             json_input['steps'] = steps
@@ -75,10 +74,6 @@ class Ticket(ModelBase):
                 size_per_event = step['size_per_event']
                 if size_per_event <= 0.0:
                     raise Exception(f'Bad size per event {size_per_event}')
-
-                submission_strategy = step['submission_strategy']
-                if submission_strategy not in {'on_done'}:
-                    raise Exception(f'Bad submission strategy {submission_strategy}')
 
                 priority = step['priority']
                 if not ModelBase.lambda_check('priority')(priority):

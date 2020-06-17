@@ -28,8 +28,7 @@ class Request(ModelBase):
         'history': [],
         # Input dataset name or request name
         'input': {'dataset': '',
-                  'request': '',
-                  'submission_strategy': 'on_done'},
+                  'request': ''},
         # Memory in MB
         'memory': 2300,
         # User notes
@@ -48,8 +47,6 @@ class Request(ModelBase):
         'size_per_event': 1.0,
         # Status is either new, approved, submitted or done
         'status': 'new',
-        # Step type: DR, MiniAOD, NanoAOD, etc.
-        'step': 'DR',
         # Subcampaign name
         'subcampaign': '',
         # Time per event in seconds
@@ -67,8 +64,7 @@ class Request(ModelBase):
         'completed_events': lambda events: events >= 0,
         'energy': ModelBase.lambda_check('energy'),
         '_input': {'dataset': lambda ds: not ds or ModelBase.lambda_check('dataset')(ds),
-                   'request': lambda req: not req or ModelBase.matches_regex(req, Request.__prepid_regex),
-                   'submission_strategy': lambda s: s in {'on_done'}},
+                   'request': lambda req: not req or ModelBase.matches_regex(req, Request.__prepid_regex)},
         'memory': ModelBase.lambda_check('memory'),
         '__output_datasets': ModelBase.lambda_check('dataset'),
         'priority': ModelBase.lambda_check('priority'),
@@ -77,7 +73,6 @@ class Request(ModelBase):
         '__sequences': lambda s: isinstance(s, Sequence),
         'size_per_event': lambda spe: spe > 0.0,
         'status': lambda status: status in {'new', 'approved', 'submitting', 'submitted', 'done'},
-        'step': ModelBase.lambda_check('step'),
         'subcampaign': ModelBase.lambda_check('subcampaign'),
         'time_per_event': lambda tpe: tpe > 0.0,
         'total_events': lambda events: events >= 0,
@@ -154,6 +149,9 @@ class Request(ModelBase):
         Return era based on input dataset
         """
         input_dataset_parts = [x for x in self.get('input')['dataset'].split('/') if x]
+        if len(input_dataset_parts) < 2:
+            return self.get_prepid().split('-')[1]
+
         return input_dataset_parts[1].split('-')[0]
 
     def get_dataset(self):
@@ -161,4 +159,13 @@ class Request(ModelBase):
         Return primary dataset based on input dataset
         """
         input_dataset_parts = [x for x in self.get('input')['dataset'].split('/') if x]
+        if not input_dataset_parts:
+            return self.get_prepid().split('-')[2]
+
         return input_dataset_parts[0]
+
+    def get_request_string(self):
+        processing_string = self.get('processing_string')
+        era = self.get_era()
+        dataset = self.get_dataset()
+        return f'{era}_{dataset}_{processing_string}'.strip('_')

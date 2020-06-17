@@ -118,15 +118,18 @@ class TicketController(ControllerBase):
 
     def get_editing_info(self, obj):
         editing_info = super().get_editing_info(obj)
-        prepid = obj.get_prepid()
         status = obj.get('status')
-        editing_info['prepid'] = False
-        editing_info['history'] = False
-        editing_info['steps'] = True
-        editing_info['created_requests'] = False
-        if status == 'done':
-            editing_info['steps'] = False
-            editing_info['priority'] = False
+        editing_info['notes'] = True
+        editing_info['steps'] = []
+        not_done = status != 'done'
+        editing_info['input_datasets'] = not_done
+        editing_info['__steps'] = not_done
+        for step_index, _ in enumerate(obj.get('steps')):
+            editing_info['steps'].append({'subcampaign': step_index > 0 and not_done,
+                                          'processing_string': step_index > 0 and not_done,
+                                          'size_per_event': not_done,
+                                          'time_per_event': not_done,
+                                          'priority': not_done})
 
         return editing_info
 
@@ -163,15 +166,13 @@ class TicketController(ControllerBase):
                         time_per_event = step['time_per_event']
                         size_per_event = step['size_per_event']
                         priority = step['priority']
-                        submission_strategy = step['submission_strategy']
                         new_request_json = {'subcampaign': subcampaign_name,
                                             'priority': priority,
                                             'processing_string': processing_string,
                                             'time_per_event': time_per_event,
                                             'size_per_event': size_per_event,
                                             'input': {'dataset': '',
-                                                      'request': '',
-                                                      'submission_strategy': submission_strategy}}
+                                                      'request': ''}}
 
                         if step_index == 0:
                             new_request_json['input']['dataset'] = input_dataset

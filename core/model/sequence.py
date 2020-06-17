@@ -213,8 +213,12 @@ class Sequence(ModelBase):
         else:
             index = self.get_index_in_parent()
             if index == 0:
-                input_dataset = self.parent().get('input_dataset')
-                arguments_dict['filein'] = f'"dbs:{input_dataset}"'
+                input_dataset = self.parent().get('input')['dataset']
+                if not input_dataset:
+                    input_request = self.parent().get('input')['request']
+                    arguments_dict['filein'] = f'"file:{input_request}.root"'
+                else:
+                    arguments_dict['filein'] = f'"dbs:{input_dataset}"'
             else:
                 previous_sequence = self.parent().get('sequences')[index - 1]
                 input_file = f'{previous_sequence.get_name()}.root'

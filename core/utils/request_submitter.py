@@ -101,7 +101,7 @@ class RequestSubmitter:
     # If maxsize is less than or equal to zero, the queue size is infinite.
     __task_queue = Queue(maxsize=0)
     # All worker threads
-    __worker_pool = WorkerPool(workers_count=1, task_queue=__task_queue)
+    __worker_pool = WorkerPool(workers_count=5, task_queue=__task_queue)
 
     def __init__(self):
         self.logger = logging.getLogger()
@@ -195,6 +195,12 @@ class RequestSubmitter:
             request = controller.get(prepid)
             if request.get('status') != 'submitting':
                 raise Exception(f'Cannot submit a request with status {request.get("status")}')
+
+            if not request.get('input')['dataset']:
+                request_db = Database('requests')
+                request.set('status', 'approved')
+                request_db.save(request.get_json())
+                raise Exception(f'Cannot submit a request without input dataset')
 
             request.set('status', 'submitting')
             request_db.save(request.get_json())
@@ -290,7 +296,13 @@ class RequestSubmitter:
                                         f'Missing DocID: {sequence_configs["harvest"]}')
                     return
 
-            job_dict = controller.get_job_dict(request)
+            try:
+                job_dict = controller.get_job_dict(request)
+            except Exception as ex:
+                self.__handle_error(request,
+                                    f'Error getting {prepid} job dict:\n{str(ex)}')
+                return
+
             headers = {'Content-type': 'application/json',
                        'Accept': 'application/json'}
 
@@ -313,12 +325,16 @@ class RequestSubmitter:
                                     f'Error submitting {prepid} to ReqMgr2:\n{reqmgr_response}')
                 return
 
-            # Try to approve workflow (move to assignment-approved) after few seconds
-            time.sleep(3)
-            approve_response = connection.api('PUT',
-                                              f'/reqmgr2/data/request/{workflow_name}',
-                                              {'RequestStatus': 'assignment-approved'},
-                                              headers)
+            try:
+                # Try to approve workflow (move to assignment-approved) after few seconds
+                time.sleep(3)
+                approve_response = connection.api('PUT',
+                                                  f'/reqmgr2/data/request/{workflow_name}',
+                                                  {'RequestStatus': 'assignment-approved'},
+                                                  headers)
+            except Exception as ex:
+                self.logger.error('Error approving %s: %s', prepid, str(ex))
+
             connection.close()
             self.logger.info(approve_response)
             controller.force_stats_to_refresh([workflow_name])

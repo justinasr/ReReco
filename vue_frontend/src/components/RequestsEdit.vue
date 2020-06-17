@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1 class="page-title" v-if="creatingNew"><span class="font-weight-light">Creating</span> new request</h1>
-    <h1 class="page-title" v-else><span class="font-weight-light">Editing</span> {{prepid}}</h1>
+    <h1 class="page-title" v-else><span class="font-weight-light">Editing request</span> {{prepid}}</h1>
     <v-card raised class="page-card">
       <table v-if="editableObject">
         <tr>
@@ -68,30 +68,30 @@
               <h3>Sequence {{index + 1}}</h3>
               <table>
                 <tr>
-                  <td>conditions</td><td><input type="text" v-model="sequence.conditions" :disabled="!editableObject.sequences"></td>
+                  <td>conditions</td><td><input type="text" v-model="sequence.conditions" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>customise</td><td><input type="text" v-model="sequence.customise" :disabled="!editableObject.sequences"></td>
+                  <td>customise</td><td><input type="text" v-model="sequence.customise" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>datatier</td><td><input type="text" v-model="sequence.datatier" :disabled="!editableObject.sequences"></td>
+                  <td>datatier</td><td><input type="text" v-model="sequence.datatier" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>era</td><td><input type="text" v-model="sequence.era" :disabled="!editableObject.sequences"></td>
+                  <td>era</td><td><input type="text" v-model="sequence.era" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>eventcontent</td><td><input type="text" v-model="sequence.eventcontent" :disabled="!editableObject.sequences"></td>
+                  <td>eventcontent</td><td><input type="text" v-model="sequence.eventcontent" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>extra</td><td><input type="text" v-model="sequence.extra" :disabled="!editableObject.sequences"></td>
+                  <td>extra</td><td><input type="text" v-model="sequence.extra" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>nThreads</td><td><input type="number" v-model="sequence.nThreads" :disabled="!editableObject.sequences"></td>
+                  <td>nThreads</td><td><input type="number" v-model="sequence.nThreads" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
                   <td>scenario</td>
                   <td>
-                    <select v-model="sequence.scenario" :disabled="!editableObject.sequences">
+                    <select v-model="sequence.scenario" :disabled="!editingInfo.sequences">
                       <option>pp</option>
                       <option>cosmics</option>
                       <option>nocoll</option>
@@ -100,13 +100,21 @@
                   </td>
                 </tr>
                 <tr>
-                  <td>step</td><td><input type="text" v-model="sequence.step" :disabled="!editableObject.sequences"></td>
+                  <td>step</td><td><input type="text" v-model="sequence.step" :disabled="!editingInfo.sequences"></td>
                 </tr>
               </table>
-              <v-btn small class="mr-1 mb-1" color="error" @click="deleteSequence(index)">Delete sequence {{index + 1}}</v-btn>
+              <v-btn small
+                     class="mr-1 mb-1"
+                     color="error"
+                     v-if="editingInfo.sequences"
+                     @click="deleteSequence(index)">Delete sequence {{index + 1}}</v-btn>
               <hr>
             </div>
-            <v-btn small class="mr-1 mb-1 mt-1" color="primary" @click="addSequence()">Add sequence {{listLength(editableObject.sequences) + 1}}</v-btn>
+            <v-btn small
+                   class="mr-1 mb-1 mt-1"
+                   color="primary"
+                   v-if="editingInfo.sequences && editableObject.sequences.length < 5"
+                   @click="addSequence()">Add sequence {{listLength(editableObject.sequences) + 1}}</v-btn>
           </td>
         </tr>
         <tr>
@@ -123,7 +131,7 @@
         </tr>
       </table>
       <v-btn small class="mr-1 mt-2" color="primary" @click="save()">Save</v-btn>
-      <v-btn v-if="editingInfo.runs && !creatingNew" small class="mr-1 mt-2" color="primary" @click="getRuns()">Get runs from DBS and certification</v-btn>
+      <v-btn v-if="editingInfo.runs && editableObject.subcampaign.length" small class="mr-1 mt-2" color="primary" @click="getRuns()">Get runs from DBS and certification</v-btn>
     </v-card>
     <LoadingOverlay :visible="loading"/>
     <v-dialog v-model="errorDialog.visible"

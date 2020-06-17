@@ -136,7 +136,6 @@ export default {
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
         {'dbName': 'created_requests', 'displayName': 'Created Requests', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
-        {'dbName': 'priority', 'displayName': 'Priority', 'visible': 0},
       ],
       headers: [],
       dataItems: [],

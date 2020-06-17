@@ -163,7 +163,7 @@ class ControllerBase():
           "notes": True
         }
         """
-        return {k: not k.startswith('_') for k in obj.get_json().keys()}
+        return {k: False for k in obj.get_json().keys()}
 
     def edit_allowed(self, obj, changed_values):
         """

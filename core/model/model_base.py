@@ -32,7 +32,6 @@ class ModelBase():
         'processing_string': lambda ps: ModelBase.matches_regex(ps, '[a-zA-Z0-9_]{1,100}'),
         'priority': lambda priority: 20000 <= priority <= 1000000,
         'scram_arch': lambda sa: ModelBase.matches_regex(sa, '[a-z0-9_]{0,30}'),
-        'step': lambda step: step in ['DR', 'MiniAOD', 'NanoAOD'],
         'subcampaign': lambda sc: ModelBase.matches_regex(sc, ModelBase.__subcampaign_regex),
     }
     lambda_checks = {}

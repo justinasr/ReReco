@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1 class="page-title" v-if="creatingNew"><span class="font-weight-light">Creating</span> new subcampaign</h1>
-    <h1 class="page-title" v-else><span class="font-weight-light">Editing</span> {{prepid}}</h1>
+    <h1 class="page-title" v-else><span class="font-weight-light">Editing subcampaign</span> {{prepid}}</h1>
     <v-card raised class="page-card">
       <table v-if="editableObject">
         <tr>
@@ -10,19 +10,27 @@
         </tr>
         <tr>
           <td>Energy</td>
-          <td><input type="number" v-model="editableObject.energy" :disabled="!editingInfo.energy">TeV</td>
+          <td><input type="number" min="0" v-model="editableObject.energy" :disabled="!editingInfo.energy">TeV</td>
         </tr>
         <tr>
           <td>CMSSW Release</td>
           <td><input type="text" v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
         </tr>
         <tr>
-          <td>SCRAM Arch</td>
-          <td><input type="text" v-model="editableObject.scram_arch" :disabled="!editingInfo.scram_arch"></td>
+          <td>Memory</td>
+          <td><input type="number" v-model="editableObject.memory" :disabled="!editingInfo.memory">MB</td>
         </tr>
         <tr>
           <td>Notes</td>
           <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
+        </tr>
+        <tr>
+          <td>Runs JSON</td>
+          <td><input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path" placeholder="Example: Collisions16/13TeV/DCSOnly/json_DCSONLY.txt"></td>
+        </tr>
+        <tr>
+          <td>SCRAM Arch</td>
+          <td><input type="text" v-model="editableObject.scram_arch" :disabled="!editingInfo.scram_arch"></td>
         </tr>
         <tr>
           <td>Sequences ({{listLength(editableObject.sequences)}})</td>
@@ -49,7 +57,7 @@
                   <td>extra</td><td><input type="text" v-model="sequence.extra" :disabled="!editableObject.sequences"></td>
                 </tr>
                 <tr>
-                  <td>nThreads</td><td><input type="number" v-model="sequence.nThreads" :disabled="!editableObject.sequences"></td>
+                  <td>nThreads</td><td><input type="number" min="1" v-model="sequence.nThreads" :disabled="!editableObject.sequences"></td>
                 </tr>
                 <tr>
                   <td>scenario</td>
@@ -66,19 +74,19 @@
                   <td>step</td><td><input type="text" v-model="sequence.step" :disabled="!editableObject.sequences"></td>
                 </tr>
               </table>
-              <v-btn small class="mr-1 mb-1" color="error" @click="deleteSequence(index)">Delete sequence {{index + 1}}</v-btn>
+              <v-btn small
+                     class="mr-1 mb-1"
+                     color="error"
+                     v-if="editingInfo.sequences"
+                     @click="deleteSequence(index)">Delete sequence {{index + 1}}</v-btn>
               <hr>
             </div>
-            <v-btn small class="mr-1 mb-1 mt-1" color="primary" @click="addSequence()">Add sequence {{listLength(editableObject.sequences) + 1}}</v-btn>
+            <v-btn small
+                   class="mr-1 mb-1 mt-1"
+                   color="primary"
+                   v-if="editingInfo.sequences && editableObject.sequences.length < 5"
+                   @click="addSequence()">Add sequence {{listLength(editableObject.sequences) + 1}}</v-btn>
           </td>
-        </tr>
-        <tr>
-          <td>Memory</td>
-          <td><input type="number" v-model="editableObject.memory" :disabled="!editingInfo.memory">MB</td>
-        </tr>
-        <tr>
-          <td>Runs JSON</td>
-          <td><input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path" placeholder="Example: Collisions16/13TeV/DCSOnly/json_DCSONLY.txt"></td>
         </tr>
       </table>
       <v-btn small class="mr-1 mt-2" color="primary" @click="save()">Save</v-btn>
@@ -173,7 +181,7 @@ export default {
     addSequence: function() {
       this.loading = true;
       let component = this;
-      axios.get('api/subcampaigns/get_default_sequence/' + this.editableObject.subcampaign).then(response => {
+      axios.get('api/subcampaigns/get_default_sequence/' + (this.creatingNew ? '' : this.prepid)).then(response => {
         component.editableObject.sequences.push(response.data.response);
         component.loading = false;
       }).catch(error => {

@@ -37,7 +37,6 @@ class RequestController(controller_base.ControllerBase):
 
         json_data['cmssw_release'] = subcampaign.get('cmssw_release')
         json_data['subcampaign'] = subcampaign.get_prepid()
-        json_data['step'] = subcampaign.get('step')
         json_data['prepid'] = 'PlaceholderPrepID'
         new_request = Request(json_input=json_data)
         if not json_data.get('sequences'):
@@ -137,24 +136,20 @@ class RequestController(controller_base.ControllerBase):
 
     def get_editing_info(self, obj):
         editing_info = super().get_editing_info(obj)
-        new = not bool(obj.get_prepid())
-        editing_info['prepid'] = False
-        editing_info['history'] = False
-        editing_info['cmssw_release'] = False
-        editing_info['step'] = False
-        editing_info['input'] = True
-        editing_info['processing_string'] = new
-        editing_info['subcampaign'] = new
+        prepid = obj.get_prepid()
+        creating_new = not bool(prepid)
+        status_new = obj.get('status') == 'new'
+        editing_info['notes'] = True
         editing_info['energy'] = True
-        editing_info['sequences'] = True
-        editing_info['input'] = new
-        status = obj.get('status')
-        if status != 'new':
-            editing_info['memory'] = False
-            editing_info['runs'] = False
-            editing_info['sequences'] = False
-            editing_info['time_per_event'] = False
-            editing_info['size_per_event'] = False
+        editing_info['priority'] = obj.get('status') != 'done'
+        editing_info['subcampaign'] = creating_new
+        editing_info['processing_string'] = creating_new
+        editing_info['sequences'] = status_new
+        editing_info['memory'] = status_new
+        editing_info['input'] = status_new
+        editing_info['runs'] = status_new
+        editing_info['time_per_event'] = status_new
+        editing_info['size_per_event'] = status_new
 
         return editing_info
 
@@ -229,19 +224,20 @@ class RequestController(controller_base.ControllerBase):
         self.logger.debug('Getting job dict for %s', prepid)
         sequences = request.get('sequences')
         input_dataset = request.get('input')['dataset']
-        input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
-        acquisition_era = input_dataset_parts[1].split('-')[0]
+        acquisition_era = request.get_era()
         subcampaigns_db = Database('subcampaigns')
         subcampaign_name = request.get('subcampaign')
         subcampaign_json = subcampaigns_db.get(subcampaign_name)
         database_url = Settings().get('cmsweb_url') + '/couchdb'
         processing_string = request.get('processing_string')
-        request_string = f'{input_dataset_parts[1]}_{input_dataset_parts[0]}_{processing_string}'
+        request_string = request.get_request_string()
         job_dict = {}
         job_dict['CMSSWVersion'] = request.get('cmssw_release')
         job_dict['ScramArch'] = subcampaign_json.get('scram_arch')
         job_dict['RequestPriority'] = request.get('priority')
-        job_dict['InputDataset'] = input_dataset
+        if input_dataset:
+            job_dict['InputDataset'] = input_dataset
+
         job_dict['Group'] = 'PPD'
         job_dict['Requestor'] = 'pdmvserv'
         job_dict['Campaign'] = request.get('subcampaign').split('-')[0]
@@ -275,6 +271,30 @@ class RequestController(controller_base.ControllerBase):
             raise NotImplementedError('Multiple sequences are not yet supported')
 
         return job_dict
+
+    def update_input_dataset(self, request):
+        prepid = request.get_prepid()
+        input_request_prepid = request.get('input')['request']
+        if input_request_prepid:
+            input_request = self.get(input_request_prepid)
+            input_dataset = input_request.get('input')['dataset']
+            output_datasets = input_request.get('output_datasets')
+            should_update = False
+            if output_datasets and input_dataset != output_datasets[-1]:
+                request.get('input')['dataset'] = output_datasets[-1]
+                should_update = True
+            elif not output_datasets:
+                request.get('input')['dataset'] = ''
+                should_update = True
+
+            if not request.get('runs'):
+                request.set('runs', input_request.get('runs'))
+                should_update = True
+
+            if should_update:
+                self.update(request.get_json(), force_update=True)
+        else:
+            self.logger.info('Did not update %s input dataset', prepid)
 
     def update_status(self, request, status, timestamp=None):
         """
@@ -327,6 +347,7 @@ class RequestController(controller_base.ControllerBase):
         """
         Try to move rquest to approved
         """
+        self.update_input_dataset(request)
         prepid = request.get_prepid()
         if not request.get('runs'):
             raise Exception(f'No runs are specified in {prepid}')
@@ -338,6 +359,13 @@ class RequestController(controller_base.ControllerBase):
         """
         Try to move request to submitting status and get sumbitted
         """
+        self.update_input_dataset(request)
+        input_dataset = request.get('input')['dataset']
+        if not input_dataset.strip():
+            prepid = request.get_prepid()
+            raise Exception(f'Could not move {prepid} to submitting '
+                            'because it does not have input dataset')
+
         RequestSubmitter().add_request(request, self)
         self.update_status(request, 'submitting')
         return request
@@ -381,7 +409,7 @@ class RequestController(controller_base.ControllerBase):
         """
         request_db = Database('requests')
         prepid = request.get_prepid()
-        query = f'input.request={prepid}&&input.submission_strategy=on_done'
+        query = f'input.request={prepid}'
         subsequent_requests = request_db.query(query)
         self.logger.info('Found %s subsequent requests for %s: %s',
                          len(subsequent_requests),
@@ -391,12 +419,7 @@ class RequestController(controller_base.ControllerBase):
             subsequent_request_prepid = subsequent_request_json.get('prepid', '')
             try:
                 subsequent_request = self.get(subsequent_request_prepid)
-                subsequent_request_input = subsequent_request.get('input')
-                subsequent_request_input['dataset'] = request.get('output_datasets')[-1]
-                subsequent_request.set('input', subsequent_request_input)
-                subsequent_request.set('runs', request.get('runs'))
-                self.update(subsequent_request.get_json(), force_update=True)
-                subsequent_request = self.get(subsequent_request_prepid)
+                self.update_input_dataset(subsequent_request)
                 if subsequent_request.get('status') == 'new':
                     self.next_status(subsequent_request)
 
@@ -651,6 +674,17 @@ class RequestController(controller_base.ControllerBase):
             request.set('workflows', new_workflows)
             request_db.save(request.get_json())
 
+            if output_datasets:
+                query = f'input.request={prepid}'
+                subsequent_requests = request_db.query(query)
+                self.logger.info('Found %s subsequent requests for %s: %s',
+                                len(subsequent_requests),
+                                prepid,
+                                [r['prepid'] for r in subsequent_requests])
+                for subsequent_request_json in subsequent_requests:
+                    subsequent_request_prepid = subsequent_request_json.get('prepid')
+                    self.update_input_dataset(self.get(subsequent_request_prepid))
+
         return request
 
     def option_reset(self, request):
@@ -723,9 +757,9 @@ class RequestController(controller_base.ControllerBase):
         credentials_path = Settings().get('credentials_path')
         with self.locker.get_lock('refresh-stats'):
             ssh_executor = SSHExecutor('vocms074.cern.ch', credentials_path)
-            workflow_update_commands = ['cd /home/pdmvserv/Stats2',
-                                        'export USERKEY=/home/pdmvserv/private/hostkey.pem',
-                                        'export USERCRT=/home/pdmvserv/private/hostcert.pem']
+            workflow_update_commands = ['cd /home/pdmvserv/private',
+                                        'source setup_credentials.sh',
+                                        'cd /home/pdmvserv/Stats2']
             for workflow_name in workflows:
                 workflow_update_commands.append(
                     f'python3 stats_update.py --action update --name {workflow_name}'
