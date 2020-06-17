@@ -133,8 +133,17 @@ table {
   overflow-y: visible !important;
 }
 
+.v-application th.text-start {
+  color: rgba(0,0,0,0.87) !important;
+  font-size: 0.9em !important;
+}
+
 .mdi-checkbox-marked::before {
   color: var(--v-accent-base) !important
+}
+
+.theme--light.v-label {
+  color: rgba(0,0,0,0.87) !important;
 }
 
 h1.page-title {

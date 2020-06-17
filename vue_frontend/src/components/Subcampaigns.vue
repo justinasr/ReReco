@@ -18,18 +18,18 @@
                       hide-default-footer
                       class="elevation-1">
           <template v-slot:item._actions="{ item }">
-            <a :href="'subcampaigns/edit?prepid=' + item.prepid" v-if="role('manager')">Edit</a>&nbsp;
-            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')">Delete</a>&nbsp;
-            <a :href="'requests?subcampaign=' + item.prepid">Requests</a>&nbsp;
+            <a :href="'subcampaigns/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit subcampaign">Edit</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')" title="Delete subcampaign">Delete</a>&nbsp;
+            <a :href="'requests?subcampaign=' + item.prepid" :title="'Show all requests in '+ item.prepid">Requests</a>&nbsp;
           </template>
           <template v-slot:item.prepid="{ item }">
-            <a :href="'subcampaigns?prepid=' + item.prepid">{{item.prepid}}</a>
+            <a :href="'subcampaigns?prepid=' + item.prepid" title="Show only this subcampaign">{{item.prepid}}</a>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
           </template>
           <template v-slot:item.sequences="{ item }">
-            <pre>{{JSON.stringify(item.sequences, null, 2)}}</pre>
+            <SequencesCell :data="item.sequences"/>
           </template>
           <template v-slot:item.memory="{ item }">
             {{item.memory}} MB
@@ -38,19 +38,19 @@
             {{item.energy}} TeV
           </template>
           <template v-slot:item.cmssw_release="{ item }">
-            <a :href="'subcampaigns?cmssw_release=' + item.cmssw_release">{{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}</a>
+            <a :href="'subcampaigns?cmssw_release=' + item.cmssw_release" :title="'Show all subcampaigns with ' + item.cmssw_release">{{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}</a>
           </template>
           <template v-slot:item.scram_arch="{ item }">
-            <a :href="'subcampaigns?scram_arch=' + item.scram_arch">{{item.scram_arch}}</a>
+            <a :href="'subcampaigns?scram_arch=' + item.scram_arch" :title="'Show all subcampaigns with ' + item.scram_arch">{{item.scram_arch}}</a>
           </template>
           <template v-slot:item.notes="{ item }">
             <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
           </template>
           <template v-slot:item.campaign="{ item }">
-            <a :href="'subcampaigns?prepid=' + getCampaign(item.prepid) + '-*'">{{getCampaign(item.prepid)}}</a>
+            <a :href="'subcampaigns?prepid=' + getCampaign(item.prepid) + '-*'" title="Show all subcampaigns in the same campaign">{{getCampaign(item.prepid)}}</a>
           </template>
           <template v-slot:item.runs_json_path="{ item }">
-            <a target="_blank" :href="'https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/' + item.runs_json_path">{{item.runs_json_path}}</a>
+            <a target="_blank" :href="'https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/' + item.runs_json_path" title="Open JSON file with runs list">{{item.runs_json_path}}</a>
           </template>
         </v-data-table>
       </div>
@@ -96,7 +96,7 @@
     </v-dialog>
 
     <footer>
-      <a :href="'subcampaigns/edit'" v-if="role('manager')">New subcampaign</a>
+      <a :href="'subcampaigns/edit'" v-if="role('manager')" title="Create new subcampaign">New subcampaign</a>
       <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
@@ -109,13 +109,15 @@ import axios from 'axios'
 import ColumnSelector from './ColumnSelector'
 import Paginator from './Paginator'
 import HistoryCell from './HistoryCell'
+import SequencesCell from './SequencesCell'
 import { roleMixin } from '../mixins/UserRoleMixin.js'
 
 export default {
   components: {
     ColumnSelector,
     Paginator,
-    HistoryCell
+    HistoryCell,
+    SequencesCell
   },
   mixins: [roleMixin],
   data () {

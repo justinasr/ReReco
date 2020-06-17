@@ -22,7 +22,7 @@
             <table v-if="editableObject.input">
               <tr>
                 <td>
-                  <input type="radio" id="inputTypeDataset" value="dataset" v-model="inputType" :disabled="!editingInfo.input">
+                  <input type="radio" id="inputTypeDataset" value="dataset" v-model="inputType" v-if="editingInfo.input">
                   Dataset:
                 </td>
                 <td>
@@ -31,7 +31,7 @@
               </tr>
               <tr>
                 <td>
-                  <input type="radio" id="inputTypeRequest" value="request" v-model="inputType" :disabled="!editingInfo.input">
+                  <input type="radio" id="inputTypeRequest" value="request" v-model="inputType" v-if="editingInfo.input">
                   Request:
                 </td>
                 <td>

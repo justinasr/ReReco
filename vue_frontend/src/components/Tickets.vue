@@ -18,13 +18,13 @@
                       hide-default-footer
                       class="elevation-1">
           <template v-slot:item._actions="{ item }">
-            <a :href="'tickets/edit?prepid=' + item.prepid" v-if="role('manager')">Edit</a>&nbsp;
-            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')">Delete</a>&nbsp;
-            <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'">Create requests</a>&nbsp;
-            <a :href="'api/tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'">TWiki</a>&nbsp;
+            <a :href="'tickets/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit ticket">Edit</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')" title="Delete ticket">Delete</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'" title="Create requests from this ticket">Create requests</a>&nbsp;
+            <a :href="'api/tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'" title="Show a snippet for TWiki">TWiki</a>&nbsp;
           </template>
           <template v-slot:item.prepid="{ item }">
-            <a :href="'tickets?prepid=' + item.prepid">{{item.prepid}}</a>
+            <a :href="'tickets?prepid=' + item.prepid" title="Show only this ticket">{{item.prepid}}</a>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
@@ -32,7 +32,13 @@
           <template v-slot:item.input_datasets="{ item }">
             {{item.input_datasets.length}} input datasets:
             <ul>
-              <li v-for="dataset in item.input_datasets" :key="dataset"><small>{{dataset}}</small></li>
+              <li v-for="dataset in item.input_datasets" :key="dataset">
+                <small>
+                  <a target="_blank" title="Open dataset in DAS" :href="makeDASLink(dataset)">
+                    {{dataset}}
+                  </a>
+                </small>
+              </li>
             </ul>
           </template>
           <template v-slot:item.steps="{ item }">
@@ -40,8 +46,8 @@
               <li v-for="(step, index) in item.steps" :key="index">
                 Step {{index + 1}}:
                 <ul>
-                  <li>Subcampaign: {{step.subcampaign}}</li>
-                  <li>Processing string: {{step.processing_string}}</li>
+                  <li>Subcampaign: <a :href="'subcampaigns?prepid=' + step.subcampaign" :title="'Open ' + step.subcampaign + ' subcampaign'">{{step.subcampaign}}</a></li>
+                  <li>Processing string: <a :href="'requests?processing_string=' + step.processing_string" :title="'Show all requests with ' + step.processing_string + ' processing string'">{{step.processing_string}}</a></li>
                   <li>Time per event: {{step.time_per_event}} s</li>
                   <li>Size per event: {{step.size_per_event}} kB</li>
                 </ul>
@@ -51,7 +57,7 @@
           <template v-slot:item.created_requests="{ item }">
             <ul>
               <li v-for="request in item.created_requests" :key="request">
-                <a :href="'requests?prepid=' + request">{{request}}</a>
+                <a :href="'requests?prepid=' + request" :title="'Open ' + request + ' request'">{{request}}</a>
               </li>
             </ul>
           </template>
@@ -102,7 +108,7 @@
     </v-dialog>
 
     <footer>
-      <a :href="'tickets/edit'" v-if="role('manager')">New ticket</a>
+      <a :href="'tickets/edit'" v-if="role('manager')" title="Create new ticket">New ticket</a>
       <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
@@ -116,6 +122,7 @@ import ColumnSelector from './ColumnSelector'
 import Paginator from './Paginator'
 import HistoryCell from './HistoryCell'
 import { roleMixin } from '../mixins/UserRoleMixin.js'
+import { utilsMixin } from '../mixins/UtilsMixin.js'
 
 export default {
   components: {
@@ -123,7 +130,7 @@ export default {
     Paginator,
     HistoryCell
   },
-  mixins: [roleMixin],
+  mixins: [roleMixin, utilsMixin],
   data () {
     return {
       databaseName: undefined,

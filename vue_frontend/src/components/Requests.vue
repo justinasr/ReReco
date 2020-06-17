@@ -21,34 +21,34 @@
                       :loading="loading"
                       v-model="selectedItems">
           <template v-slot:item._actions="{ item }">
-            <a v-if="role('manager')" :href="'requests/edit?prepid=' + item.prepid">Edit</a>&nbsp;
-            <a style="text-decoration: underline;" @click="deleteRequest(item)" v-if="role('manager') && item.status == 'new'">Delete</a>&nbsp;
-            <a :href="'api/requests/get_cmsdriver/' + item.prepid">cmsDriver</a>&nbsp;
-            <a :href="'api/requests/get_dict/' + item.prepid">Job dict</a>&nbsp;
-            <a style="text-decoration: underline;" @click="previousStatus(item)" v-if="role('manager') && item.status != 'new'">Previous</a>&nbsp;
-            <a style="text-decoration: underline;" @click="nextStatus(item)" v-if="role('manager')">Next</a>&nbsp;
-            <a style="text-decoration: underline;" @click="updateWorkflows(item)" v-if="role('manager') && item.status == 'submitted'">Update from Stats2</a>&nbsp;
-            <a style="text-decoration: underline;" @click="optionReset(item)" v-if="role('manager') && item.status == 'new'">Option reset</a>&nbsp;
-            <a target="_blank" :href="'https://cms-pdmv.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done'">Stats2</a>
+            <a v-if="role('manager')" :href="'requests/edit?prepid=' + item.prepid" title="Edit request">Edit</a>&nbsp;
+            <a style="text-decoration: underline;" @click="deleteRequest(item)" v-if="role('manager') && item.status == 'new'" title="Delete request">Delete</a>&nbsp;
+            <a :href="'api/requests/get_cmsdriver/' + item.prepid" title="Show cmsDriver.py command for this request">cmsDriver</a>&nbsp;
+            <a :href="'api/requests/get_dict/' + item.prepid" title="Show JSON dictionary for ReqMgr2">Job dict</a>&nbsp;
+            <a style="text-decoration: underline;" @click="previousStatus(item)" v-if="role('manager') && item.status != 'new'" title="Move to previous status">Previous</a>&nbsp;
+            <a style="text-decoration: underline;" @click="nextStatus(item)" v-if="role('manager')" title="Move to next status">Next</a>&nbsp;
+            <a style="text-decoration: underline;" @click="updateWorkflows(item)" v-if="role('manager') && item.status == 'submitted'" title="Update request information from Stats2">Update from Stats2</a>&nbsp;
+            <a style="text-decoration: underline;" @click="optionReset(item)" v-if="role('manager') && item.status == 'new'" :title="'Refetch values from ' + item.subcampaign + ' subcampaign'">Option reset</a>&nbsp;
+            <a target="_blank" :href="'https://cms-pdmv.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done'" title="Show workflows of this request in Stats2">Stats2</a>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
           </template>
           <template v-slot:item.prepid="{ item }">
-            <a :href="'requests?prepid=' + item.prepid">{{item.prepid}}</a>
+            <a :href="'requests?prepid=' + item.prepid" title="Show only this request">{{item.prepid}}</a>
           </template>
           <template v-slot:item.status="{ item }">
-            <a :href="'requests?status=' + item.status">{{item.status}}</a>
+            <a :href="'requests?status=' + item.status" :title="'Show requests with status ' + item.status">{{item.status}}</a>
           </template>
           <template v-slot:item.processing_string="{ item }">
-            <a :href="'requests?processing_string=' + item.processing_string">{{item.processing_string}}</a>
+            <a :href="'requests?processing_string=' + item.processing_string" :title="'Show requests with ' + item.processing_string + ' processing string'">{{item.processing_string}}</a>
           </template>
           <template v-slot:item.subcampaign="{ item }">
-            <a :href="'requests?subcampaign=' + item.subcampaign">{{item.subcampaign}}</a>&nbsp;
-            <a :href="'subcampaigns?prepid=' + item.subcampaign">Subcampaign</a>
+            <a :href="'requests?subcampaign=' + item.subcampaign" :title="'Show all requests in ' + item.subcampaign">{{item.subcampaign}}</a>&nbsp;
+            <a :href="'subcampaigns?prepid=' + item.subcampaign" :title="'Open ' + item.subcampaign + ' subcampaign'">Subcampaign</a>
           </template>
           <template v-slot:item.sequences="{ item }">
-            <pre>{{JSON.stringify(item.sequences, null, 2)}}</pre>
+            <SequencesCell :data="item.sequences"/>
           </template>
           <template v-slot:item.memory="{ item }">
             {{item.memory}} MB
@@ -57,7 +57,7 @@
             {{item.energy}} TeV
           </template>
           <template v-slot:item.cmssw_release="{ item }">
-            {{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}
+            <a :href="'requests?cmssw_release=' + item.cmssw_release" :title="'Show all requests with ' + item.cmssw_release">{{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}</a>
           </template>
           <template v-slot:item.notes="{ item }">
             <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
@@ -76,23 +76,36 @@
           </template>
           <template v-slot:item.input="{ item }">
             <ul v-if="item.input">
-              <li v-if="item.input.dataset">Dataset: <a target="_blank" title="Open dataset in DAS" :href="'https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D' + item.input.dataset">{{item.input.dataset}}</a></li>
-              <li v-if="item.input.request">Request: <a :href="'requests?prepid=' + item.input.request">{{item.input.request}}</a></li>
+              <li v-if="item.input.dataset">
+                Dataset: <a target="_blank" title="Open dataset in DAS" :href="makeDASLink(item.input.dataset)">{{item.input.dataset}}</a>
+              </li>
+              <li v-if="item.input.request">
+                Request: <a :href="'requests?prepid=' + item.input.request" :title="'Open ' + item.input_dataset + ' request'">{{item.input.request}}</a>
+              </li>
             </ul>
           </template>
           <template v-slot:item.workflows="{ item }">
             <ol>
               <li v-for="(workflow, index) in item.workflows" :key="workflow.name">
-                <a target="_blank" title="Open workflow in ReqMgr2" :href="'https://cmsweb.cern.ch/reqmgr2/fetch?rid=' + workflow.name">{{workflow.name}}</a> <small>type:</small> {{workflow.type}} <span v-if="workflow.status_history && workflow.status_history.length > 0"><small>status:</small> {{workflow.status_history[workflow.status_history.length - 1].status}}</span>
+                <a target="_blank" title="Open workflow in ReqMgr2" :href="'https://cmsweb.cern.ch/reqmgr2/fetch?rid=' + workflow.name">{{workflow.name}}</a>&nbsp;
+                <a target="_blank" title="Open workflow in Stats2" :href="'https://cms-pdmv.cern.ch/stats?workflow_name=' + workflow.name">Stats2</a>&nbsp;
+                <span v-if="workflow.status_history && workflow.status_history.length > 0">
+                  <small>type:</small> {{workflow.type}}
+                  <small>status:</small> {{workflow.status_history[workflow.status_history.length - 1].status}}
+                </span>
                 <ul v-if="index == item.workflows.length - 1">
-                  <li v-for="dataset in workflow.output_datasets" :key="dataset.name"><a target="_blank" title="Open dataset in DAS" :href="'https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D' + dataset.name">{{dataset.name}}</a> <small>events:</small> {{dataset.events}} <small>type:</small> {{dataset.type}}</li>
+                  <li v-for="dataset in workflow.output_datasets" :key="dataset.name">
+                    <a target="_blank" title="Open dataset in DAS" :href="makeDASLink(dataset.name)">{{dataset.name}}</a>&nbsp;
+                    <small>events:</small> {{dataset.events}}
+                    <small>type:</small> {{dataset.type}}
+                  </li>
                 </ul>
               </li>
             </ol>
           </template>
           <template v-slot:item.output_datasets="{ item }">
             <ul>
-              <li v-for="dataset in item.output_datasets" :key="dataset"><a target="_blank" title="Open dataset in DAS" :href="'https://cmsweb.cern.ch/das/request?view=list&limit=50&instance=prod%2Fglobal&input=dataset%3D' + dataset">{{dataset}}</a></li>
+              <li v-for="dataset in item.output_datasets" :key="dataset"><a target="_blank" title="Open dataset in DAS" :href="makeDASLink(dataset)">{{dataset}}</a></li>
             </ul>
           </template>
         </v-data-table>
@@ -139,13 +152,13 @@
     </v-dialog>
 
     <footer>
-      <a :href="'requests/edit'" v-if="role('manager') && !selectedItems.length">New request</a>
+      <a :href="'requests/edit'" v-if="role('manager') && !selectedItems.length" title="Create new request">New request</a>
       <span v-if="role('manager') && selectedItems.length">Selected items ({{selectedItems.length}}) actions:</span>
-      <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="deleteManyRequests(selectedItems)">Delete</a>
-      <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="previousMany(selectedItems)">Previous</a>
-      <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="nextStatusMany(selectedItems)">Next</a>
-      <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="updateWorkflowsMany(selectedItems)">Update from Stats2</a>
-      <a v-if="role('manager') && selectedItems.length" style="text-decoration: underline; margin-left: 4px" @click="optionResetMany(selectedItems)">Option Reset</a>
+      <a v-if="role('manager') && selectedItems.length" @click="deleteManyRequests(selectedItems)" title="Delete selected requests">Delete</a>
+      <a v-if="role('manager') && selectedItems.length" @click="previousMany(selectedItems)" title="Move selected requests to previous status">Previous</a>
+      <a v-if="role('manager') && selectedItems.length" @click="nextStatusMany(selectedItems)" title="Move selected requets to next status">Next</a>
+      <a v-if="role('manager') && selectedItems.length" @click="updateWorkflowsMany(selectedItems)" title="Update selected requests' information from Stats2">Update from Stats2</a>
+      <a v-if="role('manager') && selectedItems.length" @click="optionResetMany(selectedItems)" title="Refetch selected requests' values from their subcampaigns">Option Reset</a>
       <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
@@ -158,15 +171,18 @@ import axios from 'axios'
 import ColumnSelector from './ColumnSelector'
 import Paginator from './Paginator'
 import HistoryCell from './HistoryCell'
+import SequencesCell from './SequencesCell'
 import { roleMixin } from '../mixins/UserRoleMixin.js'
+import { utilsMixin } from '../mixins/UtilsMixin.js'
 
 export default {
   components: {
     ColumnSelector,
     Paginator,
-    HistoryCell
+    HistoryCell,
+    SequencesCell
   },
-  mixins: [roleMixin],
+  mixins: [roleMixin, utilsMixin],
   data () {
     return {
       databaseName: undefined,

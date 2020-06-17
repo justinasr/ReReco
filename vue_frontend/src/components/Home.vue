@@ -5,7 +5,7 @@
       <h3>Objects in ReReco database:</h3>
       <ul>
         <li><a :href="'subcampaigns'">Subcampaigns</a></li>
-        <li><a :href="'subcampaign_tickets'">Subcampaign tickets</a></li>
+        <li><a :href="'tickets'">Tickets</a></li>
         <li><a :href="'requests'">Requests</a>
           <ul v-if="objectsInfo">
             <li v-for="by_status_entry in objectsInfo.by_status" :key="by_status_entry._id">

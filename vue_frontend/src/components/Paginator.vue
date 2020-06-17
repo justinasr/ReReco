@@ -92,7 +92,7 @@
 <style scoped>
 
 .paginator-item {
-  margin: 8px;
+  margin: 8px 4px;
   height: 36px;
   display: inline-block;
   padding: 0;
