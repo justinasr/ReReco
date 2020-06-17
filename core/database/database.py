@@ -102,7 +102,7 @@ class Database():
         """
         Same as query_with_total_rows, but return only list of objects
         """
-        return self.query(query_string, page, limit, sort_attr, sort_asc)[0]
+        return self.query_with_total_rows(query_string, page, limit, sort_attr, sort_asc)[0]
 
     def query_with_total_rows(self,
                               query_string=None,
