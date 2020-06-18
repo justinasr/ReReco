@@ -370,6 +370,18 @@ class RequestController(controller_base.ControllerBase):
             raise Exception(f'Could not move {prepid} to submitting '
                             'because it does not have input dataset')
 
+        # Make sure input dataset is VALID
+        dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch')
+        dbs_response = dbs_conn.api('POST',
+                                    '/dbs/prod/global/DBSReader/datasetlist',
+                                    {'dataset': input_dataset,
+                                     'detail': 1})
+        dbs_response = json.loads(dbs_response.decode('utf-8'))
+        dataset_access_type = dbs_response[0].get('dataset_access_type', 'unknown')
+        self.logger.info('%s access type is %s', input_dataset, dataset_access_type)
+        if dataset_access_type != 'VALID':
+            raise Exception(f'{input_dataset} type is {dataset_access_type}, it must be VALID')
+
         RequestSubmitter().add_request(request, self)
         self.update_status(request, 'submitting')
         return request
