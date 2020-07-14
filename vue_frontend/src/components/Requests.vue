@@ -4,7 +4,7 @@
       <div style="flex: 1 1 auto;">
         <div>
           <div style="width: calc(100vw - 32px); position: sticky; left: 16px;">
-            <h1>Requests</h1>
+            <h1 class="page-title">Requests</h1>
             <ColumnSelector :columns="columns"
                             v-on:updateColumns="updateTableColumns"/>
           </div>
