@@ -7,11 +7,11 @@ import json
 import traceback
 from threading import Thread
 from queue import Queue, Empty
-from core.utils.ssh_executor import SSHExecutor
-from core.utils.locker import Locker
-from core.database.database import Database
+from core_lib.pdmv_utils.ssh_executor import SSHExecutor
+from core_lib.pdmv_utils.locker import Locker
+from core_lib.pdmv_database.database import Database
+from core_lib.pdmv_utils.settings import Settings
 from core.utils.connection_wrapper import ConnectionWrapper
-from core.utils.settings import Settings
 from core.utils.emailer import Emailer
 
 

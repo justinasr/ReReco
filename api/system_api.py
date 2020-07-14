@@ -1,11 +1,11 @@
 """
 Module that contains all system APIs
 """
-from api.api_base import APIBase
+from core_lib.pdmv_api.api_base import APIBase
+from core_lib.pdmv_utils.locker import Locker
+from core_lib.pdmv_database.database import Database
+from core_lib.pdmv_utils.user_info import UserInfo
 from core.utils.request_submitter import RequestSubmitter
-from core.utils.locker import Locker
-from core.utils.user_info import UserInfo
-from core.database.database import Database
 
 
 class SubmissionWorkerStatusAPI(APIBase):
@@ -91,7 +91,7 @@ class ObjectsInfoAPI(APIBase):
         Get number of requests with each status and processing strings of submitted requests
         """
         request_db = Database('requests')
-        database = request_db.database
+        database = request_db.collection
         by_status = database.aggregate([{'$group': {'_id': '$status',
                                                     'count': {'$sum': 1}}}])
 

@@ -6,6 +6,7 @@ import argparse
 from flask_restful import Api
 from flask_cors import CORS
 from flask import Flask, render_template
+from core_lib.pdmv_database.database import Database
 from api.subcampaign_api import (CreateSubcampaignAPI,
                                  DeleteSubcampaignAPI,
                                  UpdateSubcampaignAPI,
@@ -162,6 +163,13 @@ def main():
     parser.add_argument('--debug',
                         help='Run Flask in debug mode',
                         action='store_true')
+
+    Database.set_database_name('rereco')
+    Database.add_search_rename('requests', 'runs', 'runs<int>')
+    Database.add_search_rename('requests', 'run', 'runs<int>')
+    Database.add_search_rename('requests', 'workflows', 'workflows.name')
+    Database.add_search_rename('requests', 'workflow', 'workflows.name')
+    Database.add_search_rename('requests', 'output_dataset', 'output_datasets')
 
     args = vars(parser.parse_args())
     debug = args.get('debug', False)
