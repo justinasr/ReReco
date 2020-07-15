@@ -7,7 +7,7 @@ from core.model.ticket import Ticket
 from core_lib.utils.settings import Settings
 from core_lib.database.database import Database
 from core_lib.controller.controller_base import ControllerBase
-from core.utils.connection_wrapper import ConnectionWrapper
+from core_lib.utils.connection_wrapper import ConnectionWrapper
 from core.controller.request_controller import RequestController
 
 

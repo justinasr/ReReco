@@ -6,12 +6,12 @@ import time
 from core_lib.database.database import Database
 from core_lib.utils.settings import Settings
 from core_lib.utils.ssh_executor import SSHExecutor
+from core_lib.utils.connection_wrapper import ConnectionWrapper
 import core_lib.controller.controller_base as controller_base
 from core.model.request import Request
 from core.model.subcampaign import Subcampaign
 from core.model.ticket import Ticket
 from core.utils.request_submitter import RequestSubmitter
-from core.utils.connection_wrapper import ConnectionWrapper
 
 
 class RequestController(controller_base.ControllerBase):
