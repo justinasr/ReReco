@@ -33,7 +33,7 @@ class TicketController(ControllerBase):
         settings = Settings()
         with self.locker.get_lock(f'create-subcampaign-ticket-prepid'):
             # Get a new serial number
-            serial_number = self.get_highest_serial_number(subcampaign_ticket_db,
+            serial_number = self.get_highest_serial_number(ticket_db,
                                                            f'{prepid_middle_part}-*')
             serial_numbers = settings.get('tickets_prepid_sequence', {})
             serial_number = max(serial_number, serial_numbers.get(prepid_middle_part, 0))
