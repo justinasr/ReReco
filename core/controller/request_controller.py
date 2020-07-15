@@ -3,10 +3,10 @@ Module that contains RequestController class
 """
 import json
 import time
-from core_lib.pdmv_database.database import Database
-from core_lib.pdmv_utils.settings import Settings
-from core_lib.pdmv_utils.ssh_executor import SSHExecutor
-import core_lib.pdmv_controller.controller_base as controller_base
+from core_lib.database.database import Database
+from core_lib.utils.settings import Settings
+from core_lib.utils.ssh_executor import SSHExecutor
+import core_lib.controller.controller_base as controller_base
 from core.model.request import Request
 from core.model.subcampaign import Subcampaign
 from core.model.ticket import Ticket

@@ -3,7 +3,7 @@ Module that contains all subcampaign APIs
 """
 import json
 import flask
-from core_lib.pdmv_api.api_base import APIBase
+from core_lib.api.api_base import APIBase
 from core.controller.subcampaign_controller import SubcampaignController
 from core.model.subcampaign import Subcampaign
 

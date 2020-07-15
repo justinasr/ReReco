@@ -1,10 +1,10 @@
 """
 Module that contains all system APIs
 """
-from core_lib.pdmv_api.api_base import APIBase
-from core_lib.pdmv_utils.locker import Locker
-from core_lib.pdmv_database.database import Database
-from core_lib.pdmv_utils.user_info import UserInfo
+from core_lib.api.api_base import APIBase
+from core_lib.utils.locker import Locker
+from core_lib.database.database import Database
+from core_lib.utils.user_info import UserInfo
 from core.utils.request_submitter import RequestSubmitter
 
 

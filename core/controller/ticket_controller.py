@@ -4,9 +4,9 @@ Module that contains TicketController class
 import json
 import time
 from core.model.ticket import Ticket
-from core_lib.pdmv_utils.settings import Settings
-from core_lib.pdmv_database.database import Database
-from core_lib.pdmv_controller.controller_base import ControllerBase
+from core_lib.utils.settings import Settings
+from core_lib.database.database import Database
+from core_lib.controller.controller_base import ControllerBase
 from core.utils.connection_wrapper import ConnectionWrapper
 from core.controller.request_controller import RequestController
 

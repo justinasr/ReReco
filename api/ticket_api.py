@@ -4,7 +4,7 @@ Module that contains all ticket APIs
 import json
 import flask
 from flask import request
-from core_lib.pdmv_api.api_base import APIBase
+from core_lib.api.api_base import APIBase
 from core.controller.ticket_controller import TicketController
 from core.model.ticket import Ticket
 

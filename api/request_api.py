@@ -3,7 +3,7 @@ Module that contains all request APIs
 """
 import json
 import flask
-from core_lib.pdmv_api.api_base import APIBase
+from core_lib.api.api_base import APIBase
 from core.controller.request_controller import RequestController
 from core.model.request import Request
 
