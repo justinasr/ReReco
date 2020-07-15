@@ -223,7 +223,7 @@ class RequestSubmitter:
             ssh_executor.upload_file(f'/tmp/{prepid}_upload.sh',
                                      f'rereco_submission/{prepid}/{prepid}_upload.sh')
             # Upload python script used by upload script
-            ssh_executor.upload_file(f'./core/utils/config_uploader.py',
+            ssh_executor.upload_file(f'./core_lib/utils/config_uploader.py',
                                      f'rereco_submission/{prepid}/config_uploader.py')
             # Start executing commands
             # Create configs
