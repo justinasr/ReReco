@@ -11,7 +11,7 @@ from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.locker import Locker
 from core_lib.database.database import Database
 from core_lib.utils.settings import Settings
-from core.utils.connection_wrapper import ConnectionWrapper
+from core_lib.utils.connection_wrapper import ConnectionWrapper
 from core.utils.emailer import Emailer
 
 
