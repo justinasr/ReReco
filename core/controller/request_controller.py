@@ -335,13 +335,13 @@ class RequestController(ControllerBase):
                                     f'because {dataset_name} is {dataset_type}')
 
             for status in last_workflow['status_history']:
-                if status['status'].lower() == 'completed':
+                if status['status'].lower() in ('announced', 'normal-archived'):
                     completed_timestamp = status['time']
                     break
             else:
                 last_workflow_name = last_workflow['name']
-                raise Exception(f'Could not move {prepid} to "done" because '
-                                f'{last_workflow_name} is not yet "completed"')
+                raise Exception(f'Could not move {prepid} to "done" because {last_workflow_name} '
+                                'is not yet "announced" or "normal-archived"')
 
             self.update_status(request, 'done', completed_timestamp)
         else:
