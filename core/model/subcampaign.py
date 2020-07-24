@@ -7,7 +7,7 @@ from core.model.sequence import Sequence
 
 class Subcampaign(ModelBase):
     """
-    Class that represents a snapshot computing campaign
+    Class that represents a snapshot of computing campaign
     It is used as a template for requests
     """
 

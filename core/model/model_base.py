@@ -1,7 +1,6 @@
 """
 Module that contains ModelBase class
 """
-import re
 from core_lib.model.model_base import ModelBase as PdmVModelBase
 
 

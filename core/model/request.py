@@ -99,24 +99,6 @@ class Request(ModelBase):
 
         return super().check_attribute(attribute_name, attribute_value)
 
-    def get_cmssw_setup(self):
-        """
-        Return code needed to set up CMSSW environment for this request
-        Basically, cmsenv command
-        """
-        cmssw_release = self.get('cmssw_release')
-        commands = [f'source /cvmfs/cms.cern.ch/cmsset_default.sh',
-                    f'if [ -r {cmssw_release}/src ] ; then',
-                    f'  echo {cmssw_release} already exist',
-                    f'else',
-                    f'  scram p CMSSW {cmssw_release}',
-                    f'fi',
-                    f'cd {cmssw_release}/src',
-                    f'eval `scram runtime -sh`',
-                    f'cd ../..']
-
-        return '\n'.join(commands)
-
     def get_config_file_names(self):
         """
         Get list of dictionaries of all config file names without extensions

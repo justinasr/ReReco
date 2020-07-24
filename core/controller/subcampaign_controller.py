@@ -65,12 +65,19 @@ class SubcampaignController(ControllerBase):
         sequence = Sequence.schema()
         return sequence
 
-    def __get_scram_arch(self, cmssw_release, xml):
+    def get_scram_arch(self, cmssw_release):
         """
-        Internal method for getting scram arch for given release out of given XML string
+        Get scram arch from
+        https://cmssdt.cern.ch/SDT/cgi-bin/ReleasesXML?anytype=1
         """
-        self.logger.debug('Getting scram arch for %s', cmssw_release)
-        root = XMLet.fromstring(xml)
+        if not cmssw_release:
+            return None
+
+        self.logger.debug('Downloading releases XML')
+        conn = ConnectionWrapper(host='cmssdt.cern.ch')
+        response = conn.api('GET', '/SDT/cgi-bin/ReleasesXML?anytype=1')
+        self.logger.debug('Downloaded releases XML')
+        root = XMLet.fromstring(response)
         for architecture in root:
             if architecture.tag != 'architecture':
                 # This should never happen as children should be <architecture>
@@ -84,18 +91,3 @@ class SubcampaignController(ControllerBase):
 
         self.logger.warning('Could not find scram arch for %s', cmssw_release)
         return None
-
-    def get_scram_arch(self, cmssw_release):
-        """
-        Get scram arch from
-        https://cmssdt.cern.ch/SDT/cgi-bin/ReleasesXML?anytype=1
-        """
-
-        self.logger.debug('Downloading releases XML')
-        conn = ConnectionWrapper(host='cmssdt.cern.ch')
-        response = conn.api('GET', '/SDT/cgi-bin/ReleasesXML?anytype=1')
-        scram_arch = self.__get_scram_arch(cmssw_release, response)
-        if not scram_arch:
-            raise Exception(f'Could not find SCRAM arch for {cmssw_release}')
-
-        return scram_arch

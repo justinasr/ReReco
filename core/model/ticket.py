@@ -8,7 +8,7 @@ from core.model.model_base import ModelBase
 class Ticket(ModelBase):
     """
     Ticket has a list of input datasets and a list of steps specifications
-    Ticket can be used to create requests each input dataset
+    Ticket is used to create requests for each input dataset
     """
 
     _ModelBase__schema = {
