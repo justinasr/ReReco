@@ -59,7 +59,6 @@ class Sequence(ModelBase):
         'harvesting_config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
         'nThreads': lambda n: 0 < n < 64,
         'scenario': lambda s: s in ('pp', 'cosmics', 'nocoll', 'HeavyIons'),
-        'step': lambda s: len(s) > 0,
         '__step': lambda s: (s in ('RAW2DIGI', 'L1Reco', 'RECO', 'EI', 'PAT', 'NANO') or
                              s.startswith('ALCA') or
                              s.startswith('DQM') or
@@ -89,7 +88,7 @@ class Sequence(ModelBase):
             return super().check_attribute(attribute_name, attribute_value)
 
         has_harvesting_step = bool([s for s in self.get('step') if s.startswith('HARVESTING:@')])
-        if has_harvesting_step:
+        if not self.get('step') or has_harvesting_step:
             return super().check_attribute(attribute_name, attribute_value)
 
         # If sequence does not have HARVESTING step, eventcontent and datatier cannot be empty
