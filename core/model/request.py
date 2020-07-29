@@ -138,6 +138,20 @@ class Request(ModelBase):
 
         return input_dataset_parts[1].split('-')[0]
 
+    def get_input_processing_string(self):
+        """
+        Return processing string from input dataset
+        """
+        input_dataset_parts = [x for x in self.get('input')['dataset'].split('/') if x]
+        if len(input_dataset_parts) < 3:
+            return ''
+
+        middle_parts = [x for x in input_dataset_parts[1].split('-') if x]
+        if len(middle_parts) < 3:
+            return ''
+
+        return '-'.join(middle_parts[1:-1])
+
     def get_dataset(self):
         """
         Return primary dataset based on input dataset
