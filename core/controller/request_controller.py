@@ -57,7 +57,7 @@ class RequestController(controller_base.ControllerBase):
         # Only one must be provided
         self.logger.info(request_input)
         if input_dataset and input_request_prepid:
-            raise Exception(f'Request cannot have both input request and input dataset, only one')
+            raise Exception('Request cannot have both input request and input dataset, only one')
 
         if input_dataset and not input_request_prepid:
             input_dataset_parts = [x for x in input_dataset.split('/') if x]
@@ -72,7 +72,7 @@ class RequestController(controller_base.ControllerBase):
             era = input_request.get_era()
             dataset = input_request.get_dataset()
         else:
-            raise Exception(f'Request must have either a input request or input dataset')
+            raise Exception('Request must have either a input request or input dataset')
 
         processing_string = new_request.get('processing_string')
         prepid_middle_part = f'{era}-{dataset}-{processing_string}'

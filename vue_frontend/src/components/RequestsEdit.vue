@@ -35,7 +35,11 @@
                   Request:
                 </td>
                 <td>
-                  <input type="text" v-model="editableObject.input.request" :disabled="inputType != 'request' || !editingInfo.input">
+                  <autocompleter
+                    v-model="editableObject.input.request"
+                    :getSuggestions="getRequestSuggestions"
+                    :disabled="inputType != 'request' || !editingInfo.input">
+                  </autocompleter>
                 </td>
               </tr>
             </table>
@@ -123,7 +127,13 @@
         </tr>
         <tr>
           <td>Subcampaign</td>
-          <td><input type="text" v-model="editableObject.subcampaign" :disabled="!editingInfo.subcampaign"></td>
+          <td>
+            <autocompleter
+              v-model="editableObject.subcampaign"
+              :getSuggestions="getSubcampaignSuggestions"
+              :disabled="!editingInfo.subcampaign">
+            </autocompleter>
+          </td>
         </tr>
         <tr>
           <td>Time per event</td>
@@ -159,13 +169,15 @@
 import axios from 'axios'
 import { utilsMixin } from '../mixins/UtilsMixin.js'
 import LoadingOverlay from './LoadingOverlay.vue'
+import Autocompleter from './Autocompleter.vue'
 
 export default {
   mixins: [
     utilsMixin
   ],
   components: {
-    LoadingOverlay
+    LoadingOverlay,
+    Autocompleter
   },
   data () {
     return {
@@ -270,6 +282,26 @@ export default {
       this.errorDialog.title = title;
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
+    },
+    getSubcampaignSuggestions: function(value, callback) {
+      if (!value || value.length == 0) {
+        callback([]);
+      }
+      axios.get('api/suggestions?db_name=subcampaigns&query=' + value).then(response => {
+        callback(response.data.response);
+      }).catch(error => {
+        callback([]);
+      });
+    },
+    getRequestSuggestions: function(value, callback) {
+      if (!value || value.length == 0) {
+        callback([]);
+      }
+      axios.get('api/suggestions?db_name=requests&query=' + value).then(response => {
+        callback(response.data.response);
+      }).catch(error => {
+        callback([]);
+      });
     }
   }
 }

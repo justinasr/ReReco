@@ -16,9 +16,13 @@
               <table>
                 <tr>
                   <td>Subcampaign</td>
-                  <td><input type="text"
-                             v-model="step.subcampaign"
-                             :disabled="!editingInfo.steps[index].subcampaign"></td>
+                  <td>
+                    <autocompleter
+                      v-model="step.subcampaign"
+                      :getSuggestions="getSubcampaignSuggestions"
+                      :disabled="!editingInfo.steps[index].subcampaign">
+                    </autocompleter>
+                  </td>
                 </tr>
                 <tr>
                   <td>Processing String</td>
@@ -114,11 +118,13 @@
 import axios from 'axios'
 import { utilsMixin } from '../mixins/UtilsMixin.js'
 import LoadingOverlay from './LoadingOverlay.vue'
+import Autocompleter from './Autocompleter.vue'
 
 export default {
   name: 'TicketsEdit',
   components: {
-    LoadingOverlay
+    LoadingOverlay,
+    Autocompleter
   },
   mixins: [
     utilsMixin
@@ -241,6 +247,16 @@ export default {
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
     },
+    getSubcampaignSuggestions: function(value, callback) {
+      if (!value || value.length == 0) {
+        callback([]);
+      }
+      axios.get('api/suggestions?db_name=subcampaigns&query=' + value).then(response => {
+        callback(response.data.response);
+      }).catch(error => {
+        callback([]);
+      });
+    }
   }
 }
 </script>

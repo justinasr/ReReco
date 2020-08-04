@@ -34,7 +34,7 @@ from api.request_api import (CreateRequestAPI,
                              GetRequestRunsAPI,
                              UpdateRequestWorkflowsAPI,
                              RequestOptionResetAPI)
-from api.search_api import SearchAPI
+from api.search_api import SearchAPI, SuggestionsAPI
 from api.settings_api import SettingsAPI
 from api.system_api import (SubmissionWorkerStatusAPI,
                             SubmissionQueueAPI,
@@ -103,6 +103,7 @@ def api_documentation(_path):
 
 
 api.add_resource(SearchAPI, '/api/search')
+api.add_resource(SuggestionsAPI, '/api/suggestions')
 
 api.add_resource(SettingsAPI,
                  '/api/settings/get',
@@ -170,6 +171,8 @@ def main():
     Database.add_search_rename('requests', 'workflows', 'workflows.name')
     Database.add_search_rename('requests', 'workflow', 'workflows.name')
     Database.add_search_rename('requests', 'output_dataset', 'output_datasets')
+    Database.add_search_rename('requests', 'input_dataset', 'input.dataset')
+    Database.add_search_rename('requests', 'input_request', 'input.request')
 
     args = vars(parser.parse_args())
     debug = args.get('debug', False)
