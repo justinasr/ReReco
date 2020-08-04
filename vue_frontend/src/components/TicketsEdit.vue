@@ -73,7 +73,7 @@
     </v-card>
     <v-dialog v-model="getDatasetsDialog.visible"
               max-width="50%">
-      <v-card class="page-card mb-0">
+      <v-card class="page-card mb-0" style="max-width: none !important;">
         <v-card-title class="headline">Get dataset list</v-card-title>
         <v-card-text>
           Automatically get a list of input datasets from DBS. Query must satisfy this format:<pre>/*/*/RAW</pre>
