@@ -92,7 +92,7 @@ class TicketController(ControllerBase):
 
         return True
 
-    def get_datasets(self, query):
+    def get_datasets(self, query, exclude_list=None):
         """
         Query DBS for list of datasets
         """
@@ -111,6 +111,17 @@ class TicketController(ControllerBase):
         datasets = [x['dataset'] for x in response if x['dataset_access_type'] in valid_types]
         dataset_blacklist = set(Settings().get('dataset_blacklist'))
         datasets = [x for x in datasets if x.split('/')[1] not in dataset_blacklist]
+        if exclude_list:
+            filtered_datasets = []
+            for dataset in datasets:
+                for exclude in exclude_list:
+                    if exclude in dataset:
+                        break
+                else:
+                    filtered_datasets.append(dataset)
+
+            datasets = filtered_datasets
+
         end_time = time.time()
         self.logger.info('Got %s datasets from DBS for query %s in %.2fs',
                          len(datasets),

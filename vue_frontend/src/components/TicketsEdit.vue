@@ -80,8 +80,10 @@
       <v-card class="page-card mb-0" style="max-width: none !important;">
         <v-card-title class="headline">Get dataset list</v-card-title>
         <v-card-text>
-          Automatically get a list of input datasets from DBS. Query must satisfy this format:<pre>/*/*/RAW</pre>
-          <input type="text" v-model="getDatasetsDialog.input" placeholder="Dataset name, for example /ZeroBias/Run2018*/RAW">
+          Fetch a list of input datasets from DBS. Query must satisfy this format:<pre>/*/*/DATATIER</pre>
+          <input type="text" v-model="getDatasetsDialog.input" class="mb-2" placeholder="Dataset name query, for example /ZeroBias/Run2018*/RAW">
+          Comma-separated list of values to use when filtering-out dataset names:
+          <input type="text" v-model="getDatasetsDialog.exclude" placeholder="Comma separated patterns to exclude, e.g. validation,pilot">
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -144,6 +146,7 @@ export default {
       getDatasetsDialog: {
         visible: false,
         input: '',
+        exclude: 'validation,pilot',
       }
     }
   },
@@ -191,8 +194,13 @@ export default {
     getDatasets: function(replace) {
       this.loading = true;
       let component = this;
+      let url = 'api/tickets/get_datasets?q=' + this.getDatasetsDialog.input;
+      let exclude = this.cleanSplit(this.getDatasetsDialog.exclude, ',');
+      if (exclude.length) {
+        url += '&exclude=' + exclude.join(',');
+      }
       // Timeout 120000ms is 2 minutes
-      let httpRequest = axios.get('api/tickets/get_datasets?q=' + this.getDatasetsDialog.input, {timeout: 120000});
+      let httpRequest = axios.get(url, {timeout: 120000});
       this.closeGetDatasetsDialog();
       httpRequest.then(response => {
         if (replace) {

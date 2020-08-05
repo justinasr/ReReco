@@ -182,6 +182,7 @@ h1.page-title {
   border: 1px solid rgba(0, 0, 0, 0.87);
   border-radius: 4px;
   background: #fbfbfb;
+  color: rgba(0, 0, 0, 0.87);
 }
 
 .page-card input[type="text"],

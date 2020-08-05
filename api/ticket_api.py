@@ -5,6 +5,7 @@ import json
 import flask
 from flask import request
 from core_lib.api.api_base import APIBase
+from core_lib.utils.common_utils import clean_split
 from core.controller.ticket_controller import TicketController
 from core.model.ticket import Ticket
 
@@ -110,7 +111,9 @@ class GetTicketDatasetsAPI(APIBase):
         if not query:
             raise Exception('No input was supplied')
 
-        obj = ticket_controller.get_datasets(query)
+        exclude = request.args.get('exclude', '')
+        exclude = clean_split(exclude)
+        obj = ticket_controller.get_datasets(query, exclude)
         return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 
