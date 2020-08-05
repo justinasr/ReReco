@@ -78,18 +78,19 @@
     <v-dialog v-model="getDatasetsDialog.visible"
               max-width="50%">
       <v-card class="page-card mb-0" style="max-width: none !important;">
-        <v-card-title class="headline">Get dataset list</v-card-title>
+        <v-card-title class="headline">Fetch dataset list</v-card-title>
         <v-card-text>
           Fetch a list of input datasets from DBS. Query must satisfy this format:<pre>/*/*/DATATIER</pre>
           <input type="text" v-model="getDatasetsDialog.input" class="mb-2" placeholder="Dataset name query, for example /ZeroBias/Run2018*/RAW">
           Comma-separated list of values to use when filtering-out dataset names:
           <input type="text" v-model="getDatasetsDialog.exclude" placeholder="Comma separated patterns to exclude, e.g. validation,pilot">
         </v-card-text>
+        <small style="opacity: 0.4">Note: some primary datasets are blacklisted and will not appear in fetched list</small>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn small class="mr-1 mb-1" color="primary" v-if="!listLength(editableObject.input_datasets)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(true)">Get</v-btn>
-          <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input_datasets)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(true)" title="Fetch list and replace existing list with newly fetched one">Get and replace</v-btn>
-          <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input_datasets)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(false)" title="Fetch list and append it to an existing list">Get and append</v-btn>
+          <v-btn small class="mr-1 mb-1" color="primary" v-if="!listLength(editableObject.input_datasets)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(true)">Fetch</v-btn>
+          <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input_datasets)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(true)" title="Fetch list and replace existing list with newly fetched one">Fetch and replace</v-btn>
+          <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input_datasets)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(false)" title="Fetch list and append it to an existing list">Fetch and append</v-btn>
           <v-btn small class="mr-1 mb-1" color="error" @click="closeGetDatasetsDialog()">Close</v-btn>
         </v-card-actions>
       </v-card>
