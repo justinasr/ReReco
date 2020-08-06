@@ -7,6 +7,7 @@ from core_lib.utils.settings import Settings
 from core_lib.database.database import Database
 from core_lib.controller.controller_base import ControllerBase
 from core_lib.utils.connection_wrapper import ConnectionWrapper
+from core_lib.utils.global_config import Config
 from core.model.ticket import Ticket
 from core.controller.request_controller import RequestController
 
@@ -99,9 +100,14 @@ class TicketController(ControllerBase):
         if not query:
             return []
 
+        grid_cert = Config.get('grid_user_cert')
+        grid_key = Config.get('grid_user_key')
         with self.locker.get_lock('get-ticket-datasets'):
             start_time = time.time()
-            connection_wrapper = ConnectionWrapper(host='cmsweb.cern.ch', max_attempts=1)
+            connection_wrapper = ConnectionWrapper(host='cmsweb.cern.ch',
+                                                   max_attempts=1,
+                                                   cert_file=grid_cert,
+                                                   key_file=grid_key)
             response = connection_wrapper.api('POST',
                                               '/dbs/prod/global/DBSReader/datasetlist',
                                               {'dataset': query, 'detail': 1})

@@ -8,6 +8,7 @@ from core_lib.utils.settings import Settings
 from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.connection_wrapper import ConnectionWrapper
 from core_lib.utils.common_utils import cmssw_setup
+from core_lib.utils.global_config import Config
 import core_lib.controller.controller_base as controller_base
 from core.model.request import Request
 from core.model.subcampaign import Subcampaign
@@ -183,7 +184,7 @@ class RequestController(controller_base.ControllerBase):
         Get bash script that would upload config files to ReqMgr2
         """
         self.logger.debug('Getting config upload script for %s', request.get_prepid())
-        database_url = Settings().get('cmsweb_url') + '/couchdb'
+        database_url = Config.get('cmsweb_url') + '/couchdb'
         command = '#!/bin/bash\n'
         common_check_part = 'if [ ! -s "%s.py" ]; then\n'
         common_check_part += '  echo "File %s.py is missing" >&2\n'
@@ -235,7 +236,7 @@ class RequestController(controller_base.ControllerBase):
         subcampaigns_db = Database('subcampaigns')
         subcampaign_name = request.get('subcampaign')
         subcampaign_json = subcampaigns_db.get(subcampaign_name)
-        database_url = Settings().get('cmsweb_url') + '/couchdb'
+        database_url = Config.get('cmsweb_url') + '/couchdb'
         processing_string = request.get('processing_string')
         request_string = request.get_request_string()
         job_dict = {}
@@ -382,7 +383,9 @@ class RequestController(controller_base.ControllerBase):
                             'because it does not have input dataset')
 
         # Make sure input dataset is VALID
-        dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch')
+        grid_cert = Config.get('grid_user_cert')
+        grid_key = Config.get('grid_user_key')
+        dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch', cert_file=grid_cert, key_file=grid_key)
         dbs_response = dbs_conn.api('POST',
                                     '/dbs/prod/global/DBSReader/datasetlist',
                                     {'dataset': input_dataset,
@@ -493,11 +496,15 @@ class RequestController(controller_base.ControllerBase):
         subcampaign_db = Database('subcampaigns')
         subcampaign = subcampaign_db.get(subcampaign_name)
         runs_json_path = subcampaign.get('runs_json_path')
+        grid_cert = Config.get('grid_user_cert')
+        grid_key = Config.get('grid_user_key')
         with self.locker.get_lock('get-request-runs'):
             start_time = time.time()
             dbs_runs = []
             if input_dataset:
-                dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch')
+                dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch',
+                                             cert_file=grid_cert,
+                                             key_file=grid_key)
                 dbs_response = dbs_conn.api(
                     'GET',
                     f'/dbs/prod/global/DBSReader/runs?dataset={input_dataset}'
@@ -508,7 +515,9 @@ class RequestController(controller_base.ControllerBase):
 
             json_runs = []
             if runs_json_path:
-                json_conn = ConnectionWrapper(host='cms-service-dqm.web.cern.ch')
+                json_conn = ConnectionWrapper(host='cms-service-dqm.web.cern.ch',
+                                              cert_file=grid_cert,
+                                              key_file=grid_key)
                 json_response = json_conn.api(
                     'GET',
                     f'/cms-service-dqm/CAF/certification/{runs_json_path}'
@@ -758,8 +767,7 @@ class RequestController(controller_base.ControllerBase):
             request.set('priority', priority)
             updated_workflows = []
             active_workflows = self.__pick_active_workflows(request)
-            settings = Settings()
-            connection = ConnectionWrapper(host=settings.get('cmsweb_url'), keep_open=True)
+            connection = ConnectionWrapper(host=Config.get('cmsweb_url'), keep_open=True)
             for workflow in active_workflows:
                 workflow_name = workflow['name']
                 self.logger.info('Changing "%s" priority to %s', workflow_name, priority)
@@ -781,9 +789,9 @@ class RequestController(controller_base.ControllerBase):
         """
         Force Stats2 to update workflows with given workflow names
         """
-        credentials_path = Settings().get('credentials_path')
+        credentials_file = Config.get('credentials_file')
         with self.locker.get_lock('refresh-stats'):
-            ssh_executor = SSHExecutor('vocms074.cern.ch', credentials_path)
+            ssh_executor = SSHExecutor('vocms074.cern.ch', credentials_file)
             workflow_update_commands = ['cd /home/pdmvserv/private',
                                         'source setup_credentials.sh',
                                         'cd /home/pdmvserv/Stats2']
@@ -817,8 +825,13 @@ class RequestController(controller_base.ControllerBase):
         """
         Reject or abort list of workflows in ReqMgr2
         """
-        cmsweb_url = Settings().get('cmsweb_url')
-        connection = ConnectionWrapper(host=cmsweb_url, keep_open=True)
+        cmsweb_url = Config.get('cmsweb_url')
+        grid_cert = Config.get('grid_user_cert')
+        grid_key = Config.get('grid_user_key')
+        connection = ConnectionWrapper(host=cmsweb_url,
+                                       keep_open=True,
+                                       cert_file=grid_cert,
+                                       key_file=grid_key)
         headers = {'Content-type': 'application/json',
                    'Accept': 'application/json'}
         for workflow in workflows:

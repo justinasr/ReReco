@@ -7,10 +7,10 @@ import time
 from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.locker import Locker
 from core_lib.database.database import Database
-from core_lib.utils.settings import Settings
 from core_lib.utils.connection_wrapper import ConnectionWrapper
 from core_lib.utils.submitter import Submitter as BaseSubmitter
 from core_lib.utils.common_utils import clean_split
+from core_lib.utils.global_config import Config
 from core.utils.emailer import Emailer
 
 
@@ -39,7 +39,7 @@ class RequestSubmitter(BaseSubmitter):
         request.set('status', 'new')
         request.add_history('submission', 'failed', 'automatic')
         request_db.save(request.get_json())
-        service_url = Settings().get('service_url')
+        service_url = Config.get('service_url')
         emailer = Emailer()
         prepid = request.get_prepid()
         subject = f'Request {prepid} submission failed'
@@ -56,9 +56,9 @@ class RequestSubmitter(BaseSubmitter):
         """
         prepid = request.get_prepid()
         last_workflow = request.get('workflows')[-1]['name']
-        cmsweb_url = Settings().get('cmsweb_url')
+        cmsweb_url = Config.get('cmsweb_url')
         self.logger.info('Submission of %s succeeded', prepid)
-        service_url = Settings().get('service_url')
+        service_url = Config.get('service_url')
         emailer = Emailer()
         subject = f'Request {prepid} submission succeeded'
         body = f'Hello,\n\nSubmission of {prepid} succeeded.\n'
@@ -201,10 +201,9 @@ class RequestSubmitter(BaseSubmitter):
         Method that is used by submission workers. This is where the actual submission happens
         """
         prepid = request.get_prepid()
-        settings = Settings()
-        credentials_path = settings.get('credentials_path')
-        ssh_executor = SSHExecutor('lxplus.cern.ch', credentials_path)
-        remote_directory = settings.get('remote_path').rstrip('/')
+        credentials_file = Config.get('credentials_file')
+        ssh_executor = SSHExecutor('lxplus.cern.ch', credentials_file)
+        remote_directory = Config.get('remote_path').rstrip('/')
         remote_directory = f'{remote_directory}/{prepid}'
         self.logger.debug('Will try to acquire lock for %s', prepid)
         with Locker().get_lock(prepid):
@@ -224,8 +223,13 @@ class RequestSubmitter(BaseSubmitter):
                 self.__update_sequences_with_config_hashes(request, config_hashes)
                 # Submit job dict to ReqMgr2
                 job_dict = controller.get_job_dict(request)
-                cmsweb_url = Settings().get('cmsweb_url')
-                connection = ConnectionWrapper(host=cmsweb_url, keep_open=True)
+                cmsweb_url = Config.get('cmsweb_url')
+                grid_cert = Config.get('grid_user_cert')
+                grid_key = Config.get('grid_user_key')
+                connection = ConnectionWrapper(host=cmsweb_url,
+                                               keep_open=True,
+                                               cert_file=grid_cert,
+                                               key_file=grid_key)
                 workflow_name = self.submit_job_dict(job_dict, connection)
                 # Update request after successful submission
                 request.set('workflows', [{'name': workflow_name}])
