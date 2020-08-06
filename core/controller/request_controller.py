@@ -839,7 +839,7 @@ class RequestController(controller_base.ControllerBase):
             status_history = workflow.get('status_history')
             if not status_history:
                 self.logger.error('%s has no status history', workflow_name)
-                continue
+                status_history = [{'status': '<unknown>'}]
 
             last_workflow_status = status_history[-1]['status']
             self.logger.info('%s last status is %s', workflow_name, last_workflow_status)
