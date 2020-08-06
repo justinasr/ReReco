@@ -247,7 +247,7 @@ class RequestController(controller_base.ControllerBase):
             # Add input dataset's processing string to request's processing string
             input_dataset_processing_string = request.get_input_processing_string()
             if input_dataset_processing_string:
-                processing_string = f'{processing_string}-{input_dataset_processing_string}'
+                processing_string = f'{processing_string}_{input_dataset_processing_string}'
 
         job_dict['Group'] = 'PPD'
         job_dict['Requestor'] = 'pdmvserv'

@@ -68,14 +68,14 @@ class RequestSubmitter(BaseSubmitter):
         recipients = emailer.get_recipients(request)
         emailer.send(subject, body, recipients)
 
-    def __prepare_workspace(self, request, controller, ssh_executor):
+    def __prepare_workspace(self, request, controller, ssh_executor, remote_directory):
         """
         Clean or create a remote directory and upload all needed files
         """
         prepid = request.get_prepid()
         self.logger.debug('Will prepare remote workspace for %s', prepid)
-        ssh_executor.execute_command([f'rm -rf rereco_submission/{prepid}',
-                                      f'mkdir -p rereco_submission/{prepid}'])
+        ssh_executor.execute_command([f'rm -rf {remote_directory}',
+                                      f'mkdir -p {remote_directory}'])
         with open(f'/tmp/{prepid}_generate.sh', 'w') as temp_file:
             config_file_content = controller.get_cmsdriver(request, for_submission=True)
             temp_file.write(config_file_content)
@@ -86,13 +86,13 @@ class RequestSubmitter(BaseSubmitter):
 
         # Upload config generation script - cmsDrivers
         ssh_executor.upload_file(f'/tmp/{prepid}_generate.sh',
-                                 f'request_submission/{prepid}/config_generate.sh')
+                                 f'{remote_directory}/config_generate.sh')
         # Upload config upload to ReqMgr2 script
         ssh_executor.upload_file(f'/tmp/{prepid}_upload.sh',
-                                 f'request_submission/{prepid}/config_upload.sh')
+                                 f'{remote_directory}/config_upload.sh')
         # Upload python script used by upload script
         ssh_executor.upload_file('./core_lib/utils/config_uploader.py',
-                                 f'request_submission/{prepid}/config_uploader.py')
+                                 f'{remote_directory}/config_uploader.py')
 
         os.remove(f'/tmp/{prepid}_generate.sh')
         os.remove(f'/tmp/{prepid}_upload.sh')
@@ -112,12 +112,12 @@ class RequestSubmitter(BaseSubmitter):
             request_db.save(request.get_json())
             raise Exception('Cannot submit a request without input dataset')
 
-    def __generate_configs(self, request, ssh_executor):
+    def __generate_configs(self, request, ssh_executor, remote_directory):
         """
         SSH to a remote machine and generate cmsDriver config files
         """
         prepid = request.get_prepid()
-        command = [f'cd rereco_submission/{prepid}',
+        command = [f'cd {remote_directory}',
                    'chmod +x config_generate.sh',
                    'voms-proxy-init -voms cms --valid 4:00 --out $(pwd)/proxy.txt',
                    'export X509_USER_PROXY=$(pwd)/proxy.txt',
@@ -129,12 +129,12 @@ class RequestSubmitter(BaseSubmitter):
 
         return stdout
 
-    def __upload_configs(self, request, ssh_executor):
+    def __upload_configs(self, request, ssh_executor, remote_directory):
         """
         SSH to a remote machine and upload cmsDriver config files to ReqMgr2
         """
         prepid = request.get_prepid()
-        command = [f'cd rereco_submission/{prepid}',
+        command = [f'cd {remote_directory}',
                    'chmod +x config_upload.sh',
                    'export X509_USER_PROXY=$(pwd)/proxy.txt',
                    './config_upload.sh']
@@ -200,9 +200,12 @@ class RequestSubmitter(BaseSubmitter):
         """
         Method that is used by submission workers. This is where the actual submission happens
         """
-        credentials_path = Settings().get('credentials_path')
-        ssh_executor = SSHExecutor('lxplus.cern.ch', credentials_path)
         prepid = request.get_prepid()
+        settings = Settings()
+        credentials_path = settings.get('credentials_path')
+        ssh_executor = SSHExecutor('lxplus.cern.ch', credentials_path)
+        remote_directory = settings.get('remote_path').rstrip('/')
+        remote_directory = f'{remote_directory}/{prepid}'
         self.logger.debug('Will try to acquire lock for %s', prepid)
         with Locker().get_lock(prepid):
             self.logger.info('Locked %s for submission', prepid)
@@ -210,12 +213,12 @@ class RequestSubmitter(BaseSubmitter):
             request = controller.get(prepid)
             try:
                 self.__check_for_submission(request)
-                self.__prepare_workspace(request, controller, ssh_executor)
+                self.__prepare_workspace(request, controller, ssh_executor, remote_directory)
                 # Start executing commands
                 # Create configs
-                self.__generate_configs(request, ssh_executor)
+                self.__generate_configs(request, ssh_executor, remote_directory)
                 # Upload configs
-                config_hashes = self.__upload_configs(request, ssh_executor)
+                config_hashes = self.__upload_configs(request, ssh_executor, remote_directory)
                 self.logger.debug(config_hashes)
                 # Iterate through uploaded configs and save their hashes in request sequences
                 self.__update_sequences_with_config_hashes(request, config_hashes)
@@ -234,6 +237,7 @@ class RequestSubmitter(BaseSubmitter):
                 connection.close()
                 controller.force_stats_to_refresh([workflow_name])
             except Exception as ex:
+                self.logger.error(ex)
                 self.__handle_error(request, str(ex))
                 return
 
