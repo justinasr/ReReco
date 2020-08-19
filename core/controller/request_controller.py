@@ -673,7 +673,7 @@ class RequestController(controller_base.ControllerBase):
             all_workflows = {}
             for workflow_name in all_workflow_names:
                 workflow = stats_conn.api('GET', f'/requests/{workflow_name}')
-                if not workflow:
+                if not workflow or not workflow.get('RequestName'):
                     raise Exception(f'Could not find {workflow_name} in Stats2')
 
                 workflow = json.loads(workflow)
@@ -756,6 +756,9 @@ class RequestController(controller_base.ControllerBase):
         """
         prepid = request.get_prepid()
         request_db = Database('requests')
+        cmsweb_url = Config.get('cmsweb_url')
+        grid_cert = Config.get('grid_user_cert')
+        grid_key = Config.get('grid_user_key')
         self.logger.info('Will try to change %s priority to %s', prepid, priority)
         with self.locker.get_nonblocking_lock(prepid):
             request_json = request_db.get(prepid)
@@ -767,7 +770,10 @@ class RequestController(controller_base.ControllerBase):
             request.set('priority', priority)
             updated_workflows = []
             active_workflows = self.__pick_active_workflows(request)
-            connection = ConnectionWrapper(host=Config.get('cmsweb_url'), keep_open=True)
+            connection = ConnectionWrapper(host=cmsweb_url,
+                                           keep_open=True,
+                                           cert_file=grid_cert,
+                                           key_file=grid_key)
             for workflow in active_workflows:
                 workflow_name = workflow['name']
                 self.logger.info('Changing "%s" priority to %s', workflow_name, priority)

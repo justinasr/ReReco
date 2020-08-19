@@ -27,6 +27,6 @@ fi
 
 if [ "$CMD" = "start" ]; then
   echo "Starting ReReco"
-  nohup python3 $(pwd)main.py --mode run &
+  nohup python3 $(pwd)main.py --mode prod &
   echo "Started with pid $!"
 fi
