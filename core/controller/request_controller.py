@@ -78,7 +78,7 @@ class RequestController(controller_base.ControllerBase):
         processing_string = new_request.get('processing_string')
         prepid_middle_part = f'{era}-{dataset}-{processing_string}'
         settings = Settings()
-        with self.locker.get_lock(f'create-request-prepid'):
+        with self.locker.get_lock('create-request-prepid'):
             # Get a new serial number
             serial_number = self.get_highest_serial_number(request_db,
                                                            f'ReReco-{prepid_middle_part}-*')
@@ -205,8 +205,8 @@ class RequestController(controller_base.ControllerBase):
         # This should be done in a smarter way
         command += '\n'.join(['git clone --quiet https://github.com/dmwm/WMCore.git',
                               'export PYTHONPATH=$(pwd)/WMCore/src/python/:$PYTHONPATH'])
-        common_upload_part = ('python config_uploader.py --file %s.py --label %s '
-                              f'--group ppd --user $(echo $USER) --db {database_url}')
+        common_upload_part = ('python config_uploader.py --file $(pwd)/%s.py --label %s '
+                              f'--group ppd --user $(echo $USER) --db {database_url} || exit $?')
         for configs in request.get_config_file_names():
             # Run config uploader
             command += '\n'
@@ -673,11 +673,14 @@ class RequestController(controller_base.ControllerBase):
             all_workflows = {}
             for workflow_name in all_workflow_names:
                 workflow = stats_conn.api('GET', f'/requests/{workflow_name}')
-                if not workflow or not workflow.get('RequestName'):
+                if not workflow:
                     raise Exception(f'Could not find {workflow_name} in Stats2')
 
                 workflow = json.loads(workflow)
-                if workflow.get('RequestType').lower() == 'resubmission':
+                if not workflow.get('RequestName'):
+                    raise Exception(f'Could not find {workflow_name} in Stats2')
+
+                if workflow.get('RequestType', '').lower() == 'resubmission':
                     continue
 
                 all_workflows[workflow_name] = workflow

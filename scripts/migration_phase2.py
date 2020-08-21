@@ -3,9 +3,11 @@ Script to update data format in database for PhaseII update
 """
 import sys
 import os.path
+import os
 sys.path.append(os.path.abspath(os.path.pardir))
 from core_lib.database.database import Database
 
+Database.set_credentials_file(os.getenv('DB_AUTH'))
 Database.set_database_name('rereco')
 
 request_db = Database('requests')

@@ -45,7 +45,7 @@ class RequestSubmitter(BaseSubmitter):
         subject = f'Request {prepid} submission failed'
         body = f'Hello,\n\nUnfortunately submission of {prepid} failed.\n'
         body += (f'You can find this request at '
-                 f'{service_url}/rereco/requests?prepid={prepid}\n')
+                 f'{service_url}/requests?prepid={prepid}\n')
         body += f'Error message:\n\n{error_message}'
         recipients = emailer.get_recipients(request)
         emailer.send(subject, body, recipients)
@@ -63,7 +63,7 @@ class RequestSubmitter(BaseSubmitter):
         subject = f'Request {prepid} submission succeeded'
         body = f'Hello,\n\nSubmission of {prepid} succeeded.\n'
         body += (f'You can find this request at '
-                 f'{service_url}/rereco/requests?prepid={prepid}\n')
+                 f'{service_url}/requests?prepid={prepid}\n')
         body += f'Workflow in ReqMgr2 {cmsweb_url}/reqmgr2/fetch?rid={last_workflow}'
         recipients = emailer.get_recipients(request)
         emailer.send(subject, body, recipients)
@@ -124,8 +124,7 @@ class RequestSubmitter(BaseSubmitter):
                    './config_generate.sh']
         stdout, stderr, exit_code = ssh_executor.execute_command(command)
         if exit_code != 0:
-            self.__handle_error(request, f'Error generating configs for {prepid}.\n{stderr}')
-            return None
+            raise Exception(f'Error generating configs for {prepid}.\n{stderr}')
 
         return stdout
 
@@ -140,8 +139,7 @@ class RequestSubmitter(BaseSubmitter):
                    './config_upload.sh']
         stdout, stderr, exit_code = ssh_executor.execute_command(command)
         if exit_code != 0:
-            self.__handle_error(request, f'Error uploading configs for {prepid}.\n{stderr}')
-            return None
+            raise Exception(f'Error uploading configs for {prepid}.\n{stderr}')
 
         stdout = [x for x in clean_split(stdout, '\n') if 'DocID' in x]
         # Get all lines that have DocID as tuples split by space
@@ -158,7 +156,8 @@ class RequestSubmitter(BaseSubmitter):
             if not sequence_config_names:
                 continue
 
-            for hash_pair in config_hashes:
+            # Make a copy of the list because items will be removed from original
+            for hash_pair in list(config_hashes):
                 config_name, config_hash = hash_pair
                 if sequence_config_names['config'] == config_name:
                     sequence.set('config_id', config_hash)
@@ -167,18 +166,13 @@ class RequestSubmitter(BaseSubmitter):
                                       config_name,
                                       config_hash,
                                       sequence_name)
-                    break
-
-                if sequence_config_names.get('harvest') == config_name:
+                elif sequence_config_names.get('harvest') == config_name:
                     sequence.set('harvesting_config_id', config_hash)
                     config_hashes.remove(hash_pair)
                     self.logger.debug('Set %s %s for %s',
                                       config_name,
                                       config_hash,
                                       sequence_name)
-                    break
-            else:
-                raise Exception(f'Could not find hash for {sequence_name}')
 
         if config_hashes:
             raise Exception(f'Unused hashes: {config_hashes}')
