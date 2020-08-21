@@ -178,7 +178,7 @@ class RequestController(ControllerBase):
         # This should be done in a smarter way
         command += '\n'.join([f'git clone --quiet https://github.com/dmwm/WMCore.git',
                               f'export PYTHONPATH=$(pwd)/WMCore/src/python/:$PYTHONPATH'])
-        common_upload_part = (f'python config_uploader.py --file %s.py --label %s '
+        common_upload_part = (f'python config_uploader.py --file $(pwd)/%s.py --label %s '
                               f'--group ppd --user $(echo $USER) --db {database_url}')
         for configs in request.get_config_file_names():
             # Run config uploader
