@@ -37,10 +37,11 @@ class SubcampaignController(ControllerBase):
         scram_arch = self.get_scram_arch(cmssw_release)
         obj.set('scram_arch', scram_arch)
 
-    def before_update(self, obj):
-        cmssw_release = obj.get('cmssw_release')
-        scram_arch = self.get_scram_arch(cmssw_release)
-        obj.set('scram_arch', scram_arch)
+    def before_update(self, old_obj, new_obj, changed_values):
+        if old_obj.get('cmssw_release') != new_obj.get('cmssw_release'):
+            cmssw_release = new_obj.get('cmssw_release')
+            scram_arch = self.get_scram_arch(cmssw_release)
+            new_obj.set('scram_arch', scram_arch)
 
     def get_editing_info(self, obj):
         editing_info = super().get_editing_info(obj)

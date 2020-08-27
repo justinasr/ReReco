@@ -80,7 +80,7 @@
                 Dataset: <a target="_blank" title="Open dataset in DAS" :href="makeDASLink(item.input.dataset)">{{item.input.dataset}}</a>
               </li>
               <li v-if="item.input.request">
-                Request: <a :href="'requests?prepid=' + item.input.request" :title="'Open ' + item.input_dataset + ' request'">{{item.input.request}}</a>
+                Request: <a :href="'requests?prepid=' + item.input.request" :title="'Open ' + item.input.request + ' request'">{{item.input.request}}</a>
               </li>
             </ul>
           </template>

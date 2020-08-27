@@ -116,13 +116,15 @@ class RequestController(controller_base.ControllerBase):
 
         return True
 
-    def before_update(self, obj):
-        if obj.get('status') == 'submitted':
-            old_obj = self.get(obj.get_prepid())
-            if old_obj.get('priority') != obj.get('priority'):
-                self.change_request_priority(obj, obj.get('priority'))
+    def after_update(self, old_obj, new_obj, changed_values):
+        if new_obj.get('status') == 'submitted':
+            if old_obj.get('priority') != new_obj.get('priority'):
+                self.change_request_priority(new_obj, new_obj.get('priority'))
 
-    def before_delete(self, obj):
+        if new_obj.get('runs') != old_obj.get('runs'):
+            self.update_subsequent_requests(new_obj, {'runs': new_obj.get('runs')})
+
+    def after_delete(self, obj):
         prepid = obj.get_prepid()
         tickets_db = Database('tickets')
         tickets = tickets_db.query(f'created_requests={prepid}')
@@ -459,6 +461,34 @@ class RequestController(controller_base.ControllerBase):
             except Exception as ex:
                 self.logger.error('Error moving %s to next status: %s',
                                   subsequent_request_prepid,
+                                  ex)
+
+    def update_subsequent_requests(self, request, values):
+        """
+        Update all subsequent requests
+        """
+        request_db = Database('requests')
+        prepid = request.get_prepid()
+        query = f'input.request={prepid}'
+        requests = request_db.query(query)
+        self.logger.info('Found %s subsequent requests for %s: %s',
+                         len(requests),
+                         prepid,
+                         [r['prepid'] for r in requests])
+        for request_json in requests:
+            if request_json.get('status') not in ('new', 'approved'):
+                continue
+
+            request_prepid = request_json.get('prepid', '')
+            try:
+                subsequent_request = self.get(request_prepid)
+                for key, value in values.items():
+                    subsequent_request.set(key, value)
+
+                self.update(subsequent_request.get_json())
+            except Exception as ex:
+                self.logger.error('Error updating subsequent request %s: %s',
+                                  request_prepid,
                                   ex)
 
     def move_request_back_to_new(self, request):

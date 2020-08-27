@@ -141,7 +141,7 @@
         </tr>
       </table>
       <v-btn small class="mr-1 mt-1" color="primary" @click="save()">Save</v-btn>
-      <v-btn v-if="editingInfo.runs && editableObject.subcampaign.length" small class="mr-1 mt-2" color="primary" @click="getRuns()">Get runs from DBS and certification</v-btn>
+      <v-btn v-if="editingInfo.runs && editableObject.subcampaign.length" small class="mr-1 mt-1" color="primary" @click="getRuns()">Get runs from DBS and certification</v-btn>
       <v-btn small class="mr-1 mt-1" color="error" @click="cancel()">Cancel</v-btn>
     </v-card>
     <LoadingOverlay :visible="loading"/>
