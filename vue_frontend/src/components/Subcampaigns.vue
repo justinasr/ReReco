@@ -84,7 +84,7 @@
           {{errorDialog.title}}
         </v-card-title>
         <v-card-text>
-          {{errorDialog.description}}
+          <span v-html="errorDialog.description"></span>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -111,6 +111,7 @@ import Paginator from './Paginator'
 import HistoryCell from './HistoryCell'
 import SequencesCell from './SequencesCell'
 import { roleMixin } from '../mixins/UserRoleMixin.js'
+import { utilsMixin } from '../mixins/UtilsMixin.js'
 
 export default {
   components: {
@@ -119,7 +120,7 @@ export default {
     HistoryCell,
     SequencesCell
   },
-  mixins: [roleMixin],
+  mixins: [roleMixin, utilsMixin],
   data () {
     return {
       databaseName: undefined,
@@ -218,7 +219,7 @@ export default {
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error deleting subcampaign", error.response.data.message);
+          component.showError("Error deleting subcampaign", component.getError(error));
         });
       }
       this.dialog.cancel = function() {
@@ -232,11 +233,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-h1 {
-  margin: 8px;
-}
-
-</style>

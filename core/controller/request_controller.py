@@ -154,7 +154,7 @@ class RequestController(controller_base.ControllerBase):
         editing_info['processing_string'] = creating_new
         editing_info['sequences'] = status_new
         editing_info['memory'] = status_new
-        editing_info['input'] = status_new
+        editing_info['input'] = creating_new
         editing_info['runs'] = status_new
         editing_info['time_per_event'] = status_new
         editing_info['size_per_event'] = status_new

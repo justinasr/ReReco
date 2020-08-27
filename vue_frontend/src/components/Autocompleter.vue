@@ -56,7 +56,10 @@
         selectedIndex: 0,
       }
     },
-    watch:{
+    created () {
+      this.realValue = this.value;
+    },
+    watch: {
       isFocused (focused) {
         if (!focused) {
           this.items = [];

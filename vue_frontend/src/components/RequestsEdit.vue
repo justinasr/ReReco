@@ -140,8 +140,9 @@
           <td><input type="number" v-model="editableObject.time_per_event" :disabled="!editingInfo.time_per_event">s</td>
         </tr>
       </table>
-      <v-btn small class="mr-1 mt-2" color="primary" @click="save()">Save</v-btn>
+      <v-btn small class="mr-1 mt-1" color="primary" @click="save()">Save</v-btn>
       <v-btn v-if="editingInfo.runs && editableObject.subcampaign.length" small class="mr-1 mt-2" color="primary" @click="getRuns()">Get runs from DBS and certification</v-btn>
+      <v-btn small class="mr-1 mt-1" color="error" @click="cancel()">Cancel</v-btn>
     </v-card>
     <LoadingOverlay :visible="loading"/>
     <v-dialog v-model="errorDialog.visible"
@@ -151,7 +152,7 @@
           {{errorDialog.title}}
         </v-card-title>
         <v-card-text>
-          {{errorDialog.description}}
+          <span v-html="errorDialog.description"></span>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -216,7 +217,7 @@ export default {
       component.loading = false;
     }).catch(error => {
       component.loading = false;
-      this.showError('Error fetching editing information', error.response.data.message);
+      this.showError('Error fetching editing information', component.getError(error));
     });
   },
   methods: {
@@ -243,7 +244,7 @@ export default {
         component.loading = false;
         window.location = 'requests?prepid=' + response.data.response.prepid;
       }).catch(error => {
-        this.showError('Error saving request', error.response.data.message);
+        this.showError('Error saving request', component.getError(error));
         component.loading = false;
       });
     },
@@ -255,7 +256,7 @@ export default {
         component.loading = false;
       }).catch(error => {
         component.loading = false;
-        this.showError('Error getting sequence information', error.response.data.message);
+        this.showError('Error getting sequence information', component.getError(error));
       });
     },
     deleteSequence: function(index) {
@@ -269,7 +270,7 @@ export default {
         this.loading = false;
       }).catch(error => {
         component.loading = false;
-        this.showError('Error getting runs for request', error.response.data.message)
+        this.showError('Error getting runs for request', component.getError(error))
       });
     },
     clearErrorDialog: function() {
@@ -302,7 +303,14 @@ export default {
       }).catch(error => {
         callback([]);
       });
-    }
+    },
+    cancel: function() {
+      if (this.creatingNew) {
+        window.location = 'requests';
+      } else {
+        window.location = 'requests?prepid=' + this.prepid;
+      }
+    },
   }
 }
 </script>

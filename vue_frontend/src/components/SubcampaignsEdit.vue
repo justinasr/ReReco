@@ -89,7 +89,8 @@
           </td>
         </tr>
       </table>
-      <v-btn small class="mr-1 mt-2" color="primary" @click="save()">Save</v-btn>
+      <v-btn small class="mr-1 mt-1" color="primary" @click="save()">Save</v-btn>
+      <v-btn small class="mr-1 mt-1" color="error" @click="cancel()">Cancel</v-btn>
     </v-card>
     <LoadingOverlay :visible="loading"/>
     <v-dialog v-model="errorDialog.visible"
@@ -99,7 +100,7 @@
           {{errorDialog.title}}
         </v-card-title>
         <v-card-text>
-          {{errorDialog.description}}
+          <span v-html="errorDialog.description"></span>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -155,7 +156,7 @@ export default {
       component.loading = false;
     }).catch(error => {
       component.loading = false;
-      this.showError('Error fetching editing information', error.response.data.message);
+      this.showError('Error fetching editing information', component.getError(error));
     });
   },
   methods: {
@@ -175,7 +176,7 @@ export default {
         window.location = 'subcampaigns?prepid=' + response.data.response.prepid;
       }).catch(error => {
         component.loading = false;
-        this.showError('Error saving subcampaign', error.response.data.message);
+        this.showError('Error saving subcampaign', component.getError(error));
       });
     },
     addSequence: function() {
@@ -186,7 +187,7 @@ export default {
         component.loading = false;
       }).catch(error => {
         component.loading = false;
-        this.showError('Error getting sequence information', error.response.data.message);
+        this.showError('Error getting sequence information', component.getError(error));
       });
     },
     deleteSequence: function(index) {
@@ -202,6 +203,13 @@ export default {
       this.errorDialog.title = title;
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
+    },
+    cancel: function() {
+      if (this.creatingNew) {
+        window.location = 'subcampaigns';
+      } else {
+        window.location = 'subcampaigns?prepid=' + this.prepid;
+      }
     },
   }
 }

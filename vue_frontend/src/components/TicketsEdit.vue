@@ -72,8 +72,9 @@
           <td><textarea v-model="editableObject.input_datasets" :disabled="!editingInfo.input_datasets"></textarea></td>
         </tr>
       </table>
-      <v-btn small class="mr-1 mt-2" color="primary" @click="save()" :disabled="!listLength(editableObject.steps) || !listLength(editableObject.input_datasets)">Save</v-btn>
-      <v-btn v-if="editingInfo.input_datasets" small class="mr-1 mt-2" color="primary" @click="showGetDatasetsDialog()">Get dataset list from DBS</v-btn>
+      <v-btn small class="mr-1 mt-1" color="primary" @click="save()" :disabled="!listLength(editableObject.steps) || !listLength(editableObject.input_datasets)">Save</v-btn>
+      <v-btn v-if="editingInfo.input_datasets" small class="mr-1 mt-1" color="primary" @click="showGetDatasetsDialog()">Get dataset list from DBS</v-btn>
+      <v-btn small class="mr-1 mt-1" color="error" @click="cancel()">Cancel</v-btn>
     </v-card>
     <v-dialog v-model="getDatasetsDialog.visible"
               max-width="50%">
@@ -103,7 +104,7 @@
           {{errorDialog.title}}
         </v-card-title>
         <v-card-text>
-          {{errorDialog.description}}
+          <span v-html="errorDialog.description"></span>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -165,10 +166,13 @@ export default {
       component.editableObject = response.data.response.object;
       component.editableObject.input_datasets = component.editableObject.input_datasets.filter(Boolean).join('\n');
       component.editingInfo = response.data.response.editing_info;
+      if (component.creatingNew) {
+        component.addStep();
+      }
       component.loading = false;
     }).catch(error => {
       component.loading = false;
-      this.showError('Error fetching editing information', error.response.data.message);
+      this.showError('Error fetching editing information', component.getError(error));
     });
   },
   methods: {
@@ -189,7 +193,7 @@ export default {
         window.location = 'tickets?prepid=' + response.data.response.prepid;
       }).catch(error => {
         component.loading = false;
-        this.showError('Error saving ticket', error.response.data.message);
+        this.showError('Error saving ticket', component.getError(error));
       });
     },
     getDatasets: function(replace) {
@@ -218,7 +222,7 @@ export default {
         component.loading = false;
       }).catch(error => {
         component.loading = false;
-        this.showError('Error getting datasets for ticket', error.response.data.message)
+        this.showError('Error getting datasets for ticket', component.getError(error))
       });
     },
     showGetDatasetsDialog: function() {
@@ -240,6 +244,12 @@ export default {
                                    'priority': true,
                                    'size_per_event': true,
                                    'time_per_event': true});
+      if (this.editableObject.steps.length > 1) {
+        // Copy processing string of last step
+        const steps = this.editableObject.steps;
+        steps[steps.length - 1]['processing_string'] = steps[steps.length - 2]['processing_string'];
+        steps[steps.length - 1]['priority'] = steps[steps.length - 2]['priority'];
+      }
     },
     deleteStep: function(index) {
       this.editableObject.steps.splice(index, 1);
@@ -265,7 +275,14 @@ export default {
       }).catch(error => {
         callback([]);
       });
-    }
+    },
+    cancel: function() {
+      if (this.creatingNew) {
+        window.location = 'subcampaigns';
+      } else {
+        window.location = 'subcampaigns?prepid=' + this.prepid;
+      }
+    },
   }
 }
 </script>

@@ -96,7 +96,7 @@
           {{errorDialog.title}}
         </v-card-title>
         <v-card-text>
-          {{errorDialog.description}}
+          <span v-html="errorDialog.description"></span>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -226,7 +226,7 @@ export default {
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error deleting ticket", error.response.data.message);
+          component.showError("Error deleting ticket", component.getError(error));
         });
       }
       this.dialog.cancel = function() {
@@ -246,7 +246,7 @@ export default {
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error creating requests", error.response.data.message);
+          component.showError("Error creating requests", component.getError(error));
         });
       }
       this.dialog.cancel = function() {
@@ -257,15 +257,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-h1 {
-  margin: 8px;
-}
-
-input[type="text"]:disabled {
-  background: #dddddd;
-}
-
-</style>

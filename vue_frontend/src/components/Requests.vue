@@ -140,7 +140,7 @@
           {{errorDialog.title}}
         </v-card-title>
         <v-card-text>
-          {{errorDialog.description}}
+          <span v-html="errorDialog.description"></span>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -291,7 +291,7 @@ export default {
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error deleting request", error.response.data.message);
+          component.showError("Error deleting request", component.getError(error));
         });
       }
       this.dialog.cancel = function() {
@@ -312,7 +312,7 @@ export default {
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error deleting requests", error.response.data.message);
+          component.showError("Error deleting requests", component.getError(error));
           component.selectedItems =  [];
         });
       }
@@ -329,7 +329,7 @@ export default {
       }).catch(error => {
         component.loading = false;
         component.clearDialog();
-        component.showError("Error moving request to next status", error.response.data.message);
+        component.showError("Error moving request to next status", component.getError(error));
       });
     },
     nextStatusMany: function (requests) {
@@ -341,7 +341,7 @@ export default {
       }).catch(error => {
         component.loading = false;
         component.clearDialog();
-        component.showError("Error moving requests to next status", error.response.data.message);
+        component.showError("Error moving requests to next status", component.getError(error));
         component.selectedItems = [];
       });
     },
@@ -357,7 +357,7 @@ export default {
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error moving request to previous status", error.response.data.message);
+          component.showError("Error moving request to previous status", component.getError(error));
         });
       }
       this.dialog.cancel = function() {
@@ -378,7 +378,7 @@ export default {
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error moving requests to previous status", error.response.data.message);
+          component.showError("Error moving requests to previous status", component.getError(error));
           component.selectedItems =  [];
         });
       }
@@ -395,7 +395,7 @@ export default {
       }).catch(error => {
         component.loading = false;
         component.clearDialog();
-        component.showError("Error updating request info", error.response.data.message);
+        component.showError("Error updating request info", component.getError(error));
       });
     },
     updateWorkflowsMany: function(requests) {
@@ -407,7 +407,7 @@ export default {
       }).catch(error => {
         component.loading = false;
         component.clearDialog();
-        component.showError("Error updating request info", error.response.data.message);
+        component.showError("Error updating request info", component.getError(error));
         component.selectedItems =  [];
       });
     },
@@ -423,7 +423,7 @@ export default {
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error option resetting request", error.response.data.message);
+          component.showError("Error option resetting request", component.getError(error));
         });
       }
       this.dialog.cancel = function() {
@@ -443,7 +443,7 @@ export default {
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error option resetting requests", error.response.data.message);
+          component.showError("Error option resetting requests", component.getError(error));
         });
       }
       this.dialog.cancel = function() {
@@ -456,10 +456,6 @@ export default {
 </script>
 
 <style scoped>
-
-h1 {
-  margin: 8px;
-}
 
 th {
   color: var(--v-accent-base) !important;
