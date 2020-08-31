@@ -43,6 +43,15 @@ class SearchAPI(APIBase):
         if 'limit' in args:
             del args['limit']
 
+        # Special cases
+        from_ticket = args.pop('ticket', None)
+        if db_name == 'requests' and from_ticket:
+            ticket_database = Database('tickets')
+            ticket = ticket_database.get(from_ticket)
+            created_requests = ','.join(ticket['created_requests'])
+            prepid_query = args.pop('prepid', '')
+            args['prepid'] = ('%s,%s' % (prepid_query, created_requests)).strip(',')
+
         query_string = '&&'.join(['%s=%s' % (pair) for pair in args.items()])
         database = Database(db_name)
         query_string = database.build_query_with_types(query_string, self.classes[db_name])

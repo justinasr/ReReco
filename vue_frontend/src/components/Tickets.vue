@@ -31,7 +31,7 @@
           </template>
           <template v-slot:item.input_datasets="{ item }">
             {{item.input_datasets.length}} input datasets:
-            <ul>
+            <ul style="line-height: 95%">
               <li v-for="dataset in item.input_datasets" :key="dataset">
                 <small>
                   <a target="_blank" title="Open dataset in DAS" :href="makeDASLink(dataset)">
@@ -55,9 +55,14 @@
             </ul>
           </template>
           <template v-slot:item.created_requests="{ item }">
-            <ul>
+            <span v-if="item.created_requests && item.created_requests.length > 0"><a :href="'requests?ticket=' + item.prepid">{{item.created_requests.length}} requests:</a></span>
+            <ul style="line-height: 95%">
               <li v-for="request in item.created_requests" :key="request">
-                <a :href="'requests?prepid=' + request" :title="'Open ' + request + ' request'">{{request}}</a>
+                <small>
+                  <a :href="'requests?prepid=' + request" :title="'Open ' + request + ' request'">
+                    {{request}}
+                  </a>
+                </small>
               </li>
             </ul>
           </template>
