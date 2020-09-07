@@ -348,7 +348,7 @@ export default {
     previousStatus: function(request) {
       let component = this;
       this.dialog.title = "Set " + request.prepid + " to previous status?";
-      this.dialog.description = "Are you sure you want to set " + request.prepid + " request request to previous status?";
+      this.dialog.description = "Are you sure you want to set " + request.prepid + " request to previous status?";
       this.dialog.ok = function() {
         component.loading = true;
         axios.post('api/requests/previous_status', request).then(response => {
