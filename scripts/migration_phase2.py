@@ -26,7 +26,9 @@ print('(Old) subcampaign tickets: %s' % (total_old_tickets))
 print('(New) tickets: %s' % (total_new_tickets))
 
 for index, subcampaign in enumerate(subcampaign_db.query(limit=total_subcampaigns)):
-    print('Processing subcampaign %s/%s %s' % (index + 1, total_subcampaigns, subcampaign['prepid']))
+    print('Processing subcampaign %s/%s %s' % (index + 1,
+                                               total_subcampaigns,
+                                               subcampaign['prepid']))
     subcampaign.pop('_rev', None)
     subcampaign.pop('step', None)
     subcampaign_db.save(subcampaign)

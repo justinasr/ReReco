@@ -13,7 +13,7 @@ from core_lib.database.database import Database
 Database.set_database_name('rereco')
 database_credentials = os.getenv('DB_AUTH')
 if database_credentials:
-     Database.set_credentials_file(database_credentials)
+    Database.set_credentials_file(database_credentials)
 
 connection = http.client.HTTPConnection('localhost', port=sys.argv[1], timeout=300)
 headers = {'Content-Type': 'application/json',

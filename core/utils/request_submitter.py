@@ -117,6 +117,7 @@ class RequestSubmitter(BaseSubmitter):
         SSH to a remote machine and generate cmsDriver config files
         """
         prepid = request.get_prepid()
+        self.logger.debug('Will generate configs for %s', prepid)
         command = [f'cd {remote_directory}',
                    'chmod +x config_generate.sh',
                    'voms-proxy-init -voms cms --valid 4:00 --out $(pwd)/proxy.txt',
@@ -133,6 +134,7 @@ class RequestSubmitter(BaseSubmitter):
         SSH to a remote machine and upload cmsDriver config files to ReqMgr2
         """
         prepid = request.get_prepid()
+        self.logger.debug('Will upload configs for %s', prepid)
         command = [f'cd {remote_directory}',
                    'chmod +x config_upload.sh',
                    'export X509_USER_PROXY=$(pwd)/proxy.txt',

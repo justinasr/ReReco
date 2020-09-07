@@ -4,7 +4,6 @@ Module that contains RequestController class
 import json
 import time
 from core_lib.database.database import Database
-from core_lib.utils.settings import Settings
 from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.connection_wrapper import ConnectionWrapper
 from core_lib.utils.common_utils import cmssw_setup
@@ -77,7 +76,6 @@ class RequestController(controller_base.ControllerBase):
 
         processing_string = new_request.get('processing_string')
         prepid_middle_part = f'{era}-{dataset}-{processing_string}'
-        settings = Settings()
         with self.locker.get_lock(f'create-request-prepid-{prepid_middle_part}'):
             # Get a new serial number
             serial_number = self.get_highest_serial_number(request_db,
@@ -683,14 +681,13 @@ class RequestController(controller_base.ControllerBase):
                                            port=5984,
                                            https=False,
                                            keep_open=True)
-            existing_workflows = request.get('workflows')
             stats_workflows = stats_conn.api(
                 'GET',
                 f'/requests/_design/_designDoc/_view/prepids?key="{prepid}"&include_docs=True'
             )
             stats_workflows = json.loads(stats_workflows)
             stats_workflows = [x['doc'] for x in stats_workflows['rows']]
-            existing_workflows = [x['name'] for x in existing_workflows]
+            existing_workflows = [x['name'] for x in request.get('workflows')]
             stats_workflows = [x['RequestName'] for x in stats_workflows]
             all_workflow_names = list(set(existing_workflows) | set(stats_workflows))
             self.logger.info('All workflows of %s are %s', prepid, ', '.join(all_workflow_names))
@@ -738,8 +735,7 @@ class RequestController(controller_base.ControllerBase):
             request_db.save(request.get_json())
 
             if output_datasets:
-                query = f'input.request={prepid}'
-                subsequent_requests = request_db.query(query)
+                subsequent_requests = request_db.query(f'input.request={prepid}')
                 self.logger.info('Found %s subsequent requests for %s: %s',
                                  len(subsequent_requests),
                                  prepid,
