@@ -78,20 +78,14 @@ class RequestController(controller_base.ControllerBase):
         processing_string = new_request.get('processing_string')
         prepid_middle_part = f'{era}-{dataset}-{processing_string}'
         settings = Settings()
-        with self.locker.get_lock('create-request-prepid'):
+        with self.locker.get_lock(f'create-request-prepid-{prepid_middle_part}'):
             # Get a new serial number
             serial_number = self.get_highest_serial_number(request_db,
                                                            f'ReReco-{prepid_middle_part}-*')
-            serial_numbers = settings.get('requests_prepid_sequence', {})
-            serial_number = max(serial_number, serial_numbers.get(prepid_middle_part, 0))
             serial_number += 1
-            # Form a new temporary prepid
             prepid = f'ReReco-{prepid_middle_part}-{serial_number:05d}'
             new_request.set('prepid', prepid)
             new_request_json = super().create(new_request.get_json())
-            # After successful save update serial numbers in settings
-            serial_numbers[prepid_middle_part] = serial_number
-            settings.save('requests_prepid_sequence', serial_numbers)
 
         return new_request_json
 

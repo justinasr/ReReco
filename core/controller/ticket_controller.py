@@ -31,21 +31,15 @@ class TicketController(ControllerBase):
         subcampaign_name = ticket.get('steps')[0]['subcampaign']
         processing_string = ticket.get('steps')[0]['processing_string']
         prepid_middle_part = f'{subcampaign_name}-{processing_string}'
-        settings = Settings()
         with self.locker.get_lock(f'create-subcampaign-ticket-prepid'):
             # Get a new serial number
             serial_number = self.get_highest_serial_number(ticket_db,
                                                            f'{prepid_middle_part}-*')
-            serial_numbers = settings.get('tickets_prepid_sequence', {})
-            serial_number = max(serial_number, serial_numbers.get(prepid_middle_part, 0))
             serial_number += 1
             # Form a new temporary prepid
             prepid = f'{prepid_middle_part}-{serial_number:05d}'
             json_data['prepid'] = prepid
             new_ticket_json = super().create(json_data)
-            # After successful save update serial numbers in settings
-            serial_numbers[prepid_middle_part] = serial_number
-            settings.save('tickets_prepid_sequence', serial_numbers)
 
         return new_ticket_json
 
