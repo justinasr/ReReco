@@ -31,7 +31,7 @@ class TicketController(ControllerBase):
         subcampaign_name = ticket.get('steps')[0]['subcampaign']
         processing_string = ticket.get('steps')[0]['processing_string']
         prepid_middle_part = f'{subcampaign_name}-{processing_string}'
-        with self.locker.get_lock(f'create-subcampaign-ticket-prepid'):
+        with self.locker.get_lock(f'create-subcampaign-ticket-prepid-{prepid_middle_part}'):
             # Get a new serial number
             serial_number = self.get_highest_serial_number(ticket_db,
                                                            f'{prepid_middle_part}-*')
