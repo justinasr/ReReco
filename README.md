@@ -1,11 +1,20 @@
 # ReReco Machine
 Web based tool for Data ReReco bookkeeping and submission
 
+## Introduction
+
+ReReco machine is a web-based tool for creating, submitting and bookkeeping reprocessing workflows - ReReco requests.
+Only PdmV conveners have rights to perform actions in the ReReco machine.
+
 ## ReReco objects
 
-There are four types of objects in ReReco machine: subcampaigns, requests, sequences and tickets. Sequences are parts of request and cannot exist independently.
+There are four types of objects in ReReco machine: Subcampaigns, Requests, Sequences and Tickets. Sequence is always a part of a request and cannot exist independently.
 
 ### Subcampaigns
+
+##### Definition
+Campaigns in computing can be very big and have many fundamentally different requests in them. While designing ReReco machine, it was decided to introduce a smaller unit - Subcampaign. If ReReco machine used campaigns, a campaign would have to be changed for each batch of requests, for example: campaign UltraLegacy2017 is used for Cosmics and ZeroBiasScouting. Both cases have very different sequences, so it would be impractical to change sequence in campaign after generating Cosmics requests and before generating ZeroBiasScouting requests. Each Subcampaign represent a different variation of same computing campaign. In this example, there would be two UltraLegacy2017 Subcampaigns - one for Cosmics and one for ZeroBiasScouting and ReReco machine can preserve different sequences that were used in one campaign. That is why it is called a Subcampaign - it is like one of many variations of a campaign.
+Subcampaign name is made of two parts that are joined with a dash ("-"). First part is campaign name in computing. Second part is arbitrary string that gives more insight on sequence(s) that this Subcampaign contains, i.e.: "NameOfCampaignInComputing-ArbitraryStringForIdentification". Full Subcampaign name is not submitted to computing. When requests are submitted for production, only the campaign name part is used and subcampaign-specific part is removed, so introduction of this new object does not affect computing.
 
 ##### Structure in database:
 * `_id` - unique document identifier in database (required by DB)
@@ -21,7 +30,11 @@ There are four types of objects in ReReco machine: subcampaigns, requests, seque
 
 ### Requests
 
-Structure in database:
+##### Definition
+Requests are the main units of ReReco machine. Each Request represent one step in production pipeline. In ReReco case it is usually a RECO or NanoAOD step. Request can have multiple sequences - cmsDrivers inside. Request can have a dataset or another Request as input. In latter case, last output dataset of input request will be used as input dataset. Request statuses are new, approved, submitting, submitted and done. When Request becomes done, Requests that use it as input will automatically be submitted.
+Each Request corresponds to one submitted workflow in ReqMgr2. If Request or it's workflow was resubmitted, Request will have multiple workflows.
+
+##### Structure in database:
 * `_id` - unique document identifier in database (required by DB)
 * `cmssw_release` - CMSSW release
 * `completed_events` - completed (produced) events
@@ -56,7 +69,11 @@ Structure in database:
 
 ### Tickets
 
-Structure in database:
+##### Definition
+Tickets are a way to create multiple Requests with identical settings, but different input datasets. If multiple steps are specified in a Ticket, then each input dataset will create as many Requests as there are steps and these Requests will be linked together, so output of first is the input of second, output of second is input of third, etc. Each input dataset will be used to create one Request where input will be that input dataset. For example, if there are two steps - RECO and Nano campaigns and three input datasets /a/b/RAW, /c/d/RAW and /e/f/RAW, then six Requests in total will be created. First Request will have /a/b/RAW as input dataset. Second Request will use first Request as input. Third request will have /c/d/RAW as input. Fourth Request will use third Request as input. Same for fifth and sixth Requests.
+List of input datasets can be filled manually or fetched from DBS using a query. Query supports wildcards. ReReco machine has a list of Primary Datasets that will be omitted from fetched input datasets. Also, only VALID and PRODUCTION datasets are fetched.
+
+##### Structure in database:
 * `_id` - unique document identifier in database (required by DB)
 * `created_requests` - list of prepids of requests that were created from this ticket
 * `history` - action history of this object
@@ -73,7 +90,10 @@ Structure in database:
 
 ### Sequences
 
-Structure in database:
+##### Definition
+Sequence is one cmsDriver command. It has some predefined arguments that can be modified by a user. It also has IDs of uploaded configuration files. If Sequence steps include DQM, an additional cmsDriver for harvesting will be automatically added after cmsDriver of this Sequence.
+
+##### Structure in database:
 * `conditions` - what conditions to use, this has to be specified
 * `config_id` - id of configuration in ReqMgr2's config cache
 * `customise` - inline customization
