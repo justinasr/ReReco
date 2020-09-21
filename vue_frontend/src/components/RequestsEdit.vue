@@ -62,7 +62,7 @@
           <td><input type="text" v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
         </tr>
         <tr>
-          <td>Runs ({{listLength(editableObject.runs)}})</td>
+          <td>Runs ({{runListLength(editableObject.runs)}})</td>
           <td><textarea v-model="editableObject.runs" :disabled="!editingInfo.runs"></textarea></td>
         </tr>
         <tr>
@@ -310,6 +310,9 @@ export default {
       } else {
         window.location = 'requests?prepid=' + this.prepid;
       }
+    },
+    runListLength: function(list) {
+      return this.cleanSplit(list).length;
     },
   }
 }
