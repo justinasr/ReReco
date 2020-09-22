@@ -6,20 +6,23 @@ import argparse
 from flask_restful import Api
 from flask_cors import CORS
 from flask import Flask, render_template
+from jinja2.exceptions import TemplateNotFound
+from core_lib.database.database import Database
+from core_lib.utils.global_config import Config
 from api.subcampaign_api import (CreateSubcampaignAPI,
                                  DeleteSubcampaignAPI,
                                  UpdateSubcampaignAPI,
                                  GetSubcampaignAPI,
                                  GetEditableSubcampaignAPI,
                                  GetDefaultSubcampaignSequenceAPI)
-from api.subcampaign_ticket_api import (CreateSubcampaignTicketAPI,
-                                        DeleteSubcampaignTicketAPI,
-                                        UpdateSubcampaignTicketAPI,
-                                        GetSubcampaignTicketAPI,
-                                        GetSubcampaignTicketDatasetsAPI,
-                                        GetEditableSubcampaignTicketAPI,
-                                        CreateRequestsForSubcampaignTicketAPI,
-                                        GetSubcampaignTicketTwikiAPI)
+from api.ticket_api import (CreateTicketAPI,
+                            DeleteTicketAPI,
+                            UpdateTicketAPI,
+                            GetTicketAPI,
+                            GetTicketDatasetsAPI,
+                            GetEditableTicketAPI,
+                            CreateRequestsForTicketAPI,
+                            GetTicketTwikiAPI)
 from api.request_api import (CreateRequestAPI,
                              DeleteRequestAPI,
                              UpdateRequestAPI,
@@ -33,7 +36,7 @@ from api.request_api import (CreateRequestAPI,
                              GetRequestRunsAPI,
                              UpdateRequestWorkflowsAPI,
                              RequestOptionResetAPI)
-from api.search_api import SearchAPI
+from api.search_api import SearchAPI, SuggestionsAPI
 from api.settings_api import SettingsAPI
 from api.system_api import (SubmissionWorkerStatusAPI,
                             SubmissionQueueAPI,
@@ -66,7 +69,12 @@ def catch_all(_path):
     """
     Return index.html for all paths except API
     """
-    return render_template('index.html')
+    try:
+        return render_template('index.html')
+    except TemplateNotFound:
+        response = '<script>setTimeout(function() {location.reload();}, 5000);</script>'
+        response += 'Webpage is starting, please wait a few minutes...'
+        return response
 
 
 @app.route('/api', defaults={'_path': ''})
@@ -102,6 +110,7 @@ def api_documentation(_path):
 
 
 api.add_resource(SearchAPI, '/api/search')
+api.add_resource(SuggestionsAPI, '/api/suggestions')
 
 api.add_resource(SettingsAPI,
                  '/api/settings/get',
@@ -124,18 +133,18 @@ api.add_resource(GetDefaultSubcampaignSequenceAPI,
                  '/api/subcampaigns/get_default_sequence',
                  '/api/subcampaigns/get_default_sequence/<string:prepid>')
 
-api.add_resource(CreateSubcampaignTicketAPI, '/api/subcampaign_tickets/create')
-api.add_resource(DeleteSubcampaignTicketAPI, '/api/subcampaign_tickets/delete')
-api.add_resource(UpdateSubcampaignTicketAPI, '/api/subcampaign_tickets/update')
-api.add_resource(GetSubcampaignTicketAPI, '/api/subcampaign_tickets/get/<string:prepid>')
-api.add_resource(GetEditableSubcampaignTicketAPI,
-                 '/api/subcampaign_tickets/get_editable',
-                 '/api/subcampaign_tickets/get_editable/<string:prepid>')
-api.add_resource(GetSubcampaignTicketDatasetsAPI, '/api/subcampaign_tickets/get_datasets')
-api.add_resource(CreateRequestsForSubcampaignTicketAPI,
-                 '/api/subcampaign_tickets/create_requests')
-api.add_resource(GetSubcampaignTicketTwikiAPI,
-                 '/api/subcampaign_tickets/twiki_snippet/<string:prepid>')
+api.add_resource(CreateTicketAPI, '/api/tickets/create')
+api.add_resource(DeleteTicketAPI, '/api/tickets/delete')
+api.add_resource(UpdateTicketAPI, '/api/tickets/update')
+api.add_resource(GetTicketAPI, '/api/tickets/get/<string:prepid>')
+api.add_resource(GetEditableTicketAPI,
+                 '/api/tickets/get_editable',
+                 '/api/tickets/get_editable/<string:prepid>')
+api.add_resource(GetTicketDatasetsAPI, '/api/tickets/get_datasets')
+api.add_resource(CreateRequestsForTicketAPI,
+                 '/api/tickets/create_requests')
+api.add_resource(GetTicketTwikiAPI,
+                 '/api/tickets/twiki_snippet/<string:prepid>')
 
 api.add_resource(CreateRequestAPI, '/api/requests/create')
 api.add_resource(DeleteRequestAPI, '/api/requests/delete')
@@ -159,14 +168,37 @@ def main():
     Main function: start Flask web server
     """
     parser = argparse.ArgumentParser(description='ReReco Machine')
+    parser.add_argument('--mode',
+                        help='Use production (prod) or development (dev) section of config',
+                        choices=['prod', 'dev'],
+                        required=True)
+    parser.add_argument('--config',
+                        default='config.cfg',
+                        help='Specify non standard config file name')
     parser.add_argument('--debug',
                         help='Run Flask in debug mode',
                         action='store_true')
-
     args = vars(parser.parse_args())
+    config = Config.load(args.get('config'), args.get('mode'))
+    database_auth = config.get('database_auth')
+
+    Database.set_database_name('rereco')
+    if database_auth:
+        Database.set_credentials_file(database_auth)
+
+    Database.add_search_rename('requests', 'runs', 'runs<int>')
+    Database.add_search_rename('requests', 'run', 'runs<int>')
+    Database.add_search_rename('requests', 'workflows', 'workflows.name')
+    Database.add_search_rename('requests', 'workflow', 'workflows.name')
+    Database.add_search_rename('requests', 'output_dataset', 'output_datasets')
+    Database.add_search_rename('requests', 'input_dataset', 'input.dataset')
+    Database.add_search_rename('requests', 'input_request', 'input.request')
+
     debug = args.get('debug', False)
-    app.run(host='0.0.0.0',
-            port=8002,
+    port = int(config.get('port', 8002))
+    host = config.get('host', '0.0.0.0')
+    app.run(host=host,
+            port=port,
             threaded=True,
             debug=debug)
 

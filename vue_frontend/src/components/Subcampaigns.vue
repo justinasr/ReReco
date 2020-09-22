@@ -4,7 +4,7 @@
       <div style="flex: 1 1 auto;">
         <div>
           <div style="width: calc(100vw - 32px); position: sticky; left: 16px;">
-            <h1>Subcampaigns</h1>
+            <h1 class="page-title">Subcampaigns</h1>
             <ColumnSelector :columns="columns"
                             v-on:updateColumns="updateTableColumns"/>
           </div>
@@ -18,18 +18,18 @@
                       hide-default-footer
                       class="elevation-1">
           <template v-slot:item._actions="{ item }">
-            <a :href="'subcampaigns/edit?prepid=' + item.prepid" v-if="role('manager')">Edit</a>&nbsp;
-            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')">Delete</a>&nbsp;
-            <a :href="'requests?subcampaign=' + item.prepid">Requests</a>&nbsp;
+            <a :href="'subcampaigns/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit subcampaign">Edit</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')" title="Delete subcampaign">Delete</a>&nbsp;
+            <a :href="'requests?subcampaign=' + item.prepid" :title="'Show all requests in '+ item.prepid">Requests</a>&nbsp;
           </template>
           <template v-slot:item.prepid="{ item }">
-            <a :href="'subcampaigns?prepid=' + item.prepid">{{item.prepid}}</a>
+            <a :href="'subcampaigns?prepid=' + item.prepid" title="Show only this subcampaign">{{item.prepid}}</a>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
           </template>
           <template v-slot:item.sequences="{ item }">
-            <pre>{{JSON.stringify(item.sequences, null, 2)}}</pre>
+            <SequencesCell :data="item.sequences"/>
           </template>
           <template v-slot:item.memory="{ item }">
             {{item.memory}} MB
@@ -38,16 +38,19 @@
             {{item.energy}} TeV
           </template>
           <template v-slot:item.cmssw_release="{ item }">
-            {{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}
+            <a :href="'subcampaigns?cmssw_release=' + item.cmssw_release" :title="'Show all subcampaigns with ' + item.cmssw_release">{{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}</a>
+          </template>
+          <template v-slot:item.scram_arch="{ item }">
+            <a :href="'subcampaigns?scram_arch=' + item.scram_arch" :title="'Show all subcampaigns with ' + item.scram_arch">{{item.scram_arch}}</a>
           </template>
           <template v-slot:item.notes="{ item }">
             <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
           </template>
           <template v-slot:item.campaign="{ item }">
-            {{item.prepid.split('-').filter(Boolean)[0]}}
+            <a :href="'subcampaigns?prepid=' + getCampaign(item.prepid) + '-*'" title="Show all subcampaigns in the same campaign">{{getCampaign(item.prepid)}}</a>
           </template>
           <template v-slot:item.runs_json_path="{ item }">
-            <a target="_blank" :href="'https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/' + item.runs_json_path">{{item.runs_json_path}}</a>
+            <a target="_blank" :href="'https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/' + item.runs_json_path" title="Open JSON file with runs list">{{item.runs_json_path}}</a>
           </template>
         </v-data-table>
       </div>
@@ -81,7 +84,7 @@
           {{errorDialog.title}}
         </v-card-title>
         <v-card-text>
-          {{errorDialog.description}}
+          <span v-html="errorDialog.description"></span>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -93,9 +96,8 @@
     </v-dialog>
 
     <footer>
-      <a :href="'subcampaigns/edit'" style="float: left; margin: 16px;" v-if="role('manager')">New subcampaign</a>
-      <Paginator style="float: right;"
-                 :totalRows="totalItems"
+      <a :href="'subcampaigns/edit'" v-if="role('manager')" title="Create new subcampaign">New subcampaign</a>
+      <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
   </div>
@@ -107,15 +109,18 @@ import axios from 'axios'
 import ColumnSelector from './ColumnSelector'
 import Paginator from './Paginator'
 import HistoryCell from './HistoryCell'
+import SequencesCell from './SequencesCell'
 import { roleMixin } from '../mixins/UserRoleMixin.js'
+import { utilsMixin } from '../mixins/UtilsMixin.js'
 
 export default {
   components: {
     ColumnSelector,
     Paginator,
-    HistoryCell
+    HistoryCell,
+    SequencesCell
   },
-  mixins: [roleMixin],
+  mixins: [roleMixin, utilsMixin],
   data () {
     return {
       databaseName: undefined,
@@ -131,7 +136,6 @@ export default {
         {'dbName': 'runs_json_path', 'displayName': 'Runs JSON', 'visible': 0},
         {'dbName': 'scram_arch', 'displayName': 'SCRAM Arch', 'visible': 0},
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
-        {'dbName': 'step', 'displayName': 'Step', 'visible': 0},
       ],
       headers: [],
       dataItems: [],
@@ -209,28 +213,23 @@ export default {
       this.dialog.description = "Are you sure you want to delete " + subcampaign.prepid + " subcampaign?";
       this.dialog.ok = function() {
         component.loading = true;
-        axios.delete('api/subcampaigns/delete', {data: {'prepid': subcampaign.prepid, '_rev': subcampaign._rev}}).then(() => {
+        axios.delete('api/subcampaigns/delete', {data: {'prepid': subcampaign.prepid}}).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error deleting subcampaign", error.response.data.message);
+          component.showError("Error deleting subcampaign", component.getError(error));
         });
       }
       this.dialog.cancel = function() {
         component.clearDialog();
       }
       this.dialog.visible = true;
+    },
+    getCampaign: function(prepid) {
+      return prepid.split('-').filter(Boolean)[0];
     }
   }
 }
 </script>
-
-<style scoped>
-
-h1 {
-  margin: 8px;
-}
-
-</style>

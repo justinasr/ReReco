@@ -3,25 +3,25 @@ Module that contains RequestController class
 """
 import json
 import time
-from core.controller.controller_base import ControllerBase
+from core_lib.database.database import Database
+from core_lib.utils.ssh_executor import SSHExecutor
+from core_lib.utils.connection_wrapper import ConnectionWrapper
+from core_lib.utils.common_utils import cmssw_setup
+from core_lib.utils.global_config import Config
+import core_lib.controller.controller_base as controller_base
 from core.model.request import Request
 from core.model.subcampaign import Subcampaign
-from core.database.database import Database
-from core.model.subcampaign_ticket import SubcampaignTicket
+from core.model.ticket import Ticket
 from core.utils.request_submitter import RequestSubmitter
-from core.utils.connection_wrapper import ConnectionWrapper
-from core.utils.settings import Settings
-from core.utils.ssh_executor import SSHExecutor
-from core.controller.subcampaign_controller import SubcampaignController
 
 
-class RequestController(ControllerBase):
+class RequestController(controller_base.ControllerBase):
     """
     Controller that has all actions related to a request
     """
 
     def __init__(self):
-        ControllerBase.__init__(self)
+        controller_base.ControllerBase.__init__(self)
         self.database_name = 'requests'
         self.model_class = Request
 
@@ -38,7 +38,6 @@ class RequestController(ControllerBase):
 
         json_data['cmssw_release'] = subcampaign.get('cmssw_release')
         json_data['subcampaign'] = subcampaign.get_prepid()
-        json_data['step'] = subcampaign.get('step')
         json_data['prepid'] = 'PlaceholderPrepID'
         new_request = Request(json_input=json_data)
         if not json_data.get('sequences'):
@@ -50,27 +49,41 @@ class RequestController(ControllerBase):
         if not json_data.get('energy'):
             new_request.set('energy', subcampaign.get('energy'))
 
-        input_dataset = new_request.get('input_dataset')
-        input_dataset_parts = [x for x in input_dataset.split('/') if x]
-        era = input_dataset_parts[1].split('-')[0]
-        dataset = input_dataset_parts[0]
+        request_input = new_request.get('input')
+        input_dataset = request_input.get('dataset')
+        input_request_prepid = request_input.get('request')
+        # Prepid is made of era, dataset and processing string
+        # Either they are taken from input dataset or input request
+        # Only one must be provided
+        self.logger.info(request_input)
+        if input_dataset and input_request_prepid:
+            raise Exception('Request cannot have both input request and input dataset, only one')
+
+        if input_dataset and not input_request_prepid:
+            input_dataset_parts = [x for x in input_dataset.split('/') if x]
+            era = input_dataset_parts[1].split('-')[0]
+            dataset = input_dataset_parts[0]
+        elif not input_dataset and input_request_prepid:
+            input_request_json = request_db.get(input_request_prepid)
+            if not input_request_json:
+                raise Exception(f'Request "{input_request_prepid}" does not exist')
+
+            input_request = Request(json_input=input_request_json)
+            era = input_request.get_era()
+            dataset = input_request.get_dataset()
+        else:
+            raise Exception('Request must have either a input request or input dataset')
+
         processing_string = new_request.get('processing_string')
         prepid_middle_part = f'{era}-{dataset}-{processing_string}'
-        settings = Settings()
-        with self.locker.get_lock(f'create-request-prepid'):
+        with self.locker.get_lock(f'create-request-prepid-{prepid_middle_part}'):
             # Get a new serial number
             serial_number = self.get_highest_serial_number(request_db,
                                                            f'ReReco-{prepid_middle_part}-*')
-            serial_numbers = settings.get('requests_prepid_sequence', {})
-            serial_number = max(serial_number, serial_numbers.get(prepid_middle_part, 0))
             serial_number += 1
-            # Form a new temporary prepid
             prepid = f'ReReco-{prepid_middle_part}-{serial_number:05d}'
             new_request.set('prepid', prepid)
             new_request_json = super().create(new_request.get_json())
-            # After successful save update serial numbers in settings
-            serial_numbers[prepid_middle_part] = serial_number
-            settings.save('requests_prepid_sequence', serial_numbers)
 
         return new_request_json
 
@@ -84,53 +97,61 @@ class RequestController(ControllerBase):
         if obj.get('status') != 'new':
             raise Exception('Request must be in status "new" before it is deleted')
 
+        requests_db = Database('requests')
+        prepid = obj.get_prepid()
+        subsequent_requests_query = f'input.request={prepid}'
+        subsequent_requests = requests_db.query(subsequent_requests_query)
+        if subsequent_requests:
+            subsequent_requests_prepids = ', '.join([r['prepid'] for r in subsequent_requests])
+            raise Exception(f'Request cannot be deleted because it is input request'
+                            f'for {subsequent_requests_prepids}. Delete these requests first')
+
         return True
 
-    def before_update(self, obj):
-        if obj.get('status') == 'submitted':
-            old_obj = self.get(obj.get_prepid())
-            if old_obj.get('priority') != obj.get('priority'):
-                self.change_request_priority(obj, obj.get('priority'))
+    def after_update(self, old_obj, new_obj, changed_values):
+        if new_obj.get('status') == 'submitted':
+            if old_obj.get('priority') != new_obj.get('priority'):
+                self.change_request_priority(new_obj, new_obj.get('priority'))
 
-    def before_delete(self, obj):
+        if new_obj.get('runs') != old_obj.get('runs'):
+            self.update_subsequent_requests(new_obj, {'runs': new_obj.get('runs')})
+
+    def after_delete(self, obj):
         prepid = obj.get_prepid()
-        subcampaign_tickets_db = Database('subcampaign_tickets')
-        subcampaign_tickets = subcampaign_tickets_db.query(f'created_requests={prepid}')
-        self.logger.debug(json.dumps(subcampaign_tickets, indent=2))
-        for subcampaign_ticket_json in subcampaign_tickets:
-            ticket_prepid = subcampaign_ticket_json['prepid']
+        tickets_db = Database('tickets')
+        tickets = tickets_db.query(f'created_requests={prepid}')
+        self.logger.debug(json.dumps(tickets, indent=2))
+        for ticket_json in tickets:
+            ticket_prepid = ticket_json['prepid']
             with self.locker.get_lock(ticket_prepid):
-                subcampaign_ticket_json = subcampaign_tickets_db.get(ticket_prepid)
-                subcampaign_ticket = SubcampaignTicket(json_input=subcampaign_ticket_json)
-                created_requests = subcampaign_ticket.get('created_requests')
+                ticket_json = tickets_db.get(ticket_prepid)
+                ticket = Ticket(json_input=ticket_json)
+                created_requests = ticket.get('created_requests')
                 if prepid in created_requests:
                     created_requests.remove(prepid)
 
-                subcampaign_ticket.set('created_requests', created_requests)
-                subcampaign_ticket.add_history('remove_request', prepid, None)
-                subcampaign_tickets_db.save(subcampaign_ticket.get_json())
+                ticket.set('created_requests', created_requests)
+                ticket.add_history('remove_request', prepid, None)
+                tickets_db.save(ticket.get_json())
 
         return True
 
     def get_editing_info(self, obj):
         editing_info = super().get_editing_info(obj)
-        new = not bool(obj.get_prepid())
-        editing_info['prepid'] = False
-        editing_info['history'] = False
-        editing_info['cmssw_release'] = False
-        editing_info['step'] = False
-        editing_info['input_dataset'] = new
-        editing_info['processing_string'] = new
-        editing_info['subcampaign'] = new
+        prepid = obj.get_prepid()
+        creating_new = not bool(prepid)
+        status_new = obj.get('status') == 'new'
+        editing_info['notes'] = True
         editing_info['energy'] = True
-        editing_info['sequences'] = True
-        status = obj.get('status')
-        if status != 'new':
-            editing_info['memory'] = False
-            editing_info['runs'] = False
-            editing_info['sequences'] = False
-            editing_info['time_per_event'] = False
-            editing_info['size_per_event'] = False
+        editing_info['priority'] = obj.get('status') != 'done'
+        editing_info['subcampaign'] = creating_new
+        editing_info['processing_string'] = creating_new
+        editing_info['sequences'] = status_new
+        editing_info['memory'] = status_new
+        editing_info['input'] = creating_new
+        editing_info['runs'] = status_new
+        editing_info['time_per_event'] = status_new
+        editing_info['size_per_event'] = status_new
 
         return editing_info
 
@@ -141,7 +162,7 @@ class RequestController(ControllerBase):
         """
         self.logger.debug('Getting cmsDriver commands for %s', request.get_prepid())
         cms_driver = '#!/bin/bash\n\n'
-        cms_driver += request.get_cmssw_setup()
+        cms_driver += cmssw_setup(request.get('cmssw_release'))
         cms_driver += '\n\n'
         if for_submission:
             cms_driver += request.get_cmsdrivers('_placeholder_.root')
@@ -157,12 +178,12 @@ class RequestController(ControllerBase):
         Get bash script that would upload config files to ReqMgr2
         """
         self.logger.debug('Getting config upload script for %s', request.get_prepid())
-        database_url = Settings().get('cmsweb_url') + '/couchdb'
+        database_url = Config.get('cmsweb_url') + '/couchdb'
         command = '#!/bin/bash\n'
-        common_check_part = f'if [ ! -s "%s.py" ]; then\n'
-        common_check_part += f'  echo "File %s.py is missing" >&2\n'
-        common_check_part += f'  exit 1\n'
-        common_check_part += f'fi\n'
+        common_check_part = 'if [ ! -s "%s.py" ]; then\n'
+        common_check_part += '  echo "File %s.py is missing" >&2\n'
+        common_check_part += '  exit 1\n'
+        common_check_part += 'fi\n'
         for configs in request.get_config_file_names():
             # Run config uploader
             command += '\n'
@@ -172,14 +193,14 @@ class RequestController(ControllerBase):
                 command += common_check_part % (configs['harvest'], configs['harvest'])
 
         command += '\n'
-        command += request.get_cmssw_setup()
+        command += cmssw_setup(request.get('cmssw_release'))
         command += '\n\n'
         # Add path to WMCore
         # This should be done in a smarter way
-        command += '\n'.join([f'git clone --quiet https://github.com/dmwm/WMCore.git',
-                              f'export PYTHONPATH=$(pwd)/WMCore/src/python/:$PYTHONPATH'])
-        common_upload_part = (f'python config_uploader.py --file $(pwd)/%s.py --label %s '
-                              f'--group ppd --user $(echo $USER) --db {database_url}')
+        command += '\n'.join(['git clone --quiet https://github.com/dmwm/WMCore.git',
+                              'export PYTHONPATH=$(pwd)/WMCore/src/python/:$PYTHONPATH'])
+        common_upload_part = ('python config_uploader.py --file $(pwd)/%s.py --label %s '
+                              f'--group ppd --user $(echo $USER) --db {database_url} || exit $?')
         for configs in request.get_config_file_names():
             # Run config uploader
             command += '\n'
@@ -204,20 +225,25 @@ class RequestController(ControllerBase):
         prepid = request.get_prepid()
         self.logger.debug('Getting job dict for %s', prepid)
         sequences = request.get('sequences')
-        input_dataset = request.get('input_dataset')
-        input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
-        acquisition_era = input_dataset_parts[1].split('-')[0]
+        input_dataset = request.get('input')['dataset']
+        acquisition_era = request.get_era()
         subcampaigns_db = Database('subcampaigns')
         subcampaign_name = request.get('subcampaign')
         subcampaign_json = subcampaigns_db.get(subcampaign_name)
-        database_url = Settings().get('cmsweb_url') + '/couchdb'
+        database_url = Config.get('cmsweb_url') + '/couchdb'
         processing_string = request.get('processing_string')
-        request_string = f'{input_dataset_parts[1]}_{input_dataset_parts[0]}_{processing_string}'
+        request_string = request.get_request_string()
         job_dict = {}
         job_dict['CMSSWVersion'] = request.get('cmssw_release')
         job_dict['ScramArch'] = subcampaign_json.get('scram_arch')
         job_dict['RequestPriority'] = request.get('priority')
-        job_dict['InputDataset'] = input_dataset
+        if input_dataset:
+            job_dict['InputDataset'] = input_dataset
+            # Add input dataset's processing string to request's processing string
+            input_dataset_processing_string = request.get_input_processing_string()
+            if input_dataset_processing_string:
+                processing_string = f'{processing_string}_{input_dataset_processing_string}'
+
         job_dict['Group'] = 'PPD'
         job_dict['Requestor'] = 'pdmvserv'
         job_dict['Campaign'] = request.get('subcampaign').split('-')[0]
@@ -251,6 +277,34 @@ class RequestController(ControllerBase):
             raise NotImplementedError('Multiple sequences are not yet supported')
 
         return job_dict
+
+    def update_input_dataset(self, request):
+        """
+        Update input dataset name from input request (if exists)
+        Update runs from input request if they are not specified yet
+        """
+        prepid = request.get_prepid()
+        input_request_prepid = request.get('input')['request']
+        if input_request_prepid:
+            input_request = self.get(input_request_prepid)
+            input_dataset = input_request.get('input')['dataset']
+            output_datasets = input_request.get('output_datasets')
+            should_update = False
+            if output_datasets and input_dataset != output_datasets[-1]:
+                request.get('input')['dataset'] = output_datasets[-1]
+                should_update = True
+            elif not output_datasets:
+                request.get('input')['dataset'] = ''
+                should_update = True
+
+            if not request.get('runs'):
+                request.set('runs', input_request.get('runs'))
+                should_update = True
+
+            if should_update:
+                self.update(request.get_json(), force_update=True)
+        else:
+            self.logger.info('Did not update %s input dataset', prepid)
 
     def update_status(self, request, status, timestamp=None):
         """
@@ -303,6 +357,7 @@ class RequestController(ControllerBase):
         """
         Try to move rquest to approved
         """
+        self.update_input_dataset(request)
         prepid = request.get_prepid()
         if not request.get('runs'):
             raise Exception(f'No runs are specified in {prepid}')
@@ -314,7 +369,28 @@ class RequestController(ControllerBase):
         """
         Try to move request to submitting status and get sumbitted
         """
-        RequestSubmitter().add_request(request, self)
+        self.update_input_dataset(request)
+        input_dataset = request.get('input')['dataset']
+        if not input_dataset.strip():
+            prepid = request.get_prepid()
+            raise Exception(f'Could not move {prepid} to submitting '
+                            'because it does not have input dataset')
+
+        # Make sure input dataset is VALID
+        grid_cert = Config.get('grid_user_cert')
+        grid_key = Config.get('grid_user_key')
+        dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch', cert_file=grid_cert, key_file=grid_key)
+        dbs_response = dbs_conn.api('POST',
+                                    '/dbs/prod/global/DBSReader/datasetlist',
+                                    {'dataset': input_dataset,
+                                     'detail': 1})
+        dbs_response = json.loads(dbs_response.decode('utf-8'))
+        dataset_access_type = dbs_response[0].get('dataset_access_type', 'unknown')
+        self.logger.info('%s access type is %s', input_dataset, dataset_access_type)
+        if dataset_access_type != 'VALID':
+            raise Exception(f'{input_dataset} type is {dataset_access_type}, it must be VALID')
+
+        RequestSubmitter().add(request, self)
         self.update_status(request, 'submitting')
         return request
 
@@ -344,10 +420,68 @@ class RequestController(ControllerBase):
                                 'is not yet "announced" or "normal-archived"')
 
             self.update_status(request, 'done', completed_timestamp)
+            # Submit all subsequent requests
+            self.submit_subsequent_requests(request)
         else:
             raise Exception(f'{prepid} does not have any workflows in computing')
 
         return request
+
+    def submit_subsequent_requests(self, request):
+        """
+        Submit all requests that have given request as input
+        """
+        request_db = Database('requests')
+        prepid = request.get_prepid()
+        query = f'input.request={prepid}'
+        subsequent_requests = request_db.query(query)
+        self.logger.info('Found %s subsequent requests for %s: %s',
+                         len(subsequent_requests),
+                         prepid,
+                         [r['prepid'] for r in subsequent_requests])
+        for subsequent_request_json in subsequent_requests:
+            subsequent_request_prepid = subsequent_request_json.get('prepid', '')
+            try:
+                subsequent_request = self.get(subsequent_request_prepid)
+                self.update_input_dataset(subsequent_request)
+                if subsequent_request.get('status') == 'new':
+                    self.next_status(subsequent_request)
+
+                if subsequent_request.get('status') == 'approved':
+                    self.next_status(subsequent_request)
+
+            except Exception as ex:
+                self.logger.error('Error moving %s to next status: %s',
+                                  subsequent_request_prepid,
+                                  ex)
+
+    def update_subsequent_requests(self, request, values):
+        """
+        Update all subsequent requests
+        """
+        request_db = Database('requests')
+        prepid = request.get_prepid()
+        query = f'input.request={prepid}'
+        requests = request_db.query(query)
+        self.logger.info('Found %s subsequent requests for %s: %s',
+                         len(requests),
+                         prepid,
+                         [r['prepid'] for r in requests])
+        for request_json in requests:
+            if request_json.get('status') not in ('new', 'approved'):
+                continue
+
+            request_prepid = request_json.get('prepid', '')
+            try:
+                subsequent_request = self.get(request_prepid)
+                for key, value in values.items():
+                    subsequent_request.set(key, value)
+
+                self.update(subsequent_request.get_json())
+            except Exception as ex:
+                self.logger.error('Error updating subsequent request %s: %s',
+                                  request_prepid,
+                                  ex)
 
     def move_request_back_to_new(self, request):
         """
@@ -384,11 +518,15 @@ class RequestController(ControllerBase):
         subcampaign_db = Database('subcampaigns')
         subcampaign = subcampaign_db.get(subcampaign_name)
         runs_json_path = subcampaign.get('runs_json_path')
+        grid_cert = Config.get('grid_user_cert')
+        grid_key = Config.get('grid_user_key')
         with self.locker.get_lock('get-request-runs'):
             start_time = time.time()
             dbs_runs = []
             if input_dataset:
-                dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch')
+                dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch',
+                                             cert_file=grid_cert,
+                                             key_file=grid_key)
                 dbs_response = dbs_conn.api(
                     'GET',
                     f'/dbs/prod/global/DBSReader/runs?dataset={input_dataset}'
@@ -399,7 +537,9 @@ class RequestController(ControllerBase):
 
             json_runs = []
             if runs_json_path:
-                json_conn = ConnectionWrapper(host='cms-service-dqm.web.cern.ch')
+                json_conn = ConnectionWrapper(host='cms-service-dqm.web.cern.ch',
+                                              cert_file=grid_cert,
+                                              key_file=grid_key)
                 json_response = json_conn.api(
                     'GET',
                     f'/cms-service-dqm/CAF/certification/{runs_json_path}'
@@ -433,7 +573,7 @@ class RequestController(ControllerBase):
         Return a list of runs for given request
         """
         subcampaign_name = request.get('subcampaign')
-        input_dataset = request.get('input_dataset')
+        input_dataset = request.get('input')['dataset']
         return self.get_runs(subcampaign_name, input_dataset)
 
     def __pick_workflows(self, all_workflows, output_datasets):
@@ -541,14 +681,13 @@ class RequestController(ControllerBase):
                                            port=5984,
                                            https=False,
                                            keep_open=True)
-            existing_workflows = request.get('workflows')
             stats_workflows = stats_conn.api(
                 'GET',
                 f'/requests/_design/_designDoc/_view/prepids?key="{prepid}"&include_docs=True'
             )
             stats_workflows = json.loads(stats_workflows)
             stats_workflows = [x['doc'] for x in stats_workflows['rows']]
-            existing_workflows = [x['name'] for x in existing_workflows]
+            existing_workflows = [x['name'] for x in request.get('workflows')]
             stats_workflows = [x['RequestName'] for x in stats_workflows]
             all_workflow_names = list(set(existing_workflows) | set(stats_workflows))
             self.logger.info('All workflows of %s are %s', prepid, ', '.join(all_workflow_names))
@@ -559,7 +698,10 @@ class RequestController(ControllerBase):
                     raise Exception(f'Could not find {workflow_name} in Stats2')
 
                 workflow = json.loads(workflow)
-                if workflow.get('RequestType').lower() == 'resubmission':
+                if not workflow.get('RequestName'):
+                    raise Exception(f'Could not find {workflow_name} in Stats2')
+
+                if workflow.get('RequestType', '').lower() == 'resubmission':
                     continue
 
                 all_workflows[workflow_name] = workflow
@@ -592,6 +734,16 @@ class RequestController(ControllerBase):
             request.set('workflows', new_workflows)
             request_db.save(request.get_json())
 
+            if output_datasets:
+                subsequent_requests = request_db.query(f'input.request={prepid}')
+                self.logger.info('Found %s subsequent requests for %s: %s',
+                                 len(subsequent_requests),
+                                 prepid,
+                                 [r['prepid'] for r in subsequent_requests])
+                for subsequent_request_json in subsequent_requests:
+                    subsequent_request_prepid = subsequent_request_json.get('prepid')
+                    self.update_input_dataset(self.get(subsequent_request_prepid))
+
         return request
 
     def option_reset(self, request):
@@ -607,12 +759,13 @@ class RequestController(ControllerBase):
                 raise Exception('It is not allowed to option reset '
                                 'requests that are not in status "new"')
 
+            subcampaign_db = Database('subcampaigns')
             subcampaign_name = request.get('subcampaign')
-            subcampaign_controller = SubcampaignController()
-            subcampaign = subcampaign_controller.get(subcampaign_name)
-            if not subcampaign:
+            subcampaign_json = subcampaign_db.get(subcampaign_name)
+            if not subcampaign_json:
                 raise Exception(f'Subcampaign "{subcampaign_name}" does not exist')
 
+            subcampaign = Subcampaign(json_input=subcampaign_json)
             request.set('memory', subcampaign.get('memory'))
             request.set('sequences', subcampaign.get('sequences'))
             request.set('energy', subcampaign.get('energy'))
@@ -626,6 +779,9 @@ class RequestController(ControllerBase):
         """
         prepid = request.get_prepid()
         request_db = Database('requests')
+        cmsweb_url = Config.get('cmsweb_url')
+        grid_cert = Config.get('grid_user_cert')
+        grid_key = Config.get('grid_user_key')
         self.logger.info('Will try to change %s priority to %s', prepid, priority)
         with self.locker.get_nonblocking_lock(prepid):
             request_json = request_db.get(prepid)
@@ -637,8 +793,10 @@ class RequestController(ControllerBase):
             request.set('priority', priority)
             updated_workflows = []
             active_workflows = self.__pick_active_workflows(request)
-            settings = Settings()
-            connection = ConnectionWrapper(host=settings.get('cmsweb_url'), keep_open=True)
+            connection = ConnectionWrapper(host=cmsweb_url,
+                                           keep_open=True,
+                                           cert_file=grid_cert,
+                                           key_file=grid_key)
             for workflow in active_workflows:
                 workflow_name = workflow['name']
                 self.logger.info('Changing "%s" priority to %s', workflow_name, priority)
@@ -660,12 +818,12 @@ class RequestController(ControllerBase):
         """
         Force Stats2 to update workflows with given workflow names
         """
-        credentials_path = Settings().get('credentials_path')
+        credentials_file = Config.get('credentials_file')
         with self.locker.get_lock('refresh-stats'):
-            ssh_executor = SSHExecutor('vocms074.cern.ch', credentials_path)
-            workflow_update_commands = ['cd /home/pdmvserv/Stats2',
-                                        'export USERKEY=/home/pdmvserv/private/hostkey.pem',
-                                        'export USERCRT=/home/pdmvserv/private/hostcert.pem']
+            ssh_executor = SSHExecutor('vocms074.cern.ch', credentials_file)
+            workflow_update_commands = ['cd /home/pdmvserv/private',
+                                        'source setup_credentials.sh',
+                                        'cd /home/pdmvserv/Stats2']
             for workflow_name in workflows:
                 workflow_update_commands.append(
                     f'python3 stats_update.py --action update --name {workflow_name}'
@@ -696,8 +854,13 @@ class RequestController(ControllerBase):
         """
         Reject or abort list of workflows in ReqMgr2
         """
-        cmsweb_url = Settings().get('cmsweb_url')
-        connection = ConnectionWrapper(host=cmsweb_url, keep_open=True)
+        cmsweb_url = Config.get('cmsweb_url')
+        grid_cert = Config.get('grid_user_cert')
+        grid_key = Config.get('grid_user_key')
+        connection = ConnectionWrapper(host=cmsweb_url,
+                                       keep_open=True,
+                                       cert_file=grid_cert,
+                                       key_file=grid_key)
         headers = {'Content-type': 'application/json',
                    'Accept': 'application/json'}
         for workflow in workflows:
@@ -705,7 +868,7 @@ class RequestController(ControllerBase):
             status_history = workflow.get('status_history')
             if not status_history:
                 self.logger.error('%s has no status history', workflow_name)
-                continue
+                status_history = [{'status': '<unknown>'}]
 
             last_workflow_status = status_history[-1]['status']
             self.logger.info('%s last status is %s', workflow_name, last_workflow_status)

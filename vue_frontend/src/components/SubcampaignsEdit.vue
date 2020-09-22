@@ -1,8 +1,8 @@
 <template>
   <div>
-    <h1 v-if="creatingNew">Creating new Subcampaign</h1>
-    <h1 v-else>Editing {{editableObject.prepid}}</h1>
-    <v-card raised style="margin: auto; padding: 16px; max-width: 750px;">
+    <h1 class="page-title" v-if="creatingNew"><span class="font-weight-light">Creating</span> new subcampaign</h1>
+    <h1 class="page-title" v-else><span class="font-weight-light">Editing subcampaign</span> {{prepid}}</h1>
+    <v-card raised class="page-card">
       <table v-if="editableObject">
         <tr>
           <td>PrepID</td>
@@ -10,74 +10,89 @@
         </tr>
         <tr>
           <td>Energy</td>
-          <td><input type="number" v-model="editableObject.energy" :disabled="!editingInfo.energy">TeV</td>
-        </tr>
-        <tr>
-          <td>Step</td>
-          <td>
-            <select v-model="editableObject.step" :disabled="!editingInfo.step">
-              <option>DR</option>
-              <option>MiniAOD</option>
-              <option>NanoAOD</option>
-            </select>
-          </td>
+          <td><input type="number" min="0" v-model="editableObject.energy" :disabled="!editingInfo.energy">TeV</td>
         </tr>
         <tr>
           <td>CMSSW Release</td>
           <td><input type="text" v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
         </tr>
         <tr>
-          <td>SCRAM Arch</td>
-          <td><input type="text" v-model="editableObject.scram_arch" :disabled="!editingInfo.scram_arch"></td>
+          <td>Memory</td>
+          <td><input type="number" v-model="editableObject.memory" :disabled="!editingInfo.memory">MB</td>
         </tr>
         <tr>
           <td>Notes</td>
           <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
         </tr>
         <tr>
-          <td>Sequences</td>
+          <td>Runs JSON</td>
+          <td><input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path" placeholder="Example: Collisions16/13TeV/DCSOnly/json_DCSONLY.txt"></td>
+        </tr>
+        <tr>
+          <td>SCRAM Arch</td>
+          <td><input type="text" v-model="editableObject.scram_arch" :disabled="!editingInfo.scram_arch"></td>
+        </tr>
+        <tr>
+          <td>Sequences ({{listLength(editableObject.sequences)}})</td>
           <td>
-            <ul>
-              <li v-for="(sequence, index) in editableObject.sequences" :key="index">
-                Sequence {{index + 1}}
-                <v-btn v-if="editingInfo.sequences" small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(index, true)">Edit</v-btn>
-                <v-btn v-if="editingInfo.sequences" small class="mr-1 mb-1" color="error" @click="deleteSequence(index)">Delete</v-btn>
-                <v-btn v-if="!editingInfo.sequences" small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(index, false)">View</v-btn>
-              </li>
-              <li v-if="editingInfo.sequences">
-                <v-btn small class="mr-1 mb-1" color="primary" @click="showSequenceDialog(-1, true)">Add sequence</v-btn>
-              </li>
-            </ul>
+            <div v-for="(sequence, index) in editableObject.sequences" :key="index">
+              <h3>Sequence {{index + 1}}</h3>
+              <table>
+                <tr>
+                  <td>conditions</td><td><input type="text" v-model="sequence.conditions" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>customise</td><td><input type="text" v-model="sequence.customise" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>datatier</td><td><input type="text" v-model="sequence.datatier" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>era</td><td><input type="text" v-model="sequence.era" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>eventcontent</td><td><input type="text" v-model="sequence.eventcontent" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>extra</td><td><input type="text" v-model="sequence.extra" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>nThreads</td><td><input type="number" min="1" v-model="sequence.nThreads" :disabled="!editableObject.sequences"></td>
+                </tr>
+                <tr>
+                  <td>scenario</td>
+                  <td>
+                    <select v-model="sequence.scenario" :disabled="!editableObject.sequences">
+                      <option>pp</option>
+                      <option>cosmics</option>
+                      <option>nocoll</option>
+                      <option>HeavyIons</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr>
+                  <td>step</td><td><input type="text" v-model="sequence.step" :disabled="!editableObject.sequences"></td>
+                </tr>
+              </table>
+              <v-btn small
+                     class="mr-1 mb-1"
+                     color="error"
+                     v-if="editingInfo.sequences"
+                     @click="deleteSequence(index)">Delete sequence {{index + 1}}</v-btn>
+              <hr>
+            </div>
+            <v-btn small
+                   class="mr-1 mb-1 mt-1"
+                   color="primary"
+                   v-if="editingInfo.sequences && editableObject.sequences.length < 5"
+                   @click="addSequence()">Add sequence {{listLength(editableObject.sequences) + 1}}</v-btn>
           </td>
         </tr>
-        <tr>
-          <td>Memory</td>
-          <td><input type="number" v-model="editableObject.memory" :disabled="!editingInfo.memory">MB</td>
-        </tr>
-        <tr>
-          <td>Runs JSON</td>
-          <td>Get a list of runs from JSON, for example:<pre>Collisions16/13TeV/DCSOnly/json_DCSONLY.txt</pre><input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path"></td>
-        </tr>
       </table>
-      <v-btn small class="mr-1 mb-1" color="primary" @click="save()">Save</v-btn>
+      <v-btn small class="mr-1 mt-1" color="primary" @click="save()">Save</v-btn>
+      <v-btn small class="mr-1 mt-1" color="error" @click="cancel()">Cancel</v-btn>
     </v-card>
-    <v-dialog v-model="sequenceEditDialog.visible"
-              max-width="50%">
-      <v-card style="padding: 16px;">
-        <SequencesEdit :sequenceObject="sequenceEditDialog.sequence"
-                       :sequenceIndex="sequenceEditDialog.index"
-                       :editable="sequenceEditDialog.editable"
-                       v-on:saveSequence="onSeqenceSave"/>
-      </v-card>
-    </v-dialog>
-    <v-overlay :absolute="false"
-               :opacity="0.95"
-               :z-index="3"
-               :value="loading"
-               style="text-align: center">
-      <v-progress-circular indeterminate color="primary"></v-progress-circular>
-      <br>Please wait...
-    </v-overlay>
+    <LoadingOverlay :visible="loading"/>
     <v-dialog v-model="errorDialog.visible"
               max-width="50%">
       <v-card>
@@ -85,7 +100,7 @@
           {{errorDialog.title}}
         </v-card-title>
         <v-card-text>
-          {{errorDialog.description}}
+          <span v-html="errorDialog.description"></span>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -101,11 +116,15 @@
 <script>
 
 import axios from 'axios'
-import SequencesEdit from './SequencesEdit'
+import { utilsMixin } from '../mixins/UtilsMixin.js'
+import LoadingOverlay from './LoadingOverlay.vue'
 
 export default {
+  mixins: [
+    utilsMixin
+  ],
   components: {
-    SequencesEdit
+    LoadingOverlay
   },
   data () {
     return {
@@ -114,12 +133,6 @@ export default {
       editingInfo: {},
       loading: true,
       creatingNew: true,
-      sequenceEditDialog: {
-        visible: false,
-        index: -1,
-        sequence: undefined,
-        editable: false,
-      },
       errorDialog: {
         visible: false,
         title: '',
@@ -129,67 +142,56 @@ export default {
   },
   created () {
     let query = Object.assign({}, this.$route.query);
-    this.prepid = query['prepid'];
-    this.creatingNew = this.prepid === undefined;
+    if (query.prepid && query.prepid.length) {
+      this.prepid = query.prepid;
+    } else {
+      this.prepid = '';
+    }
+    this.creatingNew = this.prepid.length == 0;
     this.loading = true;
     let component = this;
-    axios.get('api/subcampaigns/get_editable' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
+    axios.get('api/subcampaigns/get_editable/' + this.prepid).then(response => {
       component.editableObject = response.data.response.object;
       component.editingInfo = response.data.response.editing_info;
       component.loading = false;
+    }).catch(error => {
+      component.loading = false;
+      this.showError('Error fetching editing information', component.getError(error));
     });
   },
   methods: {
     save: function() {
       this.loading = true;
-      let editableObject = JSON.parse(JSON.stringify(this.editableObject))
-      let component = this;
-      editableObject['notes'] = editableObject['notes'].trim();
+      let editableObject = this.makeCopy(this.editableObject);
+      editableObject.notes = editableObject.notes.trim();
       let httpRequest;
       if (this.creatingNew) {
-        httpRequest = axios.put('api/subcampaigns/create', editableObject)
+        httpRequest = axios.put('api/subcampaigns/create', editableObject);
       } else {
-        httpRequest = axios.post('api/subcampaigns/update', editableObject)
+        httpRequest = axios.post('api/subcampaigns/update', editableObject);
       }
+      let component = this;
       httpRequest.then(response => {
         component.loading = false;
         window.location = 'subcampaigns?prepid=' + response.data.response.prepid;
       }).catch(error => {
         component.loading = false;
-        this.showError('Error saving subcampaign', error.response.data.message);
+        this.showError('Error saving subcampaign', component.getError(error));
       });
     },
-    showSequenceDialog: function(index, editable) {
-      if (index < 0) {
-        let component = this;
-        axios.get('api/subcampaigns/get_default_sequence' + (this.creatingNew ? '' : ('/' + this.prepid))).then(response => {
-          component.sequenceEditDialog.visible = true;
-          component.sequenceEditDialog.index = index;
-          component.sequenceEditDialog.sequence = response.data.response;
-          component.sequenceEditDialog.editable = editable;
-        }).catch(error => {
-          component.loading = false;
-          this.showError('Error saving subcampaign', error.response.data.message);
-        });
-      } else {
-        this.sequenceEditDialog.visible = true;
-        this.sequenceEditDialog.index = index;
-        this.sequenceEditDialog.sequence = this.editableObject.sequences[index];
-        this.sequenceEditDialog.editable = editable;
-      }
-    },
-    onSeqenceSave: function(index, sequence) {
-      if (sequence !== undefined) {
-        if (index < 0) {
-          this.editableObject['sequences'].push(sequence);
-        } else {
-          this.editableObject['sequences'][index] = sequence;
-        }
-      }
-      this.sequenceEditDialog.visible = false;
+    addSequence: function() {
+      this.loading = true;
+      let component = this;
+      axios.get('api/subcampaigns/get_default_sequence/' + (this.creatingNew ? '' : this.prepid)).then(response => {
+        component.editableObject.sequences.push(response.data.response);
+        component.loading = false;
+      }).catch(error => {
+        component.loading = false;
+        this.showError('Error getting sequence information', component.getError(error));
+      });
     },
     deleteSequence: function(index) {
-      this.editableObject['sequences'].splice(index, 1);
+      this.editableObject.sequences.splice(index, 1);
     },
     clearErrorDialog: function() {
       this.errorDialog.visible = false;
@@ -202,20 +204,13 @@ export default {
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
     },
+    cancel: function() {
+      if (this.creatingNew) {
+        window.location = 'subcampaigns';
+      } else {
+        window.location = 'subcampaigns?prepid=' + this.prepid;
+      }
+    },
   }
 }
 </script>
-
-<style scoped>
-
-h1 {
-  margin: 8px;
-}
-
-td {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-right: 4px;
-}
-
-</style>

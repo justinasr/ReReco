@@ -3,7 +3,7 @@ Module that contains all request APIs
 """
 import json
 import flask
-from api.api_base import APIBase
+from core_lib.api.api_base import APIBase
 from core.controller.request_controller import RequestController
 from core.model.request import Request
 
@@ -29,7 +29,7 @@ class CreateRequestAPI(APIBase):
         data = flask.request.data
         request_json = json.loads(data.decode('utf-8'))
         obj = request_controller.create(request_json)
-        return self.output_text({'response': obj, 'success': True, 'message': ''})
+        return self.output_text({'response': obj.get_json(), 'success': True, 'message': ''})
 
 
 class DeleteRequestAPI(APIBase):

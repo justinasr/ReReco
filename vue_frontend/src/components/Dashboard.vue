@@ -1,7 +1,7 @@
 <template>
   <div>
-    <h1>System Dashboard</h1>
-    <div style="margin: 8px">
+    <h1 class="page-title">System Dashboard</h1>
+    <v-card raised class="page-card">
       <h3>Submission threads ({{Object.keys(submission_workers).length}})</h3>
       <ul>
         <li v-for="(info, worker) in submission_workers" :key="worker">Thread "{{worker}}" is {{info.job_name ? 'working on ' + info.job_name + ' for ' + info.job_time + 's' : 'not busy'}}</li>
@@ -22,7 +22,7 @@
           <li v-for="(info, lock) in locks" :key="lock">{{lock}}: {{info.l}}</li>
         </ul>
       </small>
-    </div>
+    </v-card>
   </div>
 </template>
 
@@ -98,9 +98,5 @@ export default {
 </script>
 
 <style scoped>
-
-h1 {
-  margin: 8px;
-}
 
 </style>

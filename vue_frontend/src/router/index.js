@@ -2,12 +2,9 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Home from '@/components/Home'
 import Subcampaigns from '@/components/Subcampaigns'
-import SubcampaignTickets from '@/components/SubcampaignTickets'
-import SubcampaignTicketsEdit from '@/components/SubcampaignTicketsEdit'
+import Tickets from '@/components/Tickets'
+import TicketsEdit from '@/components/TicketsEdit'
 import SubcampaignsEdit from '@/components/SubcampaignsEdit'
-import Flows from '@/components/Flows'
-import ChainedCampaigns from '@/components/ChainedCampaigns'
-import ChainedRequests from '@/components/ChainedRequests'
 import Requests from '@/components/Requests'
 import RequestsEdit from '@/components/RequestsEdit'
 import Dashboard from '@/components/Dashboard'
@@ -33,29 +30,14 @@ const routes = [
     component: Subcampaigns
   },
   {
-    path: '/subcampaign_tickets/edit',
-    name: 'subcampaign_tickets_edit',
-    component: SubcampaignTicketsEdit
+    path: '/tickets/edit',
+    name: 'tickets_edit',
+    component: TicketsEdit
   },
   {
-    path: '/subcampaign_tickets',
-    name: 'subcampaign_tickets',
-    component: SubcampaignTickets
-  },
-  {
-    path: '/flows',
-    name: 'flows',
-    component: Flows
-  },
-  {
-    path: '/chained_campaigns',
-    name: 'chained_campaigns',
-    component: ChainedCampaigns
-  },
-  {
-    path: '/chained_requests',
-    name: 'chained_requests',
-    component: ChainedRequests
+    path: '/tickets',
+    name: 'tickets',
+    component: Tickets
   },
   {
     path: '/requests/edit',
@@ -80,7 +62,7 @@ const router = new VueRouter({
   stringifyQuery: query => {
     var result = qs.stringify(query);
     // Do not encode asterisks
-    result = result.replace(/%2A/g, '*').replace(/%2F/g, '/').replace(/%21/g, '!');
+    result = result.replace(/%2A/g, '*').replace(/%2F/g, '/').replace(/%21/g, '!').replace(/%2C/g, ',');
     return result ? ('?' + result) : '';
   },
   routes

@@ -1,8 +1,8 @@
 """
-Module that contains all request APIs
+Module that contains all settings APIs
 """
-from api.api_base import APIBase
-from core.utils.settings import Settings
+from core_lib.api.api_base import APIBase
+from core_lib.utils.settings import Settings
 
 
 class SettingsAPI(APIBase):

@@ -4,7 +4,7 @@
       <div style="flex: 1 1 auto;">
         <div>
           <div style="width: calc(100vw - 32px); position: sticky; left: 16px;">
-            <h1>Subcampaign Tickets</h1>
+            <h1 class="page-title">Tickets</h1>
             <ColumnSelector :columns="columns"
                             v-on:updateColumns="updateTableColumns"/>
           </div>
@@ -18,36 +18,56 @@
                       hide-default-footer
                       class="elevation-1">
           <template v-slot:item._actions="{ item }">
-            <a :href="'subcampaign_tickets/edit?prepid=' + item.prepid" v-if="role('manager')">Edit</a>&nbsp;
-            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')">Delete</a>&nbsp;
-            <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'">Create requests</a>&nbsp;
-            <a :href="'api/subcampaign_tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'">TWiki</a>&nbsp;
+            <a :href="'tickets/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit ticket">Edit</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')" title="Delete ticket">Delete</a>&nbsp;
+            <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'" title="Create requests from this ticket">Create requests</a>&nbsp;
+            <a :href="'api/tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'" title="Show a snippet for TWiki">TWiki</a>&nbsp;
           </template>
           <template v-slot:item.prepid="{ item }">
-            <a :href="'subcampaign_tickets?prepid=' + item.prepid">{{item.prepid}}</a>
+            <a :href="'tickets?prepid=' + item.prepid" title="Show only this ticket">{{item.prepid}}</a>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
           </template>
           <template v-slot:item.input_datasets="{ item }">
             {{item.input_datasets.length}} input datasets:
+            <ul style="line-height: 95%">
+              <li v-for="dataset in item.input_datasets" :key="dataset">
+                <small>
+                  <a target="_blank" title="Open dataset in DAS" :href="makeDASLink(dataset)">
+                    {{dataset}}
+                  </a>
+                </small>
+              </li>
+            </ul>
+          </template>
+          <template v-slot:item.steps="{ item }">
             <ul>
-              <li v-for="dataset in item.input_datasets" :key="dataset"><small>{{dataset}}</small></li>
+              <li v-for="(step, index) in item.steps" :key="index">
+                Step {{index + 1}}:
+                <ul>
+                  <li>Subcampaign: <a :href="'subcampaigns?prepid=' + step.subcampaign" :title="'Open ' + step.subcampaign + ' subcampaign'">{{step.subcampaign}}</a></li>
+                  <li>Processing string: <a :href="'requests?processing_string=' + step.processing_string" :title="'Show all requests with ' + step.processing_string + ' processing string'">{{step.processing_string}}</a></li>
+                  <li>Time per event: {{step.time_per_event}} s</li>
+                  <li>Size per event: {{step.size_per_event}} kB</li>
+                </ul>
+              </li>
             </ul>
           </template>
           <template v-slot:item.created_requests="{ item }">
-            <ul>
-              <li v-for="prepid in item.created_requests" :key="prepid"><a :href="'requests?prepid=' + prepid">{{prepid}}</a></li>
+            <span v-if="item.created_requests && item.created_requests.length > 0"><a :href="'requests?ticket=' + item.prepid">{{item.created_requests.length}} requests:</a></span>
+            <ul style="line-height: 95%">
+              <li v-for="request in item.created_requests" :key="request">
+                <small>
+                  <a :href="'requests?prepid=' + request" :title="'Open ' + request + ' request'">
+                    {{request}}
+                  </a>
+                </small>
+              </li>
             </ul>
           </template>
           <template v-slot:item.notes="{ item }">
             <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
-          </template>
-          <template v-slot:item.time_per_event="{ item }">
-            {{item.time_per_event}}s
-          </template>
-          <template v-slot:item.size_per_event="{ item }">
-            {{item.size_per_event}} kB
           </template>
         </v-data-table>
       </div>
@@ -81,7 +101,7 @@
           {{errorDialog.title}}
         </v-card-title>
         <v-card-text>
-          {{errorDialog.description}}
+          <span v-html="errorDialog.description"></span>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -93,9 +113,8 @@
     </v-dialog>
 
     <footer>
-      <a :href="'subcampaign_tickets/edit'" style="float: left; margin: 16px;" v-if="role('manager')">New ticket</a>
-      <Paginator style="float: right;"
-                 :totalRows="totalItems"
+      <a :href="'tickets/edit'" v-if="role('manager')" title="Create new ticket">New ticket</a>
+      <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
   </div>
@@ -108,6 +127,7 @@ import ColumnSelector from './ColumnSelector'
 import Paginator from './Paginator'
 import HistoryCell from './HistoryCell'
 import { roleMixin } from '../mixins/UserRoleMixin.js'
+import { utilsMixin } from '../mixins/UtilsMixin.js'
 
 export default {
   components: {
@@ -115,7 +135,7 @@ export default {
     Paginator,
     HistoryCell
   },
-  mixins: [roleMixin],
+  mixins: [roleMixin, utilsMixin],
   data () {
     return {
       databaseName: undefined,
@@ -123,15 +143,11 @@ export default {
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'status', 'displayName': 'Status', 'visible': 1},
-        {'dbName': 'subcampaign', 'displayName': 'Subcampaign', 'visible': 1},
-        {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 1},
+        {'dbName': 'steps', 'displayName': 'Steps', 'visible': 1},
         {'dbName': 'input_datasets', 'displayName': 'Input Datasets', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
         {'dbName': 'created_requests', 'displayName': 'Created Requests', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
-        {'dbName': 'priority', 'displayName': 'Priority', 'visible': 0},
-        {'dbName': 'size_per_event', 'displayName': 'Size per Event', 'visible': 0},
-        {'dbName': 'time_per_event', 'displayName': 'Time per Event', 'visible': 0},
       ],
       headers: [],
       dataItems: [],
@@ -171,7 +187,7 @@ export default {
           queryParams += '&' + k + '=' + query[k];
         }
       });
-      axios.get('api/search?db_name=subcampaign_tickets' + queryParams).then(response => {
+      axios.get('api/search?db_name=tickets' + queryParams).then(response => {
         component.dataItems = response.data.response.results.map(function (x) { x._actions = undefined; return x});
         component.totalItems = response.data.response.total_rows;
         component.loading = false;
@@ -203,19 +219,19 @@ export default {
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
     },
-    showDeleteDialog: function(subcampaign_ticket) {
+    showDeleteDialog: function(ticket) {
       let component = this;
-      this.dialog.title = "Delete " + subcampaign_ticket.prepid + "?";
-      this.dialog.description = "Are you sure you want to delete " + subcampaign_ticket.prepid + " subcampaign ticket?";
+      this.dialog.title = "Delete " + ticket.prepid + "?";
+      this.dialog.description = "Are you sure you want to delete " + ticket.prepid + " ticket?";
       this.dialog.ok = function() {
         component.loading = true;
-        axios.delete('api/subcampaign_tickets/delete', {data: {'prepid': subcampaign_ticket.prepid, '_rev': subcampaign_ticket._rev}}).then(() => {
+        axios.delete('api/tickets/delete', {data: {'prepid': ticket.prepid}}).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error deleting subcampaign ticket", error.response.data.message);
+          component.showError("Error deleting ticket", component.getError(error));
         });
       }
       this.dialog.cancel = function() {
@@ -223,19 +239,19 @@ export default {
       }
       this.dialog.visible = true;
     },
-    showCreateRequestsDialog: function(subcampaign_ticket) {
+    showCreateRequestsDialog: function(ticket) {
       let component = this;
-      this.dialog.title = "Create requests for " + subcampaign_ticket.prepid + "?";
-      this.dialog.description = "Are you sure you want to generate requests for " + subcampaign_ticket.prepid + " subcampaign ticket?";
+      this.dialog.title = "Create requests for " + ticket.prepid + "?";
+      this.dialog.description = "Are you sure you want to generate requests for " + ticket.prepid + " ticket?";
       this.dialog.ok = function() {
         component.loading = true;
-        axios.post('api/subcampaign_tickets/create_requests', {'prepid': subcampaign_ticket.prepid}).then(() => {
+        axios.post('api/tickets/create_requests', {'prepid': ticket.prepid}).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
           component.loading = false;
           component.clearDialog();
-          component.showError("Error creating requests", error.response.data.message);
+          component.showError("Error creating requests", component.getError(error));
         });
       }
       this.dialog.cancel = function() {
@@ -246,15 +262,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-h1 {
-  margin: 8px;
-}
-
-input[type="text"]:disabled {
-  background: #dddddd;
-}
-
-</style>

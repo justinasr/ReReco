@@ -41,25 +41,25 @@ class Sequence(ModelBase):
     lambda_checks = {
         'conditions': lambda c: ModelBase.matches_regex(c, '[a-zA-Z0-9_]{0,50}'),
         'config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
-        '__datatier': lambda s: s in ('AOD',
+        '__datatier': lambda s: s in {'AOD',
                                       'MINIAOD',
                                       'NANOAOD',
                                       'DQMIO',
                                       'USER',
                                       'ALCARECO',
-                                      'RECO'),
+                                      'RECO'},
         'era': lambda e: ModelBase.matches_regex(e, '[a-zA-Z0-9_\\,]{0,50}'),
-        '__eventcontent': lambda s: s in ('AOD',
+        '__eventcontent': lambda s: s in {'AOD',
                                           'MINIAOD',
                                           'NANOAOD',
                                           'DQM',
                                           'NANOEDMAOD',
                                           'ALCARECO',
-                                          'RECO'),
+                                          'RECO'},
         'harvesting_config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
         'nThreads': lambda n: 0 < n < 64,
-        'scenario': lambda s: s in ('pp', 'cosmics', 'nocoll', 'HeavyIons'),
-        '__step': lambda s: (s in ('RAW2DIGI', 'L1Reco', 'RECO', 'EI', 'PAT', 'NANO') or
+        'scenario': lambda s: s in {'pp', 'cosmics', 'nocoll', 'HeavyIons'},
+        '__step': lambda s: (s in {'RAW2DIGI', 'L1Reco', 'RECO', 'EI', 'PAT', 'NANO'} or
                              s.startswith('ALCA') or
                              s.startswith('DQM') or
                              s.startswith('SKIM') or
@@ -198,6 +198,7 @@ class Sequence(ModelBase):
         Config file is named like this
         PrepID_0_cfg.py
         """
+        sequence_name = self.get_name()
         arguments_dict = dict(self.get_json())
         # Delete sequence metadata
         if 'config_id' in arguments_dict:
@@ -206,14 +207,34 @@ class Sequence(ModelBase):
         if 'harvesting_config_id' in arguments_dict:
             del arguments_dict['harvesting_config_id']
 
+        # Fetch list of files for specific runs
+        das_query = ''
         # Handle input/output file names
         if overwrite_input:
             arguments_dict['filein'] = overwrite_input
         else:
             index = self.get_index_in_parent()
+            arguments_dict['number'] = 10
             if index == 0:
-                input_dataset = self.parent().get('input_dataset')
-                arguments_dict['filein'] = f'"dbs:{input_dataset}"'
+                input_dataset = self.parent().get('input')['dataset']
+                all_runs = self.parent().get('runs')
+                if not input_dataset:
+                    input_request = self.parent().get('input')['request']
+                    arguments_dict['filein'] = f'"file:{input_request}.root"'
+                elif all_runs:
+                    das_file = f'{sequence_name}_files.txt'
+                    das_query += '# Query DAS to get list of files for specified runs\n'
+                    # Chunkify to 25 runs, otherwise script line gets very long
+                    for runs in self.chunkify(all_runs, 25):
+                        runs = ','.join([str(r) for r in runs])
+                        das_query += 'dasgoclient --limit 0 '
+                        das_query += f'--query "file dataset={input_dataset} run in [{runs}]" '
+                        das_query += f'>> {das_file}\n'
+
+                    das_query += '\n'
+                    arguments_dict['filein'] = f'"filelist:{das_file}"'
+                else:
+                    arguments_dict['filein'] = f'"dbs:{input_dataset}"'
             else:
                 previous_sequence = self.parent().get('sequences')[index - 1]
                 input_file = f'{previous_sequence.get_name()}.root'
@@ -231,9 +252,9 @@ class Sequence(ModelBase):
             # Build a small python program to get value from CMSSW on the go
             step_var = f'{step}_STEP=$(python -c "'
             if step == 'ALCA':
-                step_var += f'from Configuration.AlCa.autoAlca import AlCaRecoMatrix as ds;'
+                step_var += 'from Configuration.AlCa.autoAlca import AlCaRecoMatrix as ds;'
             elif step == 'SKIM':
-                step_var += f'from Configuration.Skimming.autoSkim import autoSkim as ds;'
+                step_var += 'from Configuration.Skimming.autoSkim import autoSkim as ds;'
 
             step_var += f'print(\'{step}:@{dataset}\' if \'{dataset}\' in ds.keys() else \'\')")'
             dynamic_steps += f'{step_var}\n'
@@ -242,13 +263,12 @@ class Sequence(ModelBase):
             dynamic_steps = f'# Steps based on dataset name\n{dynamic_steps}\n'
 
         # Build argument dictionary
-        sequence_name = self.get_name()
         config_names = self.get_config_file_names()
         arguments_dict['fileout'] = f'"file:{sequence_name}.root"'
         arguments_dict['python_filename'] = f'"{config_names["config"]}.py"'
         arguments_dict['no_exec'] = True
         cms_driver_command = self.__build_cmsdriver('RECO', arguments_dict)
-        return dynamic_steps + cms_driver_command
+        return dynamic_steps + das_query + cms_driver_command
 
     def get_harvesting_cmsdriver(self):
         """
@@ -303,5 +323,16 @@ class Sequence(ModelBase):
         arguments_dict['era'] = arguments_dict['era'].split(',')[0]
         arguments_dict['filein'] = f'"file:{sequence_name}_inDQM.root"'
         arguments_dict['python_filename'] = f'"{config_names["harvest"]}.py"'
+        arguments_dict['number'] = -1
         harvesting_command = self.__build_cmsdriver('HARVESTING', arguments_dict)
         return harvesting_command
+
+    def chunkify(self, items, chunk_size):
+        """
+        Yield fixed size chunks of given list
+        """
+        start = 0
+        chunk_size = max(chunk_size, 1)
+        while start < len(items):
+            yield items[start: start + chunk_size]
+            start += chunk_size
