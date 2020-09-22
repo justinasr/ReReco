@@ -92,10 +92,12 @@ class ObjectsInfoAPI(APIBase):
         """
         request_db = Database('requests')
         database = request_db.collection
-        by_status = database.aggregate([{'$group': {'_id': '$status',
+        by_status = database.aggregate([{'$match': {'deleted': {'$ne': True}}},
+                                        {'$group': {'_id': '$status',
                                                     'count': {'$sum': 1}}}])
 
-        by_processing_string = database.aggregate([{'$match': {'status': 'submitted'}},
+        by_processing_string = database.aggregate([{'$match': {'deleted': {'$ne': True}}},
+                                                   {'$match': {'status': 'submitted'}},
                                                    {'$group': {'_id': '$processing_string',
                                                                'count': {'$sum': 1}}},
                                                    {'$sort': {'count': -1}}])
