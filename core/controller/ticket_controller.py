@@ -235,9 +235,7 @@ class TicketController(ControllerBase):
         request_controller = RequestController()
         for request_prepid in ticket.get('created_requests'):
             request = request_controller.get(request_prepid)
-            input_dataset = request.get('input_dataset')
-            input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
-            acquisition_era = input_dataset_parts[1].split('-')[0]
+            acquisition_era = request.get_era()
             if acquisition_era not in acquisition_eras:
                 acquisition_eras[acquisition_era] = []
 
@@ -247,14 +245,12 @@ class TicketController(ControllerBase):
         pmp_url = 'https://cms-pdmv.cern.ch/pmp/historical?r='
         for acquisition_era, requests in acquisition_eras.items():
             output_strings.append(f'---+++ !{acquisition_era}\n')
-            output_strings.append('| *DataSet* | *prepID monitoring* | *run* |')
+            output_strings.append('| *Dataset* | *Monitoring link* | *Runs* |')
             for request in requests:
                 prepid = request.get_prepid()
                 runs = request.get('runs')
                 runs = ', '.join(str(r) for r in runs)
-                input_dataset = request.get('input_dataset')
-                input_dataset_parts = [x.strip() for x in input_dataset.split('/') if x.strip()]
-                dataset = input_dataset_parts[0]
+                dataset = request.get_dataset()
                 output_strings.append(f'| {dataset} | [[{pmp_url}{prepid}][{prepid}]] | {runs} |')
 
             output_strings.append('\n')
