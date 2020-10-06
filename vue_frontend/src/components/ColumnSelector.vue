@@ -43,7 +43,7 @@
         this.shown = query['shown'];
       }
       this.updateVisibleFromShown();
-      this.$router.replace({query: query}).catch(err => {});
+      this.$router.replace({query: query}).catch(() => {});
     },
     watch:{
       columnsLocal: {
@@ -85,7 +85,7 @@
       updateQuery: function(name, value) {
         let query = Object.assign({}, this.$route.query);
         query[name] = value;
-        this.$router.replace({query: query}).catch(err => {});
+        this.$router.replace({query: query}).catch(() => {});
       }
     }
   }

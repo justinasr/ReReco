@@ -324,7 +324,7 @@ export default {
     nextStatus: function (request) {
       let component = this;
       this.loading = true;
-      axios.post('api/requests/next_status', request).then(response => {
+      axios.post('api/requests/next_status', request).then(() => {
         component.fetchObjects();
       }).catch(error => {
         component.loading = false;
@@ -351,7 +351,7 @@ export default {
       this.dialog.description = "Are you sure you want to set " + request.prepid + " request to previous status?";
       this.dialog.ok = function() {
         component.loading = true;
-        axios.post('api/requests/previous_status', request).then(response => {
+        axios.post('api/requests/previous_status', request).then(() => {
           component.clearDialog();
           component.fetchObjects();
         }).catch(error => {
@@ -390,7 +390,7 @@ export default {
     updateWorkflows: function (request) {
       let component = this;
       this.loading = true;
-      axios.post('api/requests/update_workflows', request).then(response => {
+      axios.post('api/requests/update_workflows', request).then(() => {
         component.fetchObjects();
       }).catch(error => {
         component.loading = false;
@@ -401,7 +401,7 @@ export default {
     updateWorkflowsMany: function(requests) {
       let component = this;
       this.loading = true;
-      axios.post('api/requests/update_workflows', requests.slice()).then(response => {
+      axios.post('api/requests/update_workflows', requests.slice()).then(() => {
         component.fetchObjects();
         component.selectedItems =  [];
       }).catch(error => {

@@ -62,7 +62,7 @@
 
       query['page'] = this.page;
       query['limit'] = this.pageSize;
-      this.$router.replace({query: query}).catch(err => {});
+      this.$router.replace({query: query}).catch(() => {});
       this.$emit('update', this.page, this.pageSize);
     },
     watch:{
@@ -83,7 +83,7 @@
       updateQuery: function(name, value) {
         let query = Object.assign({}, this.$route.query);
         query[name] = value;
-        this.$router.replace({query: query}).catch(err => {});
+        this.$router.replace({query: query}).catch(() => {});
       }
     }
   }

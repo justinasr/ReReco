@@ -272,7 +272,7 @@ export default {
       }
       axios.get('api/suggestions?db_name=subcampaigns&query=' + value).then(response => {
         callback(response.data.response);
-      }).catch(error => {
+      }).catch(() => {
         callback([]);
       });
     },
