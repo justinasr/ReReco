@@ -58,6 +58,8 @@
           </template>
           <template v-slot:item.cmssw_release="{ item }">
             <a :href="'requests?cmssw_release=' + item.cmssw_release" :title="'Show all requests with ' + item.cmssw_release">{{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}</a>
+            <br>
+            <small><a :href="'requests?scram_arch=' + item.scram_arch" :title="'Show all requests with ' + item.scram_arch">{{item.scram_arch}}</a></small>
           </template>
           <template v-slot:item.notes="{ item }">
             <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
@@ -434,7 +436,7 @@ export default {
     optionResetMany: function(requests) {
       let component = this;
       this.dialog.title = "Option reset " + requests.length + " requests?";
-      this.dialog.description = "Are you sure you want to rewrite memory, sequences and energy for " + requests.length + " requests from their subcampaigns?";
+      this.dialog.description = "Are you sure you want to rewrite memory, sequences, energy and CMSSW release for " + requests.length + " requests from their subcampaigns?";
       this.dialog.ok = function() {
         component.loading = true;
         axios.post('api/requests/option_reset', requests.slice()).then(() => {

@@ -6,7 +6,7 @@ import time
 from core_lib.database.database import Database
 from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.connection_wrapper import ConnectionWrapper
-from core_lib.utils.common_utils import cmssw_setup
+from core_lib.utils.common_utils import cmssw_setup, get_scram_arch
 from core_lib.utils.global_config import Config
 import core_lib.controller.controller_base as controller_base
 from core.model.request import Request
@@ -87,6 +87,23 @@ class RequestController(controller_base.ControllerBase):
 
         return new_request_json
 
+    def before_create(self, obj):
+        cmssw_release = obj.get('cmssw_release')
+        scram_arch = get_scram_arch(cmssw_release)
+        if not scram_arch:
+            raise Exception(f'Could not find scram_arch for {cmssw_release}')
+
+        obj.set('scram_arch', scram_arch)
+
+    def before_update(self, old_obj, new_obj, changed_values):
+        if old_obj.get('cmssw_release') != new_obj.get('cmssw_release'):
+            cmssw_release = new_obj.get('cmssw_release')
+            scram_arch = get_scram_arch(cmssw_release)
+            if not scram_arch:
+                raise Exception(f'Could not find scram_arch for {cmssw_release}')
+
+            new_obj.set('scram_arch', scram_arch)
+
     def check_for_update(self, old_obj, new_obj, changed_values):
         if old_obj.get('status') == 'submitting':
             raise Exception('You are now allowed to update request while it is being submitted')
@@ -152,6 +169,7 @@ class RequestController(controller_base.ControllerBase):
         editing_info['runs'] = status_new
         editing_info['time_per_event'] = status_new
         editing_info['size_per_event'] = status_new
+        editing_info['cmssw_release'] = status_new
 
         return editing_info
 
@@ -235,7 +253,7 @@ class RequestController(controller_base.ControllerBase):
         request_string = request.get_request_string()
         job_dict = {}
         job_dict['CMSSWVersion'] = request.get('cmssw_release')
-        job_dict['ScramArch'] = subcampaign_json.get('scram_arch')
+        job_dict['ScramArch'] = request.get('scram_arch')
         job_dict['RequestPriority'] = request.get('priority')
         if input_dataset:
             job_dict['InputDataset'] = input_dataset
@@ -769,6 +787,8 @@ class RequestController(controller_base.ControllerBase):
             request.set('memory', subcampaign.get('memory'))
             request.set('sequences', subcampaign.get('sequences'))
             request.set('energy', subcampaign.get('energy'))
+            request.set('cmssw_release', subcampaign.get('cmssw_release'))
+            request.set('scram_arch', subcampaign.get('scram_arch'))
             request_db.save(request.get_json())
 
         return request

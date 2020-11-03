@@ -41,6 +41,8 @@ class Request(ModelBase):
         'processing_string': '',
         # List of runs to be processed
         'runs': [],
+        # scram architecture
+        'scram_arch': '',
         # List of dictionaries that have cmsDriver options
         'sequences': [],
         # Disk size per event in kB
@@ -72,6 +74,7 @@ class Request(ModelBase):
         'priority': ModelBase.lambda_check('priority'),
         'processing_string': ModelBase.lambda_check('processing_string'),
         '__runs': lambda r: isinstance(r, int) and r > 0,
+        'scram_arch': ModelBase.lambda_check('scram_arch'),
         '__sequences': lambda s: isinstance(s, Sequence),
         'size_per_event': lambda spe: spe > 0.0,
         'status': lambda status: status in {'new', 'approved', 'submitting', 'submitted', 'done'},

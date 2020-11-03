@@ -39,9 +39,8 @@
           </template>
           <template v-slot:item.cmssw_release="{ item }">
             <a :href="'subcampaigns?cmssw_release=' + item.cmssw_release" :title="'Show all subcampaigns with ' + item.cmssw_release">{{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}</a>
-          </template>
-          <template v-slot:item.scram_arch="{ item }">
-            <a :href="'subcampaigns?scram_arch=' + item.scram_arch" :title="'Show all subcampaigns with ' + item.scram_arch">{{item.scram_arch}}</a>
+            <br>
+            <small><a :href="'subcampaigns?scram_arch=' + item.scram_arch" :title="'Show all subcampaigns with ' + item.scram_arch">{{item.scram_arch}}</a></small>
           </template>
           <template v-slot:item.notes="{ item }">
             <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
@@ -134,7 +133,6 @@ export default {
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
         {'dbName': 'runs_json_path', 'displayName': 'Runs JSON', 'visible': 0},
-        {'dbName': 'scram_arch', 'displayName': 'SCRAM Arch', 'visible': 0},
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
       ],
       headers: [],
