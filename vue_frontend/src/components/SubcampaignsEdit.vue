@@ -151,12 +151,30 @@ export default {
     this.loading = true;
     let component = this;
     axios.get('api/subcampaigns/get_editable/' + this.prepid).then(response => {
-      component.editableObject = response.data.response.object;
-      component.editingInfo = response.data.response.editing_info;
-      component.loading = false;
+      let objectInfo = response.data.response.object;
+      let editingInfo = response.data.response.editing_info;
+      if (query.clone && query.clone.length) {
+        axios.get('api/subcampaigns/get_editable/' + query.clone).then(templateResponse => {
+          let templateInfo = templateResponse.data.response.object;
+          let templateEditingInfo = templateResponse.data.response.editing_info;
+          templateInfo.prepid = objectInfo.prepid;
+          templateInfo.history = objectInfo.history;
+          templateInfo.scram_arch = objectInfo.scram_arch;
+          component.editableObject = templateInfo;
+          component.editingInfo = editingInfo;
+          component.loading = false;
+        }).catch(error => {
+          component.loading = false;
+          component.showError('Error fetching editing information', component.getError(error));
+        });
+      } else {
+        component.editableObject = objectInfo;
+        component.editingInfo = editingInfo;
+        component.loading = false;
+      }
     }).catch(error => {
       component.loading = false;
-      this.showError('Error fetching editing information', component.getError(error));
+      component.showError('Error fetching editing information', component.getError(error));
     });
   },
   methods: {

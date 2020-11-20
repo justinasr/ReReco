@@ -12,7 +12,6 @@
         <v-data-table :headers="headers"
                       :items="dataItems"
                       :items-per-page="itemsPerPage"
-                      :mobile-breakpoint=NaN
                       disable-sort
                       show-select
                       hide-default-footer
@@ -22,12 +21,13 @@
                       v-model="selectedItems">
           <template v-slot:item._actions="{ item }">
             <a v-if="role('manager')" :href="'requests/edit?prepid=' + item.prepid" title="Edit request">Edit</a>&nbsp;
-            <a style="text-decoration: underline;" @click="deleteRequest(item)" v-if="role('manager') && item.status == 'new'" title="Delete request">Delete</a>&nbsp;
+            <a v-if="role('manager') && item.status == 'new'" style="text-decoration: underline;" @click="deleteRequest(item)" title="Delete request">Delete</a>&nbsp;
+            <a v-if="role('manager')" :href="'requests/edit?clone=' + item.prepid" title="Clone request">Clone</a>&nbsp;
             <a :href="'api/requests/get_cmsdriver/' + item.prepid" title="Show cmsDriver.py command for this request">cmsDriver</a>&nbsp;
             <a :href="'api/requests/get_dict/' + item.prepid" title="Show JSON dictionary for ReqMgr2">Job dict</a>&nbsp;
             <a style="text-decoration: underline;" @click="previousStatus(item)" v-if="role('manager') && item.status != 'new'" title="Move to previous status">Previous</a>&nbsp;
-            <a style="text-decoration: underline;" @click="nextStatus(item)" v-if="role('manager')" title="Move to next status">Next</a>&nbsp;
-            <a style="text-decoration: underline;" @click="updateWorkflows(item)" v-if="role('manager') && item.status == 'submitted'" title="Update request information from Stats2">Update from Stats2</a>&nbsp;
+            <a style="text-decoration: underline;" @click="nextStatus(item)" v-if="role('manager') && item.status != 'done'" title="Move to next status">Next</a>&nbsp;
+            <a style="text-decoration: underline;" @click="updateWorkflows(item)" v-if="role('administrator') && item.status == 'submitted'" title="Update request information from Stats2">Update from Stats2</a>&nbsp;
             <a style="text-decoration: underline;" @click="optionReset(item)" v-if="role('manager') && item.status == 'new'" :title="'Refetch values from ' + item.subcampaign + ' subcampaign'">Option reset</a>&nbsp;
             <a target="_blank" :href="'https://cms-pdmv.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done'" title="Show workflows of this request in Stats2">Stats2</a>
           </template>
@@ -159,7 +159,7 @@
       <a v-if="role('manager') && selectedItems.length" @click="deleteManyRequests(selectedItems)" title="Delete selected requests">Delete</a>
       <a v-if="role('manager') && selectedItems.length" @click="previousMany(selectedItems)" title="Move selected requests to previous status">Previous</a>
       <a v-if="role('manager') && selectedItems.length" @click="nextStatusMany(selectedItems)" title="Move selected requets to next status">Next</a>
-      <a v-if="role('manager') && selectedItems.length" @click="updateWorkflowsMany(selectedItems)" title="Update selected requests' information from Stats2">Update from Stats2</a>
+      <a v-if="role('administrator') && selectedItems.length" @click="updateWorkflowsMany(selectedItems)" title="Update selected requests' information from Stats2">Update from Stats2</a>
       <a v-if="role('manager') && selectedItems.length" @click="optionResetMany(selectedItems)" title="Refetch selected requests' values from their subcampaigns">Option Reset</a>
       <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
