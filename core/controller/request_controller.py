@@ -93,6 +93,7 @@ class RequestController(controller_base.ControllerBase):
         if not scram_arch:
             raise Exception(f'Could not find scram_arch for {cmssw_release}')
 
+        self.logger.debug('Setting %s for %s request', scram_arch, obj.get_prepid())
         obj.set('scram_arch', scram_arch)
 
     def before_update(self, old_obj, new_obj, changed_values):
@@ -102,6 +103,7 @@ class RequestController(controller_base.ControllerBase):
             if not scram_arch:
                 raise Exception(f'Could not find scram_arch for {cmssw_release}')
 
+            self.logger.debug('Setting %s for %s request', scram_arch, new_obj.get_prepid())
             new_obj.set('scram_arch', scram_arch)
 
     def check_for_update(self, old_obj, new_obj, changed_values):
@@ -245,9 +247,6 @@ class RequestController(controller_base.ControllerBase):
         sequences = request.get('sequences')
         input_dataset = request.get('input')['dataset']
         acquisition_era = request.get_era()
-        subcampaigns_db = Database('subcampaigns')
-        subcampaign_name = request.get('subcampaign')
-        subcampaign_json = subcampaigns_db.get(subcampaign_name)
         database_url = Config.get('cmsweb_url') + '/couchdb'
         processing_string = request.get('processing_string')
         request_string = request.get_request_string()

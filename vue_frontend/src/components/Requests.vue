@@ -196,7 +196,7 @@ export default {
         {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 1},
         {'dbName': 'subcampaign', 'displayName': 'Subcampaign', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
-        {'dbName': 'cmssw_release', 'displayName': 'CMSSW Version', 'visible': 0},
+        {'dbName': 'cmssw_release', 'displayName': 'CMSSW Release', 'visible': 0},
         {'dbName': 'completed_events', 'displayName': 'Completed Events', 'visible': 0},
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
