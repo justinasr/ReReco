@@ -156,7 +156,6 @@ export default {
       if (query.clone && query.clone.length) {
         axios.get('api/subcampaigns/get_editable/' + query.clone).then(templateResponse => {
           let templateInfo = templateResponse.data.response.object;
-          let templateEditingInfo = templateResponse.data.response.editing_info;
           templateInfo.prepid = objectInfo.prepid;
           templateInfo.history = objectInfo.history;
           templateInfo.scram_arch = objectInfo.scram_arch;
