@@ -18,6 +18,10 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install -r requirements.txt
         pip install pylint
+    - name: Checkout PdmVWebCore
+      run: |
+        git submodule init
+        git submodule update
     - name: Analysing the code with pylint
       run: |
-        pylint `ls -R|grep .py$|xargs`
+        pylint `find . -type f | grep .py$ | xargs`
