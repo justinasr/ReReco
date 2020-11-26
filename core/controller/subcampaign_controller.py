@@ -34,6 +34,7 @@ class SubcampaignController(ControllerBase):
         if not scram_arch:
             raise Exception(f'Could not find scram_arch for {cmssw_release}')
 
+        self.logger.debug('Setting %s for %s subcampaign', scram_arch, obj.get_prepid())
         obj.set('scram_arch', scram_arch)
 
     def before_update(self, old_obj, new_obj, changed_values):
@@ -43,6 +44,7 @@ class SubcampaignController(ControllerBase):
             if not scram_arch:
                 raise Exception(f'Could not find scram_arch for {cmssw_release}')
 
+            self.logger.debug('Setting %s for %s subcampaign', scram_arch, new_obj.get_prepid())
             new_obj.set('scram_arch', scram_arch)
 
     def get_editing_info(self, obj):

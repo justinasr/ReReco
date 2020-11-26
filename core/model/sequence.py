@@ -201,11 +201,8 @@ class Sequence(ModelBase):
         sequence_name = self.get_name()
         arguments_dict = dict(self.get_json())
         # Delete sequence metadata
-        if 'config_id' in arguments_dict:
-            del arguments_dict['config_id']
-
-        if 'harvesting_config_id' in arguments_dict:
-            del arguments_dict['harvesting_config_id']
+        arguments_dict.pop('config_id', None)
+        arguments_dict.pop('harvesting_config_id', None)
 
         # Fetch list of files for specific runs
         das_query = ''
@@ -242,13 +239,26 @@ class Sequence(ModelBase):
 
         # Update ALCA and SKIM steps to ALCA:@Dataset and SKIM:@Dataset
         # if dataset name is in "auto" dictionary in CMSSW
+        dynamic_steps = self.update_dynamic_steps(arguments_dict['step'])
+        # Build argument dictionary
+        config_names = self.get_config_file_names()
+        arguments_dict['fileout'] = f'"file:{sequence_name}.root"'
+        arguments_dict['python_filename'] = f'"{config_names["config"]}.py"'
+        arguments_dict['no_exec'] = True
+        cms_driver_command = self.__build_cmsdriver('RECO', arguments_dict)
+        return dynamic_steps + das_query + cms_driver_command
+
+    def update_dynamic_steps(self, steps):
+        """
+        Update ALCA and SKIP steps to be variables and return code that resolves them
+        """
         dynamic_steps = ''
-        for step_index, step in enumerate(arguments_dict['step']):
+        for step_index, step in enumerate(steps):
             if step not in ('ALCA', 'SKIM'):
                 continue
 
             dataset = self.parent().get_dataset()
-            arguments_dict['step'][step_index] = f'${step}_STEP'
+            steps[step_index] = f'${step}_STEP'
             # Build a small python program to get value from CMSSW on the go
             step_var = f'{step}_STEP=$(python -c "'
             if step == 'ALCA':
@@ -262,13 +272,7 @@ class Sequence(ModelBase):
         if dynamic_steps:
             dynamic_steps = f'# Steps based on dataset name\n{dynamic_steps}\n'
 
-        # Build argument dictionary
-        config_names = self.get_config_file_names()
-        arguments_dict['fileout'] = f'"file:{sequence_name}.root"'
-        arguments_dict['python_filename'] = f'"{config_names["config"]}.py"'
-        arguments_dict['no_exec'] = True
-        cms_driver_command = self.__build_cmsdriver('RECO', arguments_dict)
-        return dynamic_steps + das_query + cms_driver_command
+        return dynamic_steps
 
     def get_harvesting_cmsdriver(self):
         """
@@ -327,7 +331,8 @@ class Sequence(ModelBase):
         harvesting_command = self.__build_cmsdriver('HARVESTING', arguments_dict)
         return harvesting_command
 
-    def chunkify(self, items, chunk_size):
+    @staticmethod
+    def chunkify(items, chunk_size):
         """
         Yield fixed size chunks of given list
         """
