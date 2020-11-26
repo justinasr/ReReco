@@ -163,16 +163,43 @@ export default {
     this.loading = true;
     let component = this;
     axios.get('api/tickets/get_editable/' + this.prepid).then(response => {
-      component.editableObject = response.data.response.object;
-      component.editableObject.input_datasets = component.editableObject.input_datasets.filter(Boolean).join('\n');
-      component.editingInfo = response.data.response.editing_info;
-      if (component.creatingNew) {
-        component.addStep();
+      let objectInfo = response.data.response.object;
+      let editingInfo = response.data.response.editing_info;
+      if (query.clone && query.clone.length) {
+        axios.get('api/tickets/get_editable/' + query.clone).then(templateResponse => {
+          let templateInfo = templateResponse.data.response.object;
+          let templateEditingInfo = templateResponse.data.response.editing_info;
+          templateInfo.prepid = objectInfo.prepid;
+          templateInfo.history = objectInfo.history;
+          templateInfo.status = objectInfo.status;
+          templateInfo.created_requests = objectInfo.created_requests;
+          for (let i = 0; i < templateEditingInfo.steps.length; i++) {
+            editingInfo.steps.push({'subcampaign': true,
+                                    'processing_string': true,
+                                    'priority': true,
+                                    'size_per_event': true,
+                                    'time_per_event': true})
+          }
+          templateInfo.input_datasets = templateInfo.input_datasets.filter(Boolean).join('\n');
+          component.editableObject = templateInfo;
+          component.editingInfo = editingInfo;
+          component.loading = false;
+        }).catch(error => {
+          component.loading = false;
+          component.showError('Error fetching editing information', component.getError(error));
+        });
+      } else {
+        objectInfo.input_datasets = objectInfo.input_datasets.filter(Boolean).join('\n');
+        component.editableObject = objectInfo;
+        component.editingInfo = editingInfo;
+        if (component.creatingNew) {
+          component.addStep();
+        }
+        component.loading = false;
       }
-      component.loading = false;
     }).catch(error => {
       component.loading = false;
-      this.showError('Error fetching editing information', component.getError(error));
+      component.showError('Error fetching editing information', component.getError(error));
     });
   },
   methods: {

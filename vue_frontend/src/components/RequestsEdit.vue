@@ -206,18 +206,46 @@ export default {
     this.loading = true;
     let component = this;
     axios.get('api/requests/get_editable/' + this.prepid).then(response => {
-      component.editableObject = response.data.response.object;
-      component.editableObject.runs = component.editableObject.runs.join('\n');
-      if (component.editableObject.input.request != '') {
-        this.inputType = 'request';
+      let objectInfo = response.data.response.object;
+      let editingInfo = response.data.response.editing_info;
+      if (query.clone && query.clone.length) {
+        axios.get('api/requests/get_editable/' + query.clone).then(templateResponse => {
+          let templateInfo = templateResponse.data.response.object;
+          let templateEditingInfo = templateResponse.data.response.editing_info;
+          templateInfo.prepid = objectInfo.prepid;
+          templateInfo.history = objectInfo.history;
+          templateInfo.status = objectInfo.status;
+          templateInfo.workflows = objectInfo.workflows;
+          templateInfo.completed_events = objectInfo.completed_events;
+          templateInfo.total_events = objectInfo.total_events;
+          templateInfo.output_datasets = objectInfo.output_datasets;
+          templateInfo.runs = templateInfo.runs.join('\n');
+          component.editableObject = templateInfo;
+          component.editingInfo = editingInfo;
+          if (component.editableObject.input.request != '') {
+            component.inputType = 'request';
+          } else {
+            component.inputType = 'dataset';
+          }
+          component.loading = false;
+        }).catch(error => {
+          component.loading = false;
+          component.showError('Error fetching editing information', component.getError(error));
+        });
       } else {
-        this.inputType = 'dataset';
+        component.editableObject = response.data.response.object;
+        component.editingInfo = response.data.response.editing_info;
+        objectInfo.runs = objectInfo.runs.join('\n');
+        if (component.editableObject.input.request != '') {
+          component.inputType = 'request';
+        } else {
+          component.inputType = 'dataset';
+        }
+        component.loading = false;
       }
-      component.editingInfo = response.data.response.editing_info;
-      component.loading = false;
     }).catch(error => {
       component.loading = false;
-      this.showError('Error fetching editing information', component.getError(error));
+      component.showError('Error fetching editing information', component.getError(error));
     });
   },
   methods: {

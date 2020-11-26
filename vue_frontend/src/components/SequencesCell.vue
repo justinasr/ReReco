@@ -19,7 +19,7 @@
     },
     methods: {
       sequenceKeys: function(sequence) {
-        return Object.keys(sequence).filter(s => sequence[s] !== '');
+        return Object.keys(sequence).filter(s => sequence[s] != '' && sequence[s] !== false && s != 'config_id' && s != 'harvesting_config_id');
       },
       sequenceKey: function(key) {
         return key == 'extra' ? '' : ('--' + key);
