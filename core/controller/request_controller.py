@@ -256,10 +256,12 @@ class RequestController(controller_base.ControllerBase):
         job_dict['RequestPriority'] = request.get('priority')
         if input_dataset:
             job_dict['InputDataset'] = input_dataset
+            # Do not include input processing string for now
+            # When this will be used again, switch it so it would be {input_ps}_{ps}
             # Add input dataset's processing string to request's processing string
-            input_dataset_processing_string = request.get_input_processing_string()
-            if input_dataset_processing_string:
-                processing_string = f'{processing_string}_{input_dataset_processing_string}'
+            # input_dataset_processing_string = request.get_input_processing_string()
+            # if input_dataset_processing_string:
+                #  processing_string = f'{processing_string}_{input_dataset_processing_string}'
 
         job_dict['Group'] = 'PPD'
         job_dict['Requestor'] = 'pdmvserv'
