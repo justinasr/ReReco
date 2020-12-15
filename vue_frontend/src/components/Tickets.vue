@@ -1,5 +1,5 @@
 <template>
-  <div style="height: calc(100vh - 128px); overflow: auto;">
+  <div style="height: calc(100vh - 118px); overflow: auto;">
     <div style="display: flex;">
       <div style="flex: 1 1 auto;">
         <div>
@@ -15,7 +15,8 @@
                       :loading="loading"
                       disable-sort
                       hide-default-footer
-                      class="elevation-1">
+                      class="elevation-1"
+                      dense>
           <template v-slot:item._actions="{ item }">
             <a :href="'tickets/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit ticket">Edit</a>&nbsp;
             <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager') && item.created_requests.length < 1" title="Delete ticket">Delete</a>&nbsp;

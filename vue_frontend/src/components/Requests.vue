@@ -1,5 +1,5 @@
 <template>
-  <div style="height: calc(100vh - 128px); overflow: auto;">
+  <div style="height: calc(100vh - 118px); overflow: auto;">
     <div style="display: flex;">
       <div style="flex: 1 1 auto;">
         <div>
@@ -18,7 +18,8 @@
                       item-key="prepid"
                       class="elevation-1"
                       :loading="loading"
-                      v-model="selectedItems">
+                      v-model="selectedItems"
+                      dense>
           <template v-slot:item._actions="{ item }">
             <a v-if="role('manager')" :href="'requests/edit?prepid=' + item.prepid" title="Edit request">Edit</a>&nbsp;
             <a v-if="role('manager') && item.status == 'new'" style="text-decoration: underline;" @click="deleteRequest(item)" title="Delete request">Delete</a>&nbsp;
@@ -161,6 +162,7 @@
       <a v-if="role('manager') && selectedItems.length" @click="nextStatusMany(selectedItems)" title="Move selected requets to next status">Next</a>
       <a v-if="role('administrator') && selectedItems.length" @click="updateWorkflowsMany(selectedItems)" title="Update selected requests' information from Stats2">Update from Stats2</a>
       <a v-if="role('manager') && selectedItems.length" @click="optionResetMany(selectedItems)" title="Refetch selected requests' values from their subcampaigns">Option Reset</a>
+      <a v-if="selectedItems.length" @click="openPmpMany(selectedItems)" title="Show selected requests in pMp">pMp</a>
       <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
@@ -453,6 +455,11 @@ export default {
       }
       this.dialog.visible = true;
     },
+    openPmpMany: function(requests) {
+      let prepids = requests.map(x => x['prepid']);
+      let url = 'https://cms-pdmv.cern.ch/pmp/historical?r=' + prepids.join(',');
+      window.open(url, '_blank');
+    }
   }
 }
 </script>
