@@ -839,6 +839,9 @@ class RequestController(controller_base.ControllerBase):
         """
         Force Stats2 to update workflows with given workflow names
         """
+        if not workflows:
+            return
+
         credentials_file = Config.get('credentials_file')
         with self.locker.get_lock('refresh-stats'):
             ssh_executor = SSHExecutor('vocms074.cern.ch', credentials_file)
