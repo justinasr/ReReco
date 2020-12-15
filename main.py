@@ -193,6 +193,12 @@ def main():
     Database.add_search_rename('requests', 'output_dataset', 'output_datasets')
     Database.add_search_rename('requests', 'input_dataset', 'input.dataset')
     Database.add_search_rename('requests', 'input_request', 'input.request')
+    Database.add_search_rename('requests', 'created_on', 'history.0.time')
+    Database.add_search_rename('requests', 'created_by', 'history.0.user')
+    Database.add_search_rename('subcampaigns', 'created_on', 'history.0.time')
+    Database.add_search_rename('subcampaigns', 'created_by', 'history.0.user')
+    Database.add_search_rename('tickets', 'created_on', 'history.0.time')
+    Database.add_search_rename('tickets', 'created_by', 'history.0.user')
 
     debug = args.get('debug', False)
     port = int(config.get('port', 8002))
