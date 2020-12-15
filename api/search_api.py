@@ -45,6 +45,7 @@ class SearchAPI(APIBase):
             prepid_query = args.pop('prepid', '')
             args['prepid'] = ('%s,%s' % (prepid_query, created_requests)).strip(',')
 
+        limit = max(1, min(limit, 500))
         query_string = '&&'.join(['%s=%s' % (pair) for pair in args.items()])
         database = Database(db_name)
         query_string = database.build_query_with_types(query_string, self.classes[db_name])
@@ -58,6 +59,7 @@ class SearchAPI(APIBase):
                                               'total_rows': total_rows},
                                  'success': True,
                                  'message': ''})
+
 
 class SuggestionsAPI(APIBase):
     """
