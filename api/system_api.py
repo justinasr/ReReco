@@ -101,7 +101,12 @@ class ObjectsInfoAPI(APIBase):
                                                      {'$sort': {'count': -1}}])
         statuses = ['new', 'approved', 'submitting', 'submitted', 'done']
         by_status = sorted(list(by_status), key=lambda x: statuses.index(x['_id']))
-        by_processing_string = sorted(list(by_processing_string), key=lambda x: (x['count'], x['_id'].lower()), reverse=True)
+        by_processing_string = sorted(list(by_processing_string),
+                                      key=lambda x: (x['count'], x['_id'].lower()),
+                                      reverse=True)
+        self.logger.debug('Requests - by status %s, by PS %s',
+                          len(by_status),
+                          len(by_processing_string))
         return by_status, by_processing_string
 
     def get_tickets(self):
@@ -115,6 +120,7 @@ class ObjectsInfoAPI(APIBase):
 
         statuses = ['new', 'done']
         by_status = sorted(list(by_status), key=lambda x: statuses.index(x['_id']))
+        self.logger.debug('Tickets - by status %s', len(by_status))
         return by_status
 
     @APIBase.exceptions_to_errors

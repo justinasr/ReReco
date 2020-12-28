@@ -161,7 +161,8 @@ class WildSearchAPI(APIBase):
                 wrapped_query = f'{query}'
 
             self.logger.info('Trying to query %s in %s', wrapped_query, db_name)
-            typed_query = database.build_query_with_types(f'{attr}={wrapped_query}', self.classes[db_name])
+            typed_query = database.build_query_with_types(f'{attr}={wrapped_query}',
+                                                          self.classes[db_name])
             query_results = database.query(typed_query, 0, 5, ignore_case=True)
             for result in query_results:
                 values = self.extract_values(result, attr, wrapped_query, db_name)
@@ -186,6 +187,10 @@ class WildSearchAPI(APIBase):
                                  'message': ''})
 
     def extract_values(self, item, attribute, query, db_name):
+        """
+        Return a list of one or multiple values got from an object
+        One object might have multiple values, e.g. output datasets
+        """
         if attribute in item:
             return [item[attribute]]
 
