@@ -36,7 +36,7 @@ from api.request_api import (CreateRequestAPI,
                              GetRequestRunsAPI,
                              UpdateRequestWorkflowsAPI,
                              RequestOptionResetAPI)
-from api.search_api import SearchAPI, SuggestionsAPI
+from api.search_api import SearchAPI, SuggestionsAPI, WildSearchAPI
 from api.settings_api import SettingsAPI
 from api.system_api import (SubmissionWorkerStatusAPI,
                             SubmissionQueueAPI,
@@ -111,6 +111,7 @@ def api_documentation(_path):
 
 api.add_resource(SearchAPI, '/api/search')
 api.add_resource(SuggestionsAPI, '/api/suggestions')
+api.add_resource(WildSearchAPI, '/api/wild_search')
 
 api.add_resource(SettingsAPI,
                  '/api/settings/get',
@@ -199,6 +200,8 @@ def main():
     Database.add_search_rename('subcampaigns', 'created_by', 'history.0.user')
     Database.add_search_rename('tickets', 'created_on', 'history.0.time')
     Database.add_search_rename('tickets', 'created_by', 'history.0.user')
+    Database.add_search_rename('tickets', 'subcampaign', 'steps.subcampaign')
+    Database.add_search_rename('tickets', 'processing_string', 'steps.processing_string')
 
     debug = args.get('debug', False)
     port = int(config.get('port', 8002))

@@ -2,6 +2,7 @@
 Module that contains all search APIs
 """
 import re
+import time
 import flask
 from core_lib.api.api_base import APIBase
 from core_lib.database.database import Database
@@ -93,3 +94,128 @@ class SuggestionsAPI(APIBase):
         return self.output_text({'response': results,
                                  'success': True,
                                  'message': ''})
+
+
+class WildSearchAPI(APIBase):
+    """
+    Endpoint that is used for abstract search in the whole database
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+        self.classes = {'subcampaigns': Subcampaign,
+                        'requests': Request,
+                        'tickets': Ticket}
+
+    @APIBase.exceptions_to_errors
+    def get(self):
+        """
+        Perform a search
+        """
+        args = flask.request.args.to_dict()
+        if args is None:
+            args = {}
+
+        query = args.pop('q', None)
+        if not query:
+            return self.output_text({'response': [],
+                                     'success': True,
+                                     'message': 'Query string too short'})
+
+        query = query.strip().replace(' ', '*')
+        if len(query) < 3:
+            return self.output_text({'response': [],
+                                     'success': True,
+                                     'message': 'Query string too short'})
+
+        subcampaigns_db = Database('subcampaigns')
+        tickets_db = Database('tickets')
+        requests_db = Database('requests')
+
+        attempts = [('requests', requests_db, 'prepid', False),
+                    ('tickets', tickets_db, 'prepid', False),
+                    ('subcampaigns', subcampaigns_db, 'prepid', False),
+                    ('requests', requests_db, 'prepid', True),
+                    ('tickets', tickets_db, 'prepid', True),
+                    ('subcampaigns', subcampaigns_db, 'prepid', True),
+                    # Tickets
+                    ('tickets', tickets_db, 'subcampaign', True),
+                    ('tickets', tickets_db, 'processing_string', True),
+                    # Requests
+                    ('requests', requests_db, 'subcampaign', True),
+                    ('requests', requests_db, 'processing_string', True),
+                    ('requests', requests_db, 'input_dataset', True),
+                    ('requests', requests_db, 'output_dataset', True),
+                    ('requests', requests_db, 'workflow', True),]
+
+        results = []
+        used_values = set()
+        for attempt in attempts:
+            db_name = attempt[0]
+            database = attempt[1]
+            attr = attempt[2]
+            wrap_in_wildcards = attempt[3]
+            if wrap_in_wildcards:
+                wrapped_query = f'*{query}*'
+            else:
+                wrapped_query = f'{query}'
+
+            self.logger.info('Trying to query %s in %s', wrapped_query, db_name)
+            typed_query = database.build_query_with_types(f'{attr}={wrapped_query}', self.classes[db_name])
+            query_results = database.query(typed_query, 0, 5, ignore_case=True)
+            for result in query_results:
+                values = self.extract_values(result, attr, wrapped_query, db_name)
+                for value in values:
+                    key = f'{db_name}:{attr}:{value}'
+                    if key not in used_values:
+                        used_values.add(key)
+                        results.append({'value': value,
+                                        'attribute': attr,
+                                        'database': db_name})
+
+            # Limit results to 20 to save DB some queries
+            if len(results) >= 20:
+                results = results[:20]
+                break
+
+            # Limit DB query rate as this is very expensive
+            time.sleep(0.075)
+
+        return self.output_text({'response': results,
+                                 'success': True,
+                                 'message': ''})
+
+    def extract_values(self, item, attribute, query, db_name):
+        if attribute in item:
+            return [item[attribute]]
+
+        values = []
+        matcher = re.compile(query.replace('*', '.*'))
+        self.logger.info('Item: %s, attribute: %s, query: %s, db name: %s',
+                         item['prepid'],
+                         attribute,
+                         query,
+                         db_name)
+        if db_name == 'tickets':
+            if attribute in ('subcampaign', 'processing_string'):
+                for step in item['steps']:
+                    self.logger.info('Checking step...')
+                    if matcher.fullmatch(step[attribute]):
+                        self.logger.info('%s fits!', step[attribute])
+                        values.append(step[attribute])
+
+        elif db_name == 'requests':
+            if attribute == 'input_dataset':
+                values.append(item['input']['dataset'])
+
+            elif attribute == 'output_dataset':
+                for dataset in item['output_datasets']:
+                    if matcher.fullmatch(dataset):
+                        values.append(dataset)
+
+            elif attribute == 'workflow':
+                for workflow in item['workflows']:
+                    if matcher.fullmatch(workflow['name']):
+                        values.append(workflow['name'])
+
+        return values
