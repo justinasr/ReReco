@@ -46,7 +46,7 @@ class Subcampaign(ModelBase):
         '__sequences': lambda s: isinstance(s, Sequence),
     }
 
-    def __init__(self, json_input=None):
+    def __init__(self, json_input=None, check_attributes=True):
         if json_input:
             json_input['runs_json_path'] = json_input.get('runs_json_path', '').strip().lstrip('/')
             sequence_objects = []
@@ -55,4 +55,4 @@ class Subcampaign(ModelBase):
 
             json_input['sequences'] = sequence_objects
 
-        ModelBase.__init__(self, json_input)
+        ModelBase.__init__(self, json_input, check_attributes)

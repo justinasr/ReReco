@@ -83,17 +83,19 @@ class Request(ModelBase):
         'total_events': lambda events: events >= 0,
     }
 
-    def __init__(self, json_input=None):
+    def __init__(self, json_input=None, check_attributes=True):
         if json_input:
             json_input = deepcopy(json_input)
             json_input['runs'] = [int(r) for r in json_input.get('runs', [])]
             sequence_objects = []
             for sequence_json in json_input.get('sequences', []):
-                sequence_objects.append(Sequence(json_input=sequence_json, parent=self))
+                sequence_objects.append(Sequence(json_input=sequence_json,
+                                                 parent=self,
+                                                 check_attributes=check_attributes))
 
             json_input['sequences'] = sequence_objects
 
-        ModelBase.__init__(self, json_input)
+        ModelBase.__init__(self, json_input, check_attributes)
 
     def check_attribute(self, attribute_name, attribute_value):
         if attribute_name == 'input':

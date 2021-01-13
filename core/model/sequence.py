@@ -66,9 +66,9 @@ class Sequence(ModelBase):
                              s.startswith('HARVESTING:@'))
     }
 
-    def __init__(self, json_input=None, parent=None):
+    def __init__(self, json_input=None, parent=None, check_attributes=True):
         self.parent = None
-        ModelBase.__init__(self, json_input)
+        ModelBase.__init__(self, json_input, check_attributes)
         if parent:
             self.parent = weakref.ref(parent)
 

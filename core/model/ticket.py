@@ -38,7 +38,7 @@ class Ticket(ModelBase):
         'steps': lambda s: len(s) > 0,
     }
 
-    def __init__(self, json_input=None):
+    def __init__(self, json_input=None, check_attributes=True):
         if json_input:
             json_input = deepcopy(json_input)
             steps = []
@@ -51,7 +51,7 @@ class Ticket(ModelBase):
 
             json_input['steps'] = steps
 
-        ModelBase.__init__(self, json_input)
+        ModelBase.__init__(self, json_input, check_attributes)
 
     def check_attribute(self, attribute_name, attribute_value):
         if attribute_name == 'steps':
