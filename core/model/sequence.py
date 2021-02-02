@@ -161,7 +161,7 @@ class Sequence(ModelBase):
         Build a cmsDriver command from given arguments
         Add comment in front of the command
         """
-        self.logger.info('Generating %s cmdDriver', cmsdriver_type)
+        self.logger.info('Generating %s cmsDriver', cmsdriver_type)
         # Actual command
         command = f'# Command for {cmsdriver_type}:\ncmsDriver.py {cmsdriver_type}'
         # Comment in front of the command for better readability

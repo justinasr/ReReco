@@ -34,7 +34,6 @@ class RequestSubmitter(BaseSubmitter):
         """
         Handle error that occured during submission, modify request accordingly
         """
-        self.logger.error(error_message)
         request_db = Database('requests')
         request.set('status', 'new')
         request.add_history('submission', 'failed', 'automatic')

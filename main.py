@@ -1,14 +1,18 @@
 """
 Main module that starts flask web server
 """
+import sys
 import logging
+import logging.handlers
 import argparse
+import os.path
 from flask_restful import Api
 from flask_cors import CORS
 from flask import Flask, render_template
 from jinja2.exceptions import TemplateNotFound
 from core_lib.database.database import Database
 from core_lib.utils.global_config import Config
+from core_lib.utils.username_filter import UsernameFilter
 from api.subcampaign_api import (CreateSubcampaignAPI,
                                  DeleteSubcampaignAPI,
                                  UpdateSubcampaignAPI,
@@ -53,6 +57,8 @@ app = Flask(__name__,
             template_folder='./vue_frontend/dist')
 # Set flask logging to warning
 logging.getLogger('werkzeug').setLevel(logging.WARNING)
+# Set paramiko logging to warning
+logging.getLogger('paramiko').setLevel(logging.WARNING)
 
 app.url_map.strict_slashes = False
 api = Api(app)
@@ -164,6 +170,26 @@ api.add_resource(UpdateRequestWorkflowsAPI, '/api/requests/update_workflows')
 api.add_resource(RequestOptionResetAPI, '/api/requests/option_reset')
 
 
+def setup_logging(config, debug):
+    logger = logging.getLogger()
+    logger.propagate = False
+    if debug:
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(logging.DEBUG)
+    else:
+        if not os.path.isdir('logs'):
+            os.mkdir('logs')
+
+        handler = logging.handlers.RotatingFileHandler('logs/rereco.log', 'a', 8*1024*1024, 50)
+        handler.setLevel(logging.INFO)
+
+    formatter = logging.Formatter(fmt='[%(asctime)s][%(user)s][%(levelname)s] %(message)s')
+    handler.setFormatter(formatter)
+    handler.addFilter(UsernameFilter())
+    logger.handlers.clear()
+    logger.addHandler(handler)
+    return logger
+
 def main():
     """
     Main function: start Flask web server
@@ -206,6 +232,8 @@ def main():
     debug = args.get('debug', False)
     port = int(config.get('port', 8002))
     host = config.get('host', '0.0.0.0')
+    logger = setup_logging(config, debug)
+    logger.info('Starting... Debug: %s, Host: %s, Port: %s', debug, host, port)
     app.run(host=host,
             port=port,
             threaded=True,
