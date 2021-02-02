@@ -41,6 +41,7 @@ class RequestSubmitter(BaseSubmitter):
         service_url = Config.get('service_url')
         emailer = Emailer()
         prepid = request.get_prepid()
+        self.logger.warning('Submission of %s failed', prepid)
         subject = f'Request {prepid} submission failed'
         body = f'Hello,\n\nUnfortunately submission of {prepid} failed.\n'
         body += (f'You can find this request at '

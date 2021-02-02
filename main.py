@@ -170,7 +170,10 @@ api.add_resource(UpdateRequestWorkflowsAPI, '/api/requests/update_workflows')
 api.add_resource(RequestOptionResetAPI, '/api/requests/option_reset')
 
 
-def setup_logging(config, debug):
+def setup_logging(debug):
+    """
+    Setup logging format and place - console for debug mode and rotating files for production
+    """
     logger = logging.getLogger()
     logger.propagate = False
     if debug:
@@ -232,7 +235,7 @@ def main():
     debug = args.get('debug', False)
     port = int(config.get('port', 8002))
     host = config.get('host', '0.0.0.0')
-    logger = setup_logging(config, debug)
+    logger = setup_logging(debug)
     logger.info('Starting... Debug: %s, Host: %s, Port: %s', debug, host, port)
     app.run(host=host,
             port=port,
