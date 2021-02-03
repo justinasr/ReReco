@@ -19,7 +19,7 @@
       <h3 v-if="role('administrator')">Locked objects ({{Object.keys(locks).length}})</h3>
       <small v-if="role('administrator')">
         <ul>
-          <li v-for="(info, lock) in locks" :key="lock">{{lock}}: {{info.l}}</li>
+          <li v-for="(info, lock) in locks" :key="lock" :style="info ? 'color: red; font-weight: bold;' : ''">{{lock}}: {{info}}</li>
         </ul>
       </small>
     </v-card>
@@ -96,7 +96,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-</style>
