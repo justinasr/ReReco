@@ -138,7 +138,7 @@ class Sequence(ModelBase):
         index = self.get_index_in_parent()
         parent_prepid = self.parent().get_prepid()
         if index != len(self.parent().get('sequences')) - 1:
-            index = f'{parent_prepid}_{index}'
+            sequence_name = f'{parent_prepid}_{index}'
         else:
             sequence_name = f'{parent_prepid}'
 
