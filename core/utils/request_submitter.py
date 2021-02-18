@@ -214,6 +214,8 @@ class RequestSubmitter(BaseSubmitter):
                     self.__generate_configs(request, ssh_executor, remote_directory)
                     # Upload configs
                     config_hashes = self.__upload_configs(request, ssh_executor, remote_directory)
+                    # Remove remote directory
+                    ssh_executor.execute_command([f'rm -rf {remote_directory}'])
 
                 self.logger.debug(config_hashes)
                 # Iterate through uploaded configs and save their hashes in request sequences
@@ -224,7 +226,6 @@ class RequestSubmitter(BaseSubmitter):
                 grid_cert = Config.get('grid_user_cert')
                 grid_key = Config.get('grid_user_key')
                 connection = ConnectionWrapper(host=cmsweb_url,
-                                               keep_open=True,
                                                cert_file=grid_cert,
                                                key_file=grid_key)
                 workflow_name = self.submit_job_dict(job_dict, connection)
@@ -238,7 +239,6 @@ class RequestSubmitter(BaseSubmitter):
                 connection.close()
                 controller.force_stats_to_refresh([workflow_name])
             except Exception as ex:
-                self.logger.error(ex)
                 self.__handle_error(request, str(ex))
                 return
 
