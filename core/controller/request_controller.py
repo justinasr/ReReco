@@ -850,7 +850,6 @@ class RequestController(controller_base.ControllerBase):
 
         credentials_file = Config.get('credentials_file')
         with self.locker.get_lock('refresh-stats'):
-            ssh_executor = SSHExecutor('vocms074.cern.ch', credentials_file)
             workflow_update_commands = ['cd /home/pdmvserv/private',
                                         'source setup_credentials.sh',
                                         'cd /home/pdmvserv/Stats2']
@@ -860,7 +859,10 @@ class RequestController(controller_base.ControllerBase):
                 )
 
             self.logger.info('Will make Stats2 refresh these workflows: %s', ', '.join(workflows))
-            ssh_executor.execute_command(workflow_update_commands)
+            with SSHExecutor('vocms074.cern.ch', credentials_file) as ssh_executor:
+                ssh_executor.execute_command(workflow_update_commands)
+
+            self.logger.info('Finished making Stats2 refresh workflows')
 
     def __pick_active_workflows(self, request):
         """

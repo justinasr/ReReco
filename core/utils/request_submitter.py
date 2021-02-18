@@ -198,7 +198,6 @@ class RequestSubmitter(BaseSubmitter):
         """
         prepid = request.get_prepid()
         credentials_file = Config.get('credentials_file')
-        ssh_executor = SSHExecutor('lxplus.cern.ch', credentials_file)
         remote_directory = Config.get('remote_path').rstrip('/')
         remote_directory = f'{remote_directory}/{prepid}'
         self.logger.debug('Will try to acquire lock for %s', prepid)
@@ -208,12 +207,14 @@ class RequestSubmitter(BaseSubmitter):
             request = controller.get(prepid)
             try:
                 self.__check_for_submission(request)
-                self.__prepare_workspace(request, controller, ssh_executor, remote_directory)
-                # Start executing commands
-                # Create configs
-                self.__generate_configs(request, ssh_executor, remote_directory)
-                # Upload configs
-                config_hashes = self.__upload_configs(request, ssh_executor, remote_directory)
+                with SSHExecutor('lxplus.cern.ch', credentials_file) as ssh_executor:
+                    # Start executing commands
+                    self.__prepare_workspace(request, controller, ssh_executor, remote_directory)
+                    # Create configs
+                    self.__generate_configs(request, ssh_executor, remote_directory)
+                    # Upload configs
+                    config_hashes = self.__upload_configs(request, ssh_executor, remote_directory)
+
                 self.logger.debug(config_hashes)
                 # Iterate through uploaded configs and save their hashes in request sequences
                 self.__update_sequences_with_config_hashes(request, config_hashes)
