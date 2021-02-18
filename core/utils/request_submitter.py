@@ -81,7 +81,7 @@ class RequestSubmitter(BaseSubmitter):
             temp_file.write(config_file_content)
 
         with open(f'/tmp/{prepid}_upload.sh', 'w') as temp_file:
-            upload_file_content = controller.get_config_upload_file(request)
+            upload_file_content = controller.get_config_upload_file(request, for_submission=True)
             temp_file.write(upload_file_content)
 
         # Upload config generation script - cmsDrivers

@@ -6,7 +6,7 @@ import time
 from core_lib.database.database import Database
 from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.connection_wrapper import ConnectionWrapper
-from core_lib.utils.common_utils import cmssw_setup, get_scram_arch
+from core_lib.utils.common_utils import cmssw_setup, get_scram_arch, config_cache_lite_setup
 from core_lib.utils.global_config import Config
 import core_lib.controller.controller_base as controller_base
 from core.model.request import Request
@@ -193,48 +193,39 @@ class RequestController(controller_base.ControllerBase):
 
         return cms_driver
 
-    def get_config_upload_file(self, request):
+    def get_config_upload_file(self, request, for_submission=False):
         """
         Get bash script that would upload config files to ReqMgr2
         """
         self.logger.debug('Getting config upload script for %s', request.get_prepid())
-        database_url = Config.get('cmsweb_url') + '/couchdb'
-        command = '#!/bin/bash\n'
-        common_check_part = 'if [ ! -s "%s.py" ]; then\n'
+        database_url = Config.get('cmsweb_url').replace('https://', '').replace('http://', '')
+        command = '#!/bin/bash'
+        # Check if all expected config files are present
+        common_check_part = '\n\nif [ ! -s "%s.py" ]; then\n'
         common_check_part += '  echo "File %s.py is missing" >&2\n'
         common_check_part += '  exit 1\n'
-        common_check_part += 'fi\n'
+        common_check_part += 'fi'
         for configs in request.get_config_file_names():
             # Run config uploader
-            command += '\n'
             command += common_check_part % (configs['config'], configs['config'])
             if configs.get('harvest'):
-                command += '\n'
                 command += common_check_part % (configs['harvest'], configs['harvest'])
 
-        command += '\n'
-        command += cmssw_setup(request.get('cmssw_release'))
+        # Set up CMSSW environment
         command += '\n\n'
-        # Add path to WMCore
-        # This should be done in a smarter way
-        command += '\n'.join(['git clone --quiet https://github.com/dmwm/WMCore.git',
-                              'export PYTHONPATH=$(pwd)/WMCore/src/python/:$PYTHONPATH'])
-        common_upload_part = ('python config_uploader.py --file $(pwd)/%s.py --label %s '
+        command += cmssw_setup(request.get('cmssw_release'), reuse_cmssw=for_submission)
+        # Use ConfigCacheLite and TweakMakerLite instead of WMCore
+        command += '\n\n'
+        command += config_cache_lite_setup(reuse_files=for_submission)
+        # Upload command will be identical for all configs
+        command += '\n'
+        common_upload_part = ('\npython config_uploader.py --file $(pwd)/%s.py --label %s '
                               f'--group ppd --user $(echo $USER) --db {database_url} || exit $?')
         for configs in request.get_config_file_names():
             # Run config uploader
-            command += '\n'
             command += common_upload_part % (configs['config'], configs['config'])
             if configs.get('harvest'):
-                command += '\n'
                 command += common_upload_part % (configs['harvest'], configs['harvest'])
-
-        # Remove WMCore in order not to run out of space
-        command += '\n'
-        command += 'rm -rf WMCore'
-        command += '\n'
-        cmssw_release = request.get('cmssw_release')
-        command += f'rm -rf {cmssw_release}'
 
         return command
 

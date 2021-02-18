@@ -156,7 +156,7 @@ class GetConfigUploadAPI(APIBase):
         Get a text file with request's cmsDriver.py commands
         """
         request = request_controller.get(prepid)
-        commands = request_controller.get_config_upload_file(request)
+        commands = request_controller.get_config_upload_file(request, False)
         return self.output_text(commands, content_type='text/plain')
 
 
