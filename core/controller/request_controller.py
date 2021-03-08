@@ -389,7 +389,9 @@ class RequestController(controller_base.ControllerBase):
         # Make sure input dataset is VALID
         grid_cert = Config.get('grid_user_cert')
         grid_key = Config.get('grid_user_key')
-        dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch', cert_file=grid_cert, key_file=grid_key)
+        dbs_conn = ConnectionWrapper(host='cmsweb-prod.cern.ch',
+                                     cert_file=grid_cert,
+                                     key_file=grid_key)
         dbs_response = dbs_conn.api('POST',
                                     '/dbs/prod/global/DBSReader/datasetlist',
                                     {'dataset': input_dataset,
@@ -534,7 +536,7 @@ class RequestController(controller_base.ControllerBase):
             start_time = time.time()
             dbs_runs = []
             if input_dataset:
-                dbs_conn = ConnectionWrapper(host='cmsweb.cern.ch',
+                dbs_conn = ConnectionWrapper(host='cmsweb-prod.cern.ch',
                                              cert_file=grid_cert,
                                              key_file=grid_key)
                 dbs_response = dbs_conn.api(

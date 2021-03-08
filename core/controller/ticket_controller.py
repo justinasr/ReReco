@@ -98,7 +98,7 @@ class TicketController(ControllerBase):
         grid_key = Config.get('grid_user_key')
         with self.locker.get_lock('get-ticket-datasets'):
             start_time = time.time()
-            connection_wrapper = ConnectionWrapper(host='cmsweb.cern.ch',
+            connection_wrapper = ConnectionWrapper(host='cmsweb-prod.cern.ch',
                                                    max_attempts=1,
                                                    cert_file=grid_cert,
                                                    key_file=grid_key)
