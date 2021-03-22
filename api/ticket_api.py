@@ -89,7 +89,8 @@ class GetTicketAPI(APIBase):
         """
         Get a single with given prepid
         """
-        obj = ticket_controller.get(prepid)
+        args = flask.request.args
+        obj = ticket_controller.get(prepid, args.get('deleted', '').lower() == 'true')
         return self.output_text({'response': obj.get_json(), 'success': True, 'message': ''})
 
 

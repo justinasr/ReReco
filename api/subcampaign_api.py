@@ -87,7 +87,8 @@ class GetSubcampaignAPI(APIBase):
         """
         Get a single subcampaign with given prepid
         """
-        obj = subcampaign_controller.get(prepid)
+        args = flask.request.args
+        obj = subcampaign_controller.get(prepid, args.get('deleted', '').lower() == 'true')
         return self.output_text({'response': obj.get_json(), 'success': True, 'message': ''})
 
 

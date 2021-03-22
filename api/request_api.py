@@ -95,7 +95,8 @@ class GetRequestAPI(APIBase):
         """
         Get a single request with given prepid
         """
-        obj = request_controller.get(prepid)
+        args = flask.request.args
+        obj = request_controller.get(prepid, args.get('deleted', '').lower() == 'true')
         return self.output_text({'response': obj.get_json(), 'success': True, 'message': ''})
 
 
