@@ -332,18 +332,14 @@ class RequestController(controller_base.ControllerBase):
         prepid = request.get_prepid()
         with self.locker.get_nonblocking_lock(prepid):
             if request.get('status') == 'new':
-                return self.move_request_to_approved(request)
-
-            if request.get('status') == 'approved':
-                return self.move_request_to_submitting(request)
-
-            if request.get('status') == 'submitting':
+                self.move_request_to_approved(request)
+            elif request.get('status') == 'approved':
+                self.move_request_to_submitting(request)
+            elif request.get('status') == 'submitting':
                 raise Exception('Request is being submitted')
-
-            if request.get('status') == 'submitted':
-                return self.move_request_to_done(request)
-
-            if request.get('status') == 'done':
+            elif request.get('status') == 'submitted':
+                self.move_request_to_done(request)
+            elif request.get('status') == 'done':
                 raise Exception('Request is already done')
 
         return request
@@ -360,6 +356,9 @@ class RequestController(controller_base.ControllerBase):
                 self.move_request_back_to_approved(request)
             elif request.get('status') == 'submitted':
                 self.move_request_back_to_approved(request)
+            elif request.get('status') == 'done':
+                self.move_request_back_to_approved(request)
+                self.move_request_back_to_new(request)
 
         return request
 
