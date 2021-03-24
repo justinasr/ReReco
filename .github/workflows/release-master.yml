@@ -1,12 +1,6 @@
-name: Publish a new production release
+name: Make new release
 
 on:
-  # Build releases on pushes to master and development branches
-  # push:
-  #   branches:
-  #     - master
-  #     - development
-  # workflow_dispatch - manual trigger
   workflow_dispatch:
   schedule:
     # 23:59 CERN time
