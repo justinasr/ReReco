@@ -99,6 +99,7 @@ class TicketController(ControllerBase):
         with self.locker.get_lock('get-ticket-datasets'):
             start_time = time.time()
             connection_wrapper = ConnectionWrapper(host='cmsweb-prod.cern.ch',
+                                                   port=8443,
                                                    max_attempts=1,
                                                    cert_file=grid_cert,
                                                    key_file=grid_key)

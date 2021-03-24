@@ -389,6 +389,7 @@ class RequestController(controller_base.ControllerBase):
         grid_cert = Config.get('grid_user_cert')
         grid_key = Config.get('grid_user_key')
         dbs_conn = ConnectionWrapper(host='cmsweb-prod.cern.ch',
+                                     port=8443,
                                      cert_file=grid_cert,
                                      key_file=grid_key)
         dbs_response = dbs_conn.api('POST',
@@ -536,6 +537,7 @@ class RequestController(controller_base.ControllerBase):
             dbs_runs = []
             if input_dataset:
                 dbs_conn = ConnectionWrapper(host='cmsweb-prod.cern.ch',
+                                             port=8443,
                                              cert_file=grid_cert,
                                              key_file=grid_key)
                 dbs_response = dbs_conn.api(
