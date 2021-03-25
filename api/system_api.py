@@ -155,8 +155,8 @@ class BuildInfoAPI(APIBase):
         """
         build_version = '<unavailable>'
         if os.path.isfile('release_timestamp'):
-            with open('release_timestamp') as f:
-                build_version = f.read()
+            with open('release_timestamp') as timestamp_file:
+                build_version = timestamp_file.read()
 
         return self.output_text({'response': build_version, 'success': True, 'message': ''})
 

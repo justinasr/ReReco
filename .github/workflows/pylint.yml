@@ -1,6 +1,11 @@
 name: Pylint
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ master ]
 
 jobs:
   build:
@@ -8,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
     - name: Set up Python 3.8
       uses: actions/setup-python@v1
       with:
@@ -24,4 +30,4 @@ jobs:
         git submodule update
     - name: Analysing the code with pylint
       run: |
-        pylint `find . -type f | grep .py$ | grep -v "\./scripts/" | xargs`
+        python3 -m pylint `find . -type f | grep .py$ | grep -v "\./scripts/" | xargs`

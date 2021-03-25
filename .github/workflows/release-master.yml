@@ -3,7 +3,7 @@ name: Make new release
 on:
   workflow_dispatch:
   schedule:
-    # 23:59 CERN time
+    # Cron is UTC time, so 23:59 CERN time
     - cron: "59 22 * * *"
 
 jobs:
@@ -95,6 +95,12 @@ jobs:
 
     - name: Save timestamp in release
       run: cp info/release_timestamp ReReco
+
+    - name: Delete .git folder
+      run: |
+        cd ReReco
+        rm -rf .git
+        rm -f .gitignore
 
     - name: Build Vue.js frontend and remove everything else from frontend
       run: |
