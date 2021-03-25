@@ -47,7 +47,9 @@ from api.system_api import (SubmissionWorkerStatusAPI,
                             SubmissionQueueAPI,
                             LockerStatusAPI,
                             UserInfoAPI,
-                            ObjectsInfoAPI)
+                            ObjectsInfoAPI,
+                            BuildInfoAPI,
+                            UptimeInfoAPI)
 
 
 log_format = '[%(asctime)s][%(levelname)s] %(message)s'
@@ -129,6 +131,8 @@ api.add_resource(SubmissionQueueAPI, '/api/system/queue')
 api.add_resource(LockerStatusAPI, '/api/system/locks')
 api.add_resource(UserInfoAPI, '/api/system/user_info')
 api.add_resource(ObjectsInfoAPI, '/api/system/objects_info')
+api.add_resource(BuildInfoAPI, '/api/system/build_info')
+api.add_resource(UptimeInfoAPI, '/api/system/uptime')
 
 api.add_resource(CreateSubcampaignAPI, '/api/subcampaigns/create')
 api.add_resource(DeleteSubcampaignAPI, '/api/subcampaigns/delete')

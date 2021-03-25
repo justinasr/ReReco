@@ -37,7 +37,7 @@ jobs:
       id: create_tag
       run: |
         branch_name=${GITHUB_REF##*/}
-        release_timestamp=$(date +%Y-%m-%d_%H-%M-%S)
+        release_timestamp=$(TZ=Europe/Paris date +%Y-%m-%d_%H-%M-%S)
         tag=$branch_name-$release_timestamp
         echo "::set-output name=branch_name::$branch_name"
         echo "::set-output name=release_timestamp::$release_timestamp"
