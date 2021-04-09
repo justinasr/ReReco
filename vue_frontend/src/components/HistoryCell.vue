@@ -10,44 +10,41 @@
       <td>{{niceDate(entry.time)}}</td>
       <td>{{entry.user}}</td>
       <td>{{entry.action}}</td>
-      <td v-html='historyValue(entry.value)'></td>
+      <td v-html='historyValue(entry)'></td>
     </tr>
   </table>
 </template>
 
 <script>
 
-  import dateFormat from 'dateformat'
+import dateFormat from 'dateformat'
 
-  export default {
-    props:{
-      data: {
-        type: Array
+export default {
+  props:{
+    data: {
+      type: Array
+    }
+  },
+  methods: {
+    niceDate: function (time) {
+      return dateFormat(new Date(time * 1000), 'yyyy-mm-dd HH:MM:ss')
+    },
+    historyValue: function(entry) {
+      let value = entry.value;
+      if (typeof value === 'string' || value instanceof String) {
+        return value;
       }
-    },
-    data () {
-      return {
+      let action = entry.action;
+      if ((action === 'update' || action == 'create_requests') && value instanceof Array) {
+        return '<pre>' + value.join(',\n') + '</pre>';
       }
-    },
-    created () {
-    },
-    watch:{
-    },
-    methods: {
-      niceDate: function (time) {
-        return dateFormat(new Date(time * 1000), 'yyyy-mm-dd HH:MM:ss')
-      },
-      historyValue: function(value) {
-        if (typeof value === 'string' || value instanceof String) {
-          return value;
-        }
-        return '<pre>' + JSON.stringify(value, null, 2) + '</pre>';
+      if (action === 'rename' && value instanceof Array) {
+        return value.join(' -> ');
       }
-    },
-    computed: {
-      
+      return '<pre>' + JSON.stringify(value, null, 2) + '</pre>';
     }
   }
+}
 </script>
 
 <style scoped>

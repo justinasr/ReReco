@@ -6,25 +6,25 @@
       <ul>
         <li v-for="(info, worker) in submissionWorkers" :key="worker">Thread "{{worker}}" is {{info.job_name ? 'working on ' + info.job_name + ' for ' + info.job_time + 's' : 'not busy'}}</li>
       </ul>
-      <h3>Submission queue ({{submissionQueue.length}})</h3>
+      <h3 class="mt-3">Submission queue ({{submissionQueue.length}})</h3>
       <ul>
         <li v-for="name in submissionQueue" :key="name">{{name}}</li>
       </ul>
-      <h3 v-if="role('administrator')">Build info</h3>
+      <h3 class="mt-3" v-if="role('administrator')">Build info</h3>
       <ul v-if="role('administrator')">
         <li>Build version: {{buildInfo}}</li>
       </ul>
-      <h3 v-if="role('administrator')">System uptime</h3>
+      <h3 class="mt-3" v-if="role('administrator')">System uptime</h3>
       <ul v-if="role('administrator')">
         <li>{{uptime.days}} days {{uptime.hours}} hours {{uptime.minutes}} minutes {{uptime.seconds}} seconds</li>
       </ul>
-      <h3 v-if="role('administrator')">Settings ({{Object.keys(settings).length}})</h3>
+      <h3 class="mt-3" v-if="role('administrator')">Settings ({{Object.keys(settings).length}})</h3>
       <small v-if="role('administrator')">
         <ul>
           <li v-for="setting in settings" :key="setting._id">{{setting._id}}: <pre>{{JSON.stringify(setting.value, null, 2)}}</pre></li>
         </ul>
       </small>
-      <h3 v-if="role('administrator')">Locked objects ({{Object.keys(locks).length}})</h3>
+      <h3 class="mt-3" v-if="role('administrator')">Locked objects ({{Object.keys(locks).length}})</h3>
       <small v-if="role('administrator')">
         <ul>
           <li v-for="(info, lock) in locks" :key="lock" :style="info ? 'color: red; font-weight: bold;' : ''">{{lock}}: {{info}}</li>

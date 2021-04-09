@@ -22,10 +22,14 @@
             <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager') && item.created_requests.length < 1" title="Delete ticket">Delete</a>&nbsp;
             <a v-if="role('manager')" :href="'tickets/edit?clone=' + item.prepid" title="Clone ticket">Clone</a>&nbsp;
             <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'" title="Create requests from this ticket">Create requests</a>&nbsp;
+            <a :href="'requests?ticket=' + item.prepid" v-if="item.created_requests && item.created_requests.length > 0" title="Show all requests created from this ticket">Show requests</a>&nbsp;
             <a :href="'api/tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'" title="Show a snippet for TWiki">TWiki</a>&nbsp;
           </template>
           <template v-slot:item.prepid="{ item }">
             <a :href="'tickets?prepid=' + item.prepid" title="Show only this ticket">{{item.prepid}}</a>
+          </template>
+          <template v-slot:item.status="{ item }">
+            <a :href="'tickets?status=' + item.status" :title="'Show all tickets with status ' + item.status">{{item.status}}</a>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>

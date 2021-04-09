@@ -155,7 +155,7 @@ h1.page-title {
   margin: auto;
   margin-bottom: 16px;
   padding: 16px;
-  max-width: 777px !important;
+  max-width: 850px !important;
 }
 
 .page-card table {
@@ -182,7 +182,6 @@ h1.page-title {
   border: 1px solid rgba(0, 0, 0, 0.87);
   border-radius: 4px;
   background: #fbfbfb;
-  color: rgba(0, 0, 0, 0.87);
 }
 
 .page-card input[type="text"],
@@ -215,6 +214,7 @@ h1.page-title {
   background: #dadada !important;
   color: rgba(0, 0, 0, 0.65);
   cursor: not-allowed;
+  opacity: 1;
 }
 
 @media all and (max-width:650px){

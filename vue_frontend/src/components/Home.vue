@@ -4,13 +4,13 @@
     <v-card raised class="page-card">
       <h3>Search:</h3>
       <wild-search></wild-search>
-      <h3>Quick links:</h3>
+      <h3 class="mt-3">Quick links:</h3>
       <ul>
         <li><a :href="'tickets/edit'">Create new Ticket</a></li>
         <li><a :href="'requests?sort=created_on&sort_asc=false'">Newest Requests</a> - show requests with newest at the top</li>
         <li><a :href="'tickets?sort=created_on&sort_asc=false'">Newest Tickets</a> - show tickets with newest at the top</li>
       </ul>
-      <h3>Objects in ReReco database:</h3>
+      <h3 class="mt-3">Objects in ReReco database:</h3>
       <ul>
         <li><a :href="'subcampaigns'">Subcampaigns</a></li>
         <li><a :href="'tickets'">Tickets</a></li>
