@@ -21,7 +21,7 @@
             <a :href="'subcampaigns/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit subcampaign">Edit</a>&nbsp;
             <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')" title="Delete subcampaign">Delete</a>&nbsp;
             <a v-if="role('manager')" :href="'subcampaigns/edit?clone=' + item.prepid" title="Clone subcampaign">Clone</a>&nbsp;
-            <a :href="'requests?subcampaign=' + item.prepid" :title="'Show all requests in '+ item.prepid">Requests</a>&nbsp;
+            <a :href="'requests?subcampaign=' + item.prepid" :title="'Show all requests in '+ item.prepid">Show requests</a>&nbsp;
           </template>
           <template v-slot:item.prepid="{ item }">
             <a :href="'subcampaigns?prepid=' + item.prepid" title="Show only this subcampaign">{{item.prepid}}</a>

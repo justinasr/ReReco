@@ -463,16 +463,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-th {
-  color: var(--v-accent-base) !important;
-  caret-color: var(--v-accent-base) !important;
-}
-
-li {
-  margin-bottom: 4px;
-}
-
-</style>
