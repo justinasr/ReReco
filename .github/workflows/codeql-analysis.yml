@@ -2,9 +2,16 @@ name: "CodeQL"
 
 on:
   workflow_dispatch:
+  push:
+    # Specify an on.push hook so that Code Scanning can compare
+    # pull requests against the state of the base branch.
+    branches: [ master ]
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ master ]
+  schedule:
+    # 11:00 AM on Mondays
+    - cron: '0 11 * * 1'
 
 jobs:
   analyze:
