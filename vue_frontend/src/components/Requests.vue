@@ -111,6 +111,9 @@
               <li v-for="dataset in item.output_datasets" :key="dataset"><a target="_blank" title="Open dataset in DAS" :href="makeDASLink(dataset)">{{dataset}}</a></li>
             </ul>
           </template>
+          <template v-slot:item.lumisections="{ item }">
+            <pre><small>{{stringifyLumis(item.lumisections)}}</small></pre>
+          </template>
         </v-data-table>
       </div>
     </div>
@@ -203,6 +206,7 @@ export default {
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0},
         {'dbName': 'memory', 'displayName': 'Memory', 'visible': 0},
+        {'dbName': 'lumisections', 'displayName': 'Lumisections', 'visible': 0},
         {'dbName': 'output_datasets', 'displayName': 'Output datasets', 'visible': 0},
         {'dbName': 'priority', 'displayName': 'Priority', 'visible': 0},
         {'dbName': 'runs', 'displayName': 'Runs', 'visible': 0},

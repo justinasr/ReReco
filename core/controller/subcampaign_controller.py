@@ -1,9 +1,13 @@
 """
 Module that contains SubcampaignController class
 """
+import json
 from core_lib.database.database import Database
 from core_lib.controller.controller_base import ControllerBase
 from core_lib.utils.common_utils import get_scram_arch
+from core_lib.utils.cache import TimeoutCache
+from core_lib.utils.connection_wrapper import ConnectionWrapper
+from core_lib.utils.global_config import Config
 from core.model.subcampaign import Subcampaign
 from core.model.sequence import Sequence
 
@@ -12,6 +16,9 @@ class SubcampaignController(ControllerBase):
     """
     Controller that has all actions related to a subcampaign
     """
+
+    # DCS json cache
+    __dcs_cache = TimeoutCache(7200)
 
     def __init__(self):
         ControllerBase.__init__(self)
@@ -68,3 +75,29 @@ class SubcampaignController(ControllerBase):
         self.logger.debug('Creating a default sequence for %s', subcampaign.get_prepid())
         sequence = Sequence.schema()
         return sequence
+
+    def get_dcs_json(self, subcampaign_name):
+        """
+        Fetch a dict of runs and lumisection ranges for a subcampaign
+        """
+        cached_value = self.__dcs_cache.get(subcampaign_name)
+        if cached_value:
+            return cached_value
+
+        runs_json_path = self.get(subcampaign_name).get('runs_json_path')
+        if not runs_json_path:
+            return {}
+
+        conn = ConnectionWrapper(host='cms-service-dqmdc.web.cern.ch',
+                                 cert_file=Config.get('grid_user_cert'),
+                                 key_file=Config.get('grid_user_key'))
+        with self.locker.get_lock('get-dcs-runs'):
+            response = conn.api('GET', f'/CAF/certification/{runs_json_path}')
+
+        response = json.loads(response.decode('utf-8'))
+        if not response:
+            self.__dcs_cache.set(subcampaign_name, {})
+            return {}
+
+        self.__dcs_cache.set(subcampaign_name, response)
+        return response

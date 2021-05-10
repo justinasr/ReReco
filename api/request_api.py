@@ -263,12 +263,59 @@ class GetRequestRunsAPI(APIBase):
 
     @APIBase.exceptions_to_errors
     @APIBase.ensure_role('manager')
-    def get(self, prepid=None):
+    def get(self, prepid):
         """
         Get a list of run numbers
         """
         request = request_controller.get(prepid)
         result = request_controller.get_runs_for_request(request)
+        return self.output_text({'response': result, 'success': True, 'message': ''})
+
+    @APIBase.ensure_request_data
+    @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
+    def post(self):
+        """
+        Get a dictionary of runs and lumisection ranges for provided dataset and subcampaign
+        """
+        data = flask.request.data
+        data_json = json.loads(data.decode('utf-8'))
+        input_dataset = data_json['input_dataset']
+        subcampaign_name = data_json['subcampaign']
+        result = request_controller.get_runs(subcampaign_name, input_dataset)
+        return self.output_text({'response': result, 'success': True, 'message': ''})
+
+
+class GetRequestLumisectionsAPI(APIBase):
+    """
+    Endpoint for getting a subset of DCS dictionary for given request of provided runs
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
+    def get(self, prepid):
+        """
+        Get a dictionary of runs and lumisection ranges for request's runs
+        """
+        request = request_controller.get(prepid)
+        result = request_controller.get_lumisections_for_request(request)
+        return self.output_text({'response': result, 'success': True, 'message': ''})
+
+    @APIBase.ensure_request_data
+    @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
+    def post(self):
+        """
+        Get a dictionary of runs and lumisection ranges for provided runs and subcampaign
+        """
+        data = flask.request.data
+        data_json = json.loads(data.decode('utf-8'))
+        runs = data_json['runs']
+        subcampaign_name = data_json['subcampaign']
+        result = request_controller.get_lumisections(subcampaign_name, runs)
         return self.output_text({'response': result, 'success': True, 'message': ''})
 
 
