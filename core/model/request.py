@@ -29,6 +29,8 @@ class Request(ModelBase):
         # Input dataset name or request name
         'input': {'dataset': '',
                   'request': ''},
+        # Dictionary of runs and their lumisection ranges to be processed
+        'lumisections': {},
         # Memory in MB
         'memory': 2300,
         # User notes

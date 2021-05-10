@@ -39,6 +39,7 @@ from api.request_api import (CreateRequestAPI,
                              RequestNextStatus,
                              RequestPreviousStatus,
                              GetRequestRunsAPI,
+                             GetRequestLumisectionsAPI,
                              UpdateRequestWorkflowsAPI,
                              RequestOptionResetAPI)
 from api.search_api import SearchAPI, SuggestionsAPI, WildSearchAPI
@@ -170,7 +171,12 @@ api.add_resource(GetConfigUploadAPI, '/api/requests/get_config_upload/<string:pr
 api.add_resource(GetRequestJobDictAPI, '/api/requests/get_dict/<string:prepid>')
 api.add_resource(RequestNextStatus, '/api/requests/next_status')
 api.add_resource(RequestPreviousStatus, '/api/requests/previous_status')
-api.add_resource(GetRequestRunsAPI, '/api/requests/get_runs/<string:prepid>')
+api.add_resource(GetRequestRunsAPI,
+                 '/api/requests/get_runs',
+                 '/api/requests/get_runs/<string:prepid>')
+api.add_resource(GetRequestLumisectionsAPI,
+                 '/api/requests/get_lumisections',
+                 '/api/requests/get_lumisections/<string:prepid>')
 api.add_resource(UpdateRequestWorkflowsAPI, '/api/requests/update_workflows')
 api.add_resource(RequestOptionResetAPI, '/api/requests/option_reset')
 

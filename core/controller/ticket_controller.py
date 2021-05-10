@@ -196,9 +196,10 @@ class TicketController(ControllerBase):
                         try:
                             runs = request_controller.get_runs(subcampaign_name, input_dataset)
                             new_request_json['runs'] = runs
+                            lumis = request_controller.get_lumisections(subcampaign_name, runs)
+                            new_request_json['lumisections'] = lumis
                         except Exception as ex:
-                            self.logger.error('Error getting runs for %s %s %s request. '
-                                              'Will leave empty. Error:\n%s',
+                            self.logger.error('Error getting runs or lumis for %s %s %s: \n%s',
                                               subcampaign_name,
                                               input_dataset,
                                               processing_string,

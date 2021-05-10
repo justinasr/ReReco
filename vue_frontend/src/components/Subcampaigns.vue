@@ -50,7 +50,7 @@
             <a :href="'subcampaigns?prepid=' + getCampaign(item.prepid) + '-*'" title="Show all subcampaigns in the same campaign">{{getCampaign(item.prepid)}}</a>
           </template>
           <template v-slot:item.runs_json_path="{ item }">
-            <a target="_blank" :href="'https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/' + item.runs_json_path" title="Open JSON file with runs list">{{item.runs_json_path}}</a>
+            <a target="_blank" :href="'https://cms-service-dqmdc.web.cern.ch/CAF/certification/' + item.runs_json_path" title="Open JSON file with runs list">{{item.runs_json_path}}</a>
           </template>
         </v-data-table>
       </div>

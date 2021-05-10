@@ -2,7 +2,6 @@
 Module that contains RequestController class
 """
 import json
-import time
 from core_lib.database.database import Database
 from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.connection_wrapper import ConnectionWrapper
@@ -13,6 +12,7 @@ from core.model.request import Request
 from core.model.subcampaign import Subcampaign
 from core.model.ticket import Ticket
 from core.utils.request_submitter import RequestSubmitter
+from core.controller.subcampaign_controller import SubcampaignController
 
 
 class RequestController(controller_base.ControllerBase):
@@ -166,6 +166,7 @@ class RequestController(controller_base.ControllerBase):
         editing_info['subcampaign'] = creating_new
         editing_info['processing_string'] = creating_new
         editing_info['sequences'] = status_new
+        editing_info['lumisections'] = status_new
         editing_info['memory'] = status_new
         editing_info['input'] = creating_new
         editing_info['runs'] = status_new
@@ -268,10 +269,12 @@ class RequestController(controller_base.ControllerBase):
         job_dict['TimePerEvent'] = request.get('time_per_event')
         job_dict['RequestString'] = request_string
         job_dict['EnableHarvesting'] = False
-        job_dict['RunWhitelist'] = request.get('runs')
-        job_dict['RunBlacklist'] = []
-        job_dict['BlockWhitelist'] = []
-        job_dict['BlockBlacklist'] = []
+        lumisections = request.get('lumisections')
+        if lumisections:
+            job_dict['LumiList'] = lumisections
+        else:
+            job_dict['RunWhitelist'] = request.get('runs')
+
         if len(sequences) == 1:
             first_sequence = request.get('sequences')[0]
             job_dict['GlobalTag'] = first_sequence.get('conditions')
@@ -523,60 +526,59 @@ class RequestController(controller_base.ControllerBase):
         self.update_status(request, 'approved')
         return request
 
+    def get_dataset_runs(self, dataset):
+        """
+        Fetch a list of runs from DBS for a given dataset
+        """
+        if not dataset:
+            return []
+
+        conn = ConnectionWrapper(host='cmsweb-prod.cern.ch',
+                                 port=8443,
+                                 cert_file=Config.get('grid_user_cert'),
+                                 key_file=Config.get('grid_user_key'))
+        with self.locker.get_lock('get-dataset-runs'):
+            response = conn.api('GET', f'/dbs/prod/global/DBSReader/runs?dataset={dataset}')
+
+        response = json.loads(response.decode('utf-8'))
+        if not response:
+            return []
+
+        runs = response[0].get('run_num', [])
+        self.logger.debug('Fetched %s runs for %s from DBS', len(runs), dataset)
+        return runs
+
+    def get_lumisections(self, subcampaign_name, runs):
+        """
+        Get lumisection ranges in a subcampaign's dcs json for given runs
+        """
+        subcampaign_controller = SubcampaignController()
+        dcs_json = subcampaign_controller.get_dcs_json(subcampaign_name)
+        runs = {str(r) for r in runs}
+        lumisections = {run: lumis for run, lumis in dcs_json.items() if run in runs}
+        self.logger.debug('Fetched %s runs with lumi ranges for %s and %s runs',
+                          len(lumisections),
+                          subcampaign_name,
+                          len(runs))
+        return lumisections
+
     def get_runs(self, subcampaign_name, input_dataset):
         """
         Return a list of runs for given input dataset in a subcampaign
         """
-        subcampaign_db = Database('subcampaigns')
-        subcampaign = subcampaign_db.get(subcampaign_name)
-        runs_json_path = subcampaign.get('runs_json_path')
-        grid_cert = Config.get('grid_user_cert')
-        grid_key = Config.get('grid_user_key')
-        with self.locker.get_lock('get-request-runs'):
-            start_time = time.time()
-            dbs_runs = []
-            if input_dataset:
-                dbs_conn = ConnectionWrapper(host='cmsweb-prod.cern.ch',
-                                             port=8443,
-                                             cert_file=grid_cert,
-                                             key_file=grid_key)
-                dbs_response = dbs_conn.api(
-                    'GET',
-                    f'/dbs/prod/global/DBSReader/runs?dataset={input_dataset}'
-                )
-                dbs_response = json.loads(dbs_response.decode('utf-8'))
-                if dbs_response:
-                    dbs_runs = dbs_response[0].get('run_num', [])
-
-            json_runs = []
-            if runs_json_path:
-                json_conn = ConnectionWrapper(host='cms-service-dqm.web.cern.ch',
-                                              cert_file=grid_cert,
-                                              key_file=grid_key)
-                json_response = json_conn.api(
-                    'GET',
-                    f'/cms-service-dqm/CAF/certification/{runs_json_path}'
-                )
-                json_response = json.loads(json_response.decode('utf-8'))
-                if json_response:
-                    json_runs = [int(x) for x in list(json_response.keys())]
-
-        all_runs = []
-        dbs_runs = set(dbs_runs)
-        json_runs = set(json_runs)
-        if dbs_runs and json_runs:
-            all_runs = dbs_runs & json_runs
+        subcampaign_controller = SubcampaignController()
+        dbs_runs = set(self.get_dataset_runs(input_dataset))
+        dcs_json = subcampaign_controller.get_dcs_json(subcampaign_name)
+        dcs_runs = set(int(x) for x in list(dcs_json.keys()))
+        if dbs_runs and dcs_runs:
+            all_runs = sorted(list(dbs_runs & dcs_runs))
         else:
-            all_runs = dbs_runs | json_runs
+            all_runs = sorted(list(dbs_runs | dcs_runs))
 
-        all_runs = sorted(list(all_runs))
-        end_time = time.time()
-        self.logger.info('Got %s runs from DBS for dataset %s and %s runs '
-                         'from JSON in %.2fs. Result is %s runs',
+        self.logger.info('Got %s runs from DBS and %s runs from DCS for %s, total is %s runs',
                          len(dbs_runs),
+                         len(dcs_runs),
                          input_dataset,
-                         len(json_runs),
-                         end_time - start_time,
                          len(all_runs))
 
         return all_runs
@@ -588,6 +590,17 @@ class RequestController(controller_base.ControllerBase):
         subcampaign_name = request.get('subcampaign')
         input_dataset = request.get('input')['dataset']
         return self.get_runs(subcampaign_name, input_dataset)
+
+    def get_lumisections_for_request(self, request, runs=None):
+        """
+        Return a dictionary of runs and lumisection ranges
+        If no runs are provided, request's runs will be used
+        """
+        subcampaign_name = request.get('subcampaign')
+        if runs:
+            return self.get_lumisections(subcampaign_name, runs)
+
+        return self.get_lumisections(subcampaign_name, request.get('runs'))
 
     def __pick_workflows(self, all_workflows, output_datasets):
         """
