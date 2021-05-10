@@ -14,14 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Print latest hash
-        run: echo ${{ github.sha }}
+      - name: Get the newest and latest release hashes
+        run: |
+          latest_commit_hash=${{ github.sha }}
+          latest_tag=$(git tag -l master-* | tail -n 1)
+          latest_tag_hash=$(git rev-parse $latest_tag)
 
       - name: Check if there are commit in past 24 hours
         id: newest_commit_check
         continue-on-error: true
         if: ${{ github.event_name == 'schedule' }}
-        run: test -z $(git rev-list --after="24 hours" ${{ github.sha }}) && echo "::set-output name=new_commits::false"
+        run: test $latest_commit_hash = $latest_tag_hash && echo "::set-output name=new_commits::false"
 
     outputs:
       new_commits: ${{ steps.newest_commit_check.outputs.new_commits }}
