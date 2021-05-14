@@ -18,7 +18,7 @@ jobs:
         run: |
           latest_commit_hash=${{ github.sha }}
           branch_name=${GITHUB_REF##*/}
-          latest_tag=$(git tag -l $branch_name-* | tail -n 1)
+          latest_tag=$(git tag -l master-* | tail -n 1)
           latest_tag_hash=$(git rev-parse $latest_tag)
           echo "Branch $branch_name"
           echo "Newest commit $latest_commit_hash"
