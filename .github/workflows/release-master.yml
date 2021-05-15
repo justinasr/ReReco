@@ -21,14 +21,17 @@ jobs:
           latest_tag=$(git tag -l master-* | tail -n 1)
           latest_tag_hash=$(git rev-parse $latest_tag)
           echo "Branch $branch_name"
+          echo "Tags:"
+          git tag -l master-*
           echo "Newest commit $latest_commit_hash"
           echo "Newest tag $latest_tag hash $latest_tag_hash"
           test "$latest_commit_hash" = "$latest_tag_hash" && echo "No new commits"
+          echo "Last exit code: $?"
 
       - name: Check if there are commits since last release tag
         id: newest_commit_check
         continue-on-error: true
-        if: ${{ github.event_name == 'schedule' }}
+        # if: ${{ github.event_name == 'schedule' }}
         run: test "$latest_commit_hash" = "$latest_tag_hash" && echo "::set-output name=new_commits::false"
 
     outputs:
