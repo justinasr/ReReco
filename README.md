@@ -25,7 +25,6 @@ Subcampaign name is made of two parts that are joined with a dash ("-"). First p
 * `notes` - free form user notes
 * `prepid` - unique identifier in the ReReco machine, same as `_id`
 * `runs_json_path` - relative path to JSON file that contains all runs, this value will be internally prepended with https://cms-service-dqmdc.web.cern.ch/CAF/certification/
-* `scram_arch` - scram architecture of CMSSW release, will be automatically fetched from https://cmssdt.cern.ch/SDT/cgi-bin/ReleasesXML?anytype=1
 * `sequences` - list of Sequence objects (or dictionaries) that hold attributes for cmsDriver commands
 
 ### Requests

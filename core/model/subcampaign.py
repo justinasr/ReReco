@@ -28,8 +28,6 @@ class Subcampaign(ModelBase):
         'notes': '',
         # Path to json that contains all runs
         'runs_json_path': '',
-        # scram architecture
-        'scram_arch': '',
         # List of Sequences
         'sequences': [],
     }
@@ -41,7 +39,6 @@ class Subcampaign(ModelBase):
         'energy': ModelBase.lambda_check('energy'),
         'memory': ModelBase.lambda_check('memory'),
         'runs_json_path': lambda rjp: ModelBase.matches_regex(rjp, Subcampaign.__runs_json_regex),
-        'scram_arch': ModelBase.lambda_check('scram_arch'),
         'sequences': lambda s: len(s) > 0,
         '__sequences': lambda s: isinstance(s, Sequence),
     }

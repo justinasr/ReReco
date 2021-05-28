@@ -1,5 +1,5 @@
 """
-Script to update data format in database for PhaseII update
+Script to remove scram arch attribute from subcampaigns and requests
 """
 import sys
 import os.path
@@ -19,17 +19,16 @@ total_requests = request_db.get_count()
 print('Requests: %s' % (total_requests))
 print('Subcampaigns: %s' % (total_subcampaigns))
 
-subcampaigns = {}
-
 for index, subcampaign in enumerate(subcampaign_db.query(limit=total_subcampaigns)):
     print('Processing subcampaign %s/%s %s' % (index + 1,
                                                total_subcampaigns,
                                                subcampaign['prepid']))
-    subcampaigns[subcampaign['prepid']] = subcampaign['scram_arch']
+    subcampaign.pop('scram_arch', None)
+    subcampaign_db.save(subcampaign)
 
 for index, request in enumerate(request_db.query(limit=total_requests)):
     print('Processing request %s/%s %s' % (index + 1, total_requests, request['prepid']))
-    request['scram_arch'] = subcampaigns[request['subcampaign']]
+    request.pop('scram_arch', None)
     request_db.save(request)
 
 
