@@ -58,12 +58,10 @@
             {{item.energy}} TeV
           </template>
           <template v-slot:item.cmssw_release="{ item }">
-            <a :href="'requests?cmssw_release=' + item.cmssw_release" :title="'Show all requests with ' + item.cmssw_release">{{item.cmssw_release.replace('_', ' ').replace(/_/g, '.')}}</a>
-            <br>
-            <small><a :href="'requests?scram_arch=' + item.scram_arch" :title="'Show all requests with ' + item.scram_arch">{{item.scram_arch}}</a></small>
+            <a :href="'requests?cmssw_release=' + item.cmssw_release" :title="'Show all requests with ' + item.cmssw_release">{{item.cmssw_release}}</a>
           </template>
           <template v-slot:item.notes="{ item }">
-            <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
+            <pre v-if="item.notes.length" v-html="sanitize(item.notes)" class="notes" v-linkified></pre>
           </template>
           <template v-slot:item.time_per_event="{ item }">
             {{item.time_per_event}}s
