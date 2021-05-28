@@ -4,7 +4,6 @@ Module that contains SubcampaignController class
 import json
 from core_lib.database.database import Database
 from core_lib.controller.controller_base import ControllerBase
-from core_lib.utils.common_utils import get_scram_arch
 from core_lib.utils.cache import TimeoutCache
 from core_lib.utils.connection_wrapper import ConnectionWrapper
 from core_lib.utils.global_config import Config
@@ -34,25 +33,6 @@ class SubcampaignController(ControllerBase):
                             f'requests. {prepid} has {len(requests)} requests')
 
         return True
-
-    def before_create(self, obj):
-        cmssw_release = obj.get('cmssw_release')
-        scram_arch = get_scram_arch(cmssw_release)
-        if not scram_arch:
-            raise Exception(f'Could not find scram_arch for {cmssw_release}')
-
-        self.logger.debug('Setting %s for %s subcampaign', scram_arch, obj.get_prepid())
-        obj.set('scram_arch', scram_arch)
-
-    def before_update(self, old_obj, new_obj, changed_values):
-        if old_obj.get('cmssw_release') != new_obj.get('cmssw_release'):
-            cmssw_release = new_obj.get('cmssw_release')
-            scram_arch = get_scram_arch(cmssw_release)
-            if not scram_arch:
-                raise Exception(f'Could not find scram_arch for {cmssw_release}')
-
-            self.logger.debug('Setting %s for %s subcampaign', scram_arch, new_obj.get_prepid())
-            new_obj.set('scram_arch', scram_arch)
 
     def get_editing_info(self, obj):
         editing_info = super().get_editing_info(obj)

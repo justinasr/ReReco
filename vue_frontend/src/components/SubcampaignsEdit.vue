@@ -29,10 +29,6 @@
           <td><input type="text" v-model="editableObject.runs_json_path" :disabled="!editingInfo.runs_json_path" placeholder="Example: Collisions16/13TeV/DCSOnly/json_DCSONLY.txt"></td>
         </tr>
         <tr>
-          <td>SCRAM Arch</td>
-          <td><input type="text" v-model="editableObject.scram_arch" :disabled="!editingInfo.scram_arch"></td>
-        </tr>
-        <tr>
           <td>Sequences ({{listLength(editableObject.sequences)}})</td>
           <td>
             <div v-for="(sequence, index) in editableObject.sequences" :key="index">
@@ -158,7 +154,6 @@ export default {
           let templateInfo = templateResponse.data.response.object;
           templateInfo.prepid = objectInfo.prepid;
           templateInfo.history = objectInfo.history;
-          templateInfo.scram_arch = objectInfo.scram_arch;
           component.editableObject = templateInfo;
           component.editingInfo = editingInfo;
           component.loading = false;
