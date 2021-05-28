@@ -42,7 +42,7 @@
             <a :href="'subcampaigns?cmssw_release=' + item.cmssw_release" :title="'Show all subcampaigns with ' + item.cmssw_release">{{item.cmssw_release}}</a>
           </template>
           <template v-slot:item.notes="{ item }">
-            <pre v-if="item.notes.length" class="notes">{{item.notes}}</pre>
+            <pre v-if="item.notes.length" v-html="sanitize(item.notes)" class="notes" v-linkified></pre>
           </template>
           <template v-slot:item.campaign="{ item }">
             <a :href="'subcampaigns?prepid=' + getCampaign(item.prepid) + '-*'" title="Show all subcampaigns in the same campaign">{{getCampaign(item.prepid)}}</a>
