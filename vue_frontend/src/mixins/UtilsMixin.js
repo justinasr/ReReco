@@ -57,6 +57,6 @@ export const utilsMixin = {
         outputLines = '\n' + outputLines.trimRight().slice(0, -1) + '\n';
       }
       return '{' + outputLines + '}';
-    },
+    }
   }
 }

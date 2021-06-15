@@ -48,12 +48,7 @@
         <tr>
           <td>Lumisections</td>
           <td>
-            <textarea class="lumisections" v-model="editableObject.lumisections" :disabled="!editingInfo.lumisections" v-on:input="checkLumisectionJSON(editableObject.lumisections)"></textarea>
-            <template v-if="editableObject.lumisections && editableObject.lumisections.length">
-              <br>
-              <small v-if="lumisectionJSONValid" style="color: #27ae60">Valid JSON</small>
-              <small v-else style="color: red">Invalid JSON</small>
-            </template>
+            <JSONField v-model="editableObject.lumisections" :disabled="!editingInfo.lumisections"/>
           </td>
         </tr>
         <tr>
@@ -183,6 +178,7 @@ import axios from 'axios'
 import { utilsMixin } from '../mixins/UtilsMixin.js'
 import LoadingOverlay from './LoadingOverlay.vue'
 import Autocompleter from './Autocompleter.vue'
+import JSONField from './JSONField.vue'
 
 export default {
   mixins: [
@@ -190,7 +186,8 @@ export default {
   ],
   components: {
     LoadingOverlay,
-    Autocompleter
+    Autocompleter,
+    JSONField
   },
   data () {
     return {
@@ -200,7 +197,6 @@ export default {
       loading: true,
       creatingNew: true,
       inputType: 'dataset',
-      lumisectionJSONValid: true,
       errorDialog: {
         visible: false,
         title: '',
@@ -232,8 +228,7 @@ export default {
           templateInfo.total_events = objectInfo.total_events;
           templateInfo.output_datasets = objectInfo.output_datasets;
           templateInfo.runs = templateInfo.runs.join('\n');
-          templateInfo.lumisections = templateInfo.lumisections ? component.stringifyLumis(templateInfo.lumisections) : '';
-          component.checkLumisectionJSON(templateInfo.lumisections);
+          templateInfo.lumisections = component.stringifyLumis(templateInfo.lumisections);
           component.editableObject = templateInfo;
           component.editingInfo = editingInfo;
           if (component.editableObject.input.request != '') {
@@ -250,8 +245,7 @@ export default {
         component.editableObject = response.data.response.object;
         component.editingInfo = response.data.response.editing_info;
         objectInfo.runs = objectInfo.runs.join('\n');
-        objectInfo.lumisections = objectInfo.lumisections ? component.stringifyLumis(objectInfo.lumisections) : '';
-        component.checkLumisectionJSON(objectInfo.lumisections);
+        objectInfo.lumisections = component.stringifyLumis(objectInfo.lumisections);
         if (component.editableObject.input.request != '') {
           component.inputType = 'request';
         } else {
@@ -277,7 +271,7 @@ export default {
         }
       }
       editableObject['notes'] = editableObject['notes'].trim();
-      editableObject['runs'] = editableObject['runs'].replace(/,/g, '\n').split('\n').map(function(s) { return s.trim() }).filter(Boolean);
+      editableObject['runs'] = this.cleanSplit(editableObject['runs']);
       editableObject['lumisections'] = editableObject['lumisections'] ? JSON.parse(editableObject['lumisections']) : {};
       let httpRequest;
       if (this.creatingNew) {
@@ -321,7 +315,7 @@ export default {
     getLumisections: function() {
       let component = this;
       this.loading = true;
-      let runs = this.editableObject.runs.replace(/,/g, '\n').split('\n').map(function(s) { return s.trim() }).filter(Boolean);
+      let runs = this.cleanSplit(this.editableObject.runs);
       axios.post('api/requests/get_lumisections', {'subcampaign': component.editableObject.subcampaign, 'runs': runs}).then(response => {
         component.editableObject.lumisections = response.data.response ? component.stringifyLumis(response.data.response) : {};
         this.loading = false;
@@ -370,18 +364,6 @@ export default {
     },
     runListLength: function(list) {
       return this.cleanSplit(list).length;
-    },
-    checkLumisectionJSON: function(jsonText) {
-      if (!jsonText || !jsonText.length) {
-        this.lumisectionJSONValid = true;
-        return;
-      }
-      try {
-        JSON.parse(jsonText);
-        this.lumisectionJSONValid = true;
-      } catch(err) {
-        this.lumisectionJSONValid = false;
-      }
     },
   }
 }
