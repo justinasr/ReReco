@@ -23,7 +23,7 @@ class Subcampaign(ModelBase):
         # Action history
         'history': [],
         # Default memory
-        'memory': 2300,
+        'memory': 2000,
         # User notes
         'notes': '',
         # Path to json that contains all runs

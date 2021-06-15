@@ -6,7 +6,7 @@ export const utilsMixin = {
         return 0;
       }
       if (typeof(list) === "string") {
-        return list.split('\n').filter(Boolean).length;
+        return this.cleanSplit(list).length;
       }
       return list.length;
     },

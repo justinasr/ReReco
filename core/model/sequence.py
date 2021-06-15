@@ -285,29 +285,9 @@ class Sequence(ModelBase):
 
         arguments_dict = dict(self.get_json())
         # Delete sequence metadata
-        if 'config_id' in arguments_dict:
-            del arguments_dict['config_id']
-
-        if 'harvesting_config_id' in arguments_dict:
-            del arguments_dict['harvesting_config_id']
-
-        if 'customise' in arguments_dict:
-            del arguments_dict['customise']
-
-        if 'datatier' in arguments_dict:
-            del arguments_dict['datatier']
-
-        if 'eventcontent' in arguments_dict:
-            del arguments_dict['eventcontent']
-
-        if 'nThreads' in arguments_dict:
-            del arguments_dict['nThreads']
-
-        if 'extra' in arguments_dict:
-            del arguments_dict['extra']
-
-        if 'scenario' in arguments_dict:
-            del arguments_dict['scenario']
+        for attr in ('config_id', 'harvesting_config_id', 'customise', 'datatier',
+                     'eventcontent', 'nThreads', 'extra', 'scenario'):
+            arguments_dict.pop(attr, None)
 
         # Get correct configuration of DQM step, e.g.
         # DQM:@rerecoCommon should be changed to HARVESTING:@rerecoCommon
@@ -341,3 +321,13 @@ class Sequence(ModelBase):
         while start < len(items):
             yield items[start: start + chunk_size]
             start += chunk_size
+
+    def get_output_module(self):
+        """
+        Return a output module name
+        """
+        eventcontent = [e for e in self.get('eventcontent') if not e.startswith('DQM')]
+        if not eventcontent:
+            return ''
+
+        return f'{eventcontent[0]}output'

@@ -227,7 +227,7 @@ export default {
       this.loading = true;
       let component = this;
       let url = 'api/tickets/get_datasets?q=' + this.getDatasetsDialog.input;
-      let exclude = this.cleanSplit(this.getDatasetsDialog.exclude, ',');
+      let exclude = this.cleanSplit(this.getDatasetsDialog.exclude);
       if (exclude.length) {
         url += '&exclude=' + exclude.join(',');
       }
@@ -238,9 +238,9 @@ export default {
         if (replace) {
           component.editableObject.input_datasets = response.data.response.filter(Boolean).join('\n');
         } else {
-          let existingDatasets = component.editableObject.input_datasets.split('\n').map(function(s) { return s.trim() }).filter(Boolean);
+          let existingDatasets = component.cleanSplit(component.editableObject.input_datasets);
           for (let dataset of response.data.response.filter(Boolean)) {
-            if (existingDatasets.indexOf(dataset) < 0) {
+            if (!existingDatasets.includes(dataset)) {
               existingDatasets.push(dataset);
             }
           }
