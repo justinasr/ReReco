@@ -88,8 +88,9 @@
           <template v-slot:item.workflows="{ item }">
             <ol>
               <li v-for="(workflow, index) in item.workflows" :key="workflow.name">
-                <a target="_blank" title="Open workflow in ReqMgr2" :href="'https://cmsweb.cern.ch/reqmgr2/fetch?rid=' + workflow.name">{{workflow.name}}</a>&nbsp;
-                <a target="_blank" title="Open workflow in Stats2" :href="'https://cms-pdmv.cern.ch/stats?workflow_name=' + workflow.name">Stats2</a>&nbsp;
+                <a v-if="!isDev" target="_blank" title="Open workflow in ReqMgr2" :href="'https://cmsweb.cern.ch/reqmgr2/fetch?rid=' + workflow.name">{{workflow.name}}</a>&nbsp;
+                <a v-if="isDev" target="_blank" title="Open workflow in ReqMgr2" :href="'https://cmsweb-testbed.cern.ch/reqmgr2/fetch?rid=' + workflow.name">{{workflow.name}}</a>&nbsp;
+                <a v-if="!isDev" target="_blank" title="Open workflow in Stats2" :href="'https://cms-pdmv.cern.ch/stats?workflow_name=' + workflow.name">Stats2</a>&nbsp;
                 <span v-if="workflow.status_history && workflow.status_history.length > 0">
                   <small>type:</small> {{workflow.type}}
                   <small>status:</small> {{workflow.status_history[workflow.status_history.length - 1].status}}
@@ -231,7 +232,8 @@ export default {
         visible: false,
         title: '',
         description: ''
-      }
+      },
+      isDev: false,
     }
   },
   computed: {
@@ -241,6 +243,7 @@ export default {
   },
   created () {
     this.clearDialog();
+    this.isDev = document.location.origin.includes('dev');
   },
   methods: {
     fetchObjects () {
