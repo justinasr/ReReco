@@ -65,6 +65,10 @@ class RequestSubmitter(BaseSubmitter):
         body += (f'You can find this request at '
                  f'{service_url}/requests?prepid={prepid}\n')
         body += f'Workflow in ReqMgr2 {cmsweb_url}/reqmgr2/fetch?rid={last_workflow}'
+        if Config.get('development'):
+            body += '\nNOTE: This was submitted from a development instance of ReReco machine '
+            body += 'and this job will never start running in computing!\n'
+
         recipients = emailer.get_recipients(request)
         emailer.send(subject, body, recipients)
 
@@ -237,7 +241,9 @@ class RequestSubmitter(BaseSubmitter):
                 time.sleep(3)
                 self.approve_workflow(workflow_name, connection)
                 connection.close()
-                controller.force_stats_to_refresh([workflow_name])
+                if not Config.get('development'):
+                    controller.force_stats_to_refresh([workflow_name])
+
             except Exception as ex:
                 self.__handle_error(request, str(ex))
                 return
