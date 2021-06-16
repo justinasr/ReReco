@@ -4,6 +4,7 @@ Module that contains all request APIs
 import json
 import flask
 from core_lib.api.api_base import APIBase
+from core_lib.utils.common_utils import clean_split
 from core.controller.request_controller import RequestController
 from core.model.request import Request
 
@@ -78,8 +79,16 @@ class UpdateRequestAPI(APIBase):
         """
         data = flask.request.data
         request_json = json.loads(data.decode('utf-8'))
-        obj = request_controller.update(request_json)
-        return self.output_text({'response': obj, 'success': True, 'message': ''})
+        if isinstance(request_json, dict):
+            results = request_controller.update(request_json)
+        elif isinstance(request_json, list):
+            results = []
+            for single_request_json in request_json:
+                results.append(request_controller.update(single_request_json))
+        else:
+            raise Exception('Expected a single request dict or a list of request dicts')
+
+        return self.output_text({'response': results, 'success': True, 'message': ''})
 
 
 class GetRequestAPI(APIBase):
@@ -111,15 +120,27 @@ class GetEditableRequestAPI(APIBase):
     @APIBase.exceptions_to_errors
     def get(self, prepid=None):
         """
-        Get a single request with given prepid
+        Get an object and it's editing info or list of objects and their editing infos
         """
         if prepid:
-            request = request_controller.get(prepid)
+            prepid = clean_split(prepid, ',')
+            if len(prepid) == 1:
+                # Return one object if there is only one prepid
+                request = request_controller.get(prepid[0])
+                editing_info = request_controller.get_editing_info(request)
+                request = request.get_json()
+            else:
+                # Return a list if there are multiple prepids
+                request = [request_controller.get(p) for p in prepid]
+                editing_info = [request_controller.get_editing_info(r) for r in request]
+                request = [r.get_json() for r in request]
+
         else:
             request = Request()
+            editing_info = request_controller.get_editing_info(request)
+            request = request.get_json()
 
-        editing_info = request_controller.get_editing_info(request)
-        return self.output_text({'response': {'object': request.get_json(),
+        return self.output_text({'response': {'object': request,
                                               'editing_info': editing_info},
                                  'success': True,
                                  'message': ''})

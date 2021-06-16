@@ -7,6 +7,7 @@ import TicketsEdit from '@/components/TicketsEdit'
 import SubcampaignsEdit from '@/components/SubcampaignsEdit'
 import Requests from '@/components/Requests'
 import RequestsEdit from '@/components/RequestsEdit'
+import RequestsMultipleEdit from '@/components/RequestsMultipleEdit'
 import Dashboard from '@/components/Dashboard'
 import qs from 'qs';
 
@@ -43,6 +44,11 @@ const routes = [
     path: '/requests/edit',
     name: 'requests_edit',
     component: RequestsEdit
+  },
+  {
+    path: '/requests/edit_many',
+    name: 'requests_edit_many',
+    component: RequestsMultipleEdit
   },
   {
     path: '/requests',

@@ -158,6 +158,7 @@
     <footer>
       <a :href="'requests/edit'" v-if="role('manager') && !selectedItems.length" title="Create new request">New request</a>
       <span v-if="role('manager') && selectedItems.length">Selected items ({{selectedItems.length}}) actions:</span>
+      <a v-if="role('manager') && selectedItems.length > 1" @click="editRequests(selectedItems)" title="Edit selected requests">Edit</a>
       <a v-if="role('manager') && selectedItems.length" @click="deleteManyRequests(selectedItems)" title="Delete selected requests">Delete</a>
       <a v-if="role('manager') && selectedItems.length" @click="previousMany(selectedItems)" title="Move selected requests to previous status">Previous</a>
       <a v-if="role('manager') && selectedItems.length" @click="nextStatusMany(selectedItems)" title="Move selected requets to next status">Next</a>
@@ -461,7 +462,11 @@ export default {
       let prepids = requests.map(x => x['prepid']);
       let url = 'https://cms-pdmv.cern.ch/pmp/historical?r=' + prepids.join(',');
       window.open(url, '_blank');
-    }
+    },
+    editRequests: function(requests) {
+      let prepids = requests.map(x => x['prepid']);
+      window.location = 'requests/edit_many?prepid=' + prepids.join(',');
+    },
   }
 }
 </script>
