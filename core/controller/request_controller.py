@@ -219,25 +219,24 @@ class RequestController(controller_base.ControllerBase):
         self.logger.debug('Getting job dict for %s', prepid)
         sequences = request.get('sequences')
         database_url = Config.get('cmsweb_url') + '/couchdb'
-
         request_string = request.get_request_string()
+        campaign_name = request.get('subcampaign').split('-')[0]
         job_dict = {}
+        job_dict['Campaign'] = campaign_name
         job_dict['CMSSWVersion'] = request.get('cmssw_release')
-        job_dict['ScramArch'] = get_scram_arch(request.get('cmssw_release'))
-        job_dict['RequestPriority'] = request.get('priority')
-        job_dict['Group'] = 'PPD'
-        job_dict['Requestor'] = 'pdmvserv'
-        job_dict['Memory'] = request.get('memory')
         job_dict['ConfigCacheUrl'] = database_url
         job_dict['CouchURL'] = database_url
+        job_dict['EnableHarvesting'] = False
+        job_dict['Group'] = 'PPD'
+        job_dict['Memory'] = request.get('memory')
         job_dict['RequestType'] = 'ReReco'
-        job_dict['Campaign'] = request.get('subcampaign').split('-')[0]
         job_dict['PrepID'] = request.get_prepid()
+        job_dict['Requestor'] = 'pdmvserv'
+        job_dict['RequestPriority'] = request.get('priority')
         job_dict['RequestString'] = request_string
-
+        job_dict['ScramArch'] = get_scram_arch(request.get('cmssw_release'))
         job_dict['SizePerEvent'] = request.get('size_per_event')
         job_dict['TimePerEvent'] = request.get('time_per_event')
-        job_dict['EnableHarvesting'] = False
         if len(sequences) <= 1:
             job_dict.update(self.get_job_dict_singletask(request, sequences))
         else:
@@ -254,15 +253,22 @@ class RequestController(controller_base.ControllerBase):
         acquisition_era = request.get_era()
         processing_string = request.get('processing_string')
         campaign_name = request.get('subcampaign').split('-')[0]
+        memory = request.get('memory')
+        size_per_event = request.get('size_per_event')
+        time_per_event = request.get('time_per_event')
         job_dict = {}
         for index, sequence in enumerate(sequences):
             task_dict = {}
             task_dict['AcquisitionEra'] = acquisition_era
             task_dict['ProcessingString'] = processing_string
             task_dict['Campaign'] = campaign_name
+            task_dict['Memory'] = memory
             task_dict['TaskName'] = f'Task{index + 1}'
             task_dict['GlobalTag'] = sequence.get('conditions')
             task_dict['Multicore'] = sequence.get('nThreads')
+            task_dict['TimePerEvent'] = time_per_event
+            task_dict['SizePerEvent'] = size_per_event
+            task_dict['KeepOutput'] = True
             if index == 0:
                 lumisections = request.get('lumisections')
                 if lumisections:
@@ -299,17 +305,34 @@ class RequestController(controller_base.ControllerBase):
         Return a dictionary with information needed for the old style workflow submission
         This does not return a full Job Dict, but only the attributes specific for it
         """
-        job_dict = self.get_job_dict_taskchain(request, sequences)
-        task1 = job_dict['Task1']
-        task1.pop('TaskName', None)
-        index = 1
-        while f'Task{index}' in job_dict:
-            job_dict.pop(f'Task{index}', None)
+        sequence = sequences[0]
+        input_dataset = request.get('input')['dataset']
+        acquisition_era = request.get_era()
+        processing_string = request.get('processing_string')
+        job_dict = {}
+        job_dict['AcquisitionEra'] = acquisition_era
+        job_dict['ProcessingString'] = processing_string
+        job_dict['GlobalTag'] = sequence.get('conditions')
+        job_dict['Multicore'] = sequence.get('nThreads')
+        job_dict['Scenario'] = sequence.get('scenario')
+        lumisections = request.get('lumisections')
+        if lumisections:
+            job_dict['LumiList'] = lumisections
+        else:
+            job_dict['RunWhitelist'] = request.get('runs')
 
-        job_dict.pop('TaskChain', None)
-        job_dict['RequestType'] = 'ReReco'
-        job_dict['Scenario'] = sequences[0].get('scenario')
-        job_dict.update(task1)
+        if input_dataset:
+            job_dict['InputDataset'] = input_dataset
+
+        if sequence.get('config_id'):
+            job_dict['ConfigCacheID'] = sequence.get('config_id')
+
+        if sequence.needs_harvesting():
+            job_dict['EnableHarvesting'] = True
+            if sequence.get('harvesting_config_id'):
+                job_dict['DQMConfigCacheID'] = sequence.get('harvesting_config_id')
+
+        self.logger.debug('Returning %s single task dict: %s', request.get_prepid(), job_dict)
         return job_dict
 
     def update_input_dataset(self, request):
