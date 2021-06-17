@@ -332,6 +332,7 @@ class RequestController(controller_base.ControllerBase):
             if sequence.get('harvesting_config_id'):
                 job_dict['DQMConfigCacheID'] = sequence.get('harvesting_config_id')
 
+        self.logger.debug('Returning %s single task dict: %s', request.get_prepid(), job_dict)
         return job_dict
 
     def update_input_dataset(self, request):
