@@ -250,5 +250,7 @@ class RequestSubmitter(BaseSubmitter):
 
             self.__handle_success(request)
 
-        controller.update_workflows(request)
+        if not Config.get('development'):
+            controller.update_workflows(request)
+
         self.logger.info('Successfully finished %s submission', prepid)
