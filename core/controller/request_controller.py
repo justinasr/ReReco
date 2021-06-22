@@ -242,6 +242,14 @@ class RequestController(controller_base.ControllerBase):
         else:
             job_dict.update(self.get_job_dict_taskchain(request, sequences))
 
+        if job_dict.get('EnableHarvesting'):
+            if not Config.get('development'):
+                # Do not upload to prod DQM GUI in dev
+                job_dict['DQMUploadUrl'] = 'https://cmsweb.cern.ch/dqm/offline'
+            else:
+                # Upload to some dev DQM GUI
+                job_dict['DQMUploadUrl'] = 'https://cmsweb-testbed.cern.ch/dqm/dev'
+
         return job_dict
 
     def get_job_dict_taskchain(self, request, sequences):
