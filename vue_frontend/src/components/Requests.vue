@@ -28,9 +28,9 @@
             <a :href="'api/requests/get_dict/' + item.prepid" title="Show JSON dictionary for ReqMgr2">Job dict</a>&nbsp;
             <a style="text-decoration: underline;" @click="previousStatus(item)" v-if="role('manager') && item.status != 'new'" title="Move to previous status">Previous</a>&nbsp;
             <a style="text-decoration: underline;" @click="nextStatus(item)" v-if="role('manager') && item.status != 'done'" title="Move to next status">Next</a>&nbsp;
-            <a style="text-decoration: underline;" @click="updateWorkflows(item)" v-if="role('administrator') && item.status == 'submitted'" title="Update request information from Stats2">Update from Stats2</a>&nbsp;
+            <a style="text-decoration: underline;" @click="updateWorkflows(item)" v-if="role('administrator') && item.status == 'submitted' && !isDev" title="Update request information from Stats2">Update from Stats2</a>&nbsp;
             <a style="text-decoration: underline;" @click="optionReset(item)" v-if="role('manager') && item.status == 'new'" :title="'Refetch values from ' + item.subcampaign + ' subcampaign'">Option reset</a>&nbsp;
-            <a target="_blank" :href="'https://cms-pdmv.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done'" title="Show workflows of this request in Stats2">Stats2</a>
+            <a target="_blank" :href="'https://cms-pdmv.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done' && !isDev" title="Show workflows of this request in Stats2">Stats2</a>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
