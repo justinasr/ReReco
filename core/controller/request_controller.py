@@ -7,7 +7,7 @@ from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.connection_wrapper import ConnectionWrapper
 from core_lib.utils.common_utils import cmssw_setup, get_scram_arch, config_cache_lite_setup
 from core_lib.utils.global_config import Config
-import core_lib.controller.controller_base as controller_base
+from core_lib.controller.controller_base import ControllerBase
 from core.model.request import Request
 from core.model.subcampaign import Subcampaign
 from core.model.ticket import Ticket
@@ -15,13 +15,13 @@ from core.utils.request_submitter import RequestSubmitter
 from core.controller.subcampaign_controller import SubcampaignController
 
 
-class RequestController(controller_base.ControllerBase):
+class RequestController(ControllerBase):
     """
     Controller that has all actions related to a request
     """
 
     def __init__(self):
-        controller_base.ControllerBase.__init__(self)
+        ControllerBase.__init__(self)
         self.database_name = 'requests'
         self.model_class = Request
 

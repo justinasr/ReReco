@@ -60,7 +60,7 @@ class SubcampaignController(ControllerBase):
         """
         Fetch a dict of runs and lumisection ranges for a subcampaign
         """
-        cached_value = self.__dcs_cache.get(subcampaign_name)
+        cached_value = SubcampaignController.__dcs_cache.get(subcampaign_name)
         if cached_value:
             return cached_value
 
@@ -76,8 +76,8 @@ class SubcampaignController(ControllerBase):
 
         response = json.loads(response.decode('utf-8'))
         if not response:
-            self.__dcs_cache.set(subcampaign_name, {})
+            SubcampaignController.__dcs_cache.set(subcampaign_name, {})
             return {}
 
-        self.__dcs_cache.set(subcampaign_name, response)
+        SubcampaignController.__dcs_cache.set(subcampaign_name, response)
         return response
