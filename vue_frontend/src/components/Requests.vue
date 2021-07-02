@@ -12,12 +12,13 @@
         <v-data-table :headers="headers"
                       :items="dataItems"
                       :items-per-page="itemsPerPage"
-                      disable-sort
+                      :options.sync="optionsSync"
+                      :loading="loading"
+                      :server-items-length="totalItems"
                       show-select
                       hide-default-footer
                       item-key="prepid"
                       class="elevation-1"
-                      :loading="loading"
                       v-model="selectedItems"
                       dense>
           <template v-slot:item._actions="{ item }">
@@ -194,26 +195,26 @@ export default {
     return {
       databaseName: undefined,
       columns: [
-        {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
+        {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1, 'sortable': true},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
-        {'dbName': 'status', 'displayName': 'Status', 'visible': 1},
+        {'dbName': 'status', 'displayName': 'Status', 'visible': 1, 'sortable': true},
         {'dbName': 'input', 'displayName': 'Input', 'visible': 1},
-        {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 1},
-        {'dbName': 'subcampaign', 'displayName': 'Subcampaign', 'visible': 1},
+        {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 1, 'sortable': true},
+        {'dbName': 'subcampaign', 'displayName': 'Subcampaign', 'visible': 1, 'sortable': true},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
-        {'dbName': 'cmssw_release', 'displayName': 'CMSSW Release', 'visible': 0},
-        {'dbName': 'completed_events', 'displayName': 'Completed Events', 'visible': 0},
-        {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0},
-        {'dbName': 'history', 'displayName': 'History', 'visible': 0},
-        {'dbName': 'memory', 'displayName': 'Memory', 'visible': 0},
+        {'dbName': 'cmssw_release', 'displayName': 'CMSSW Release', 'visible': 0, 'sortable': true},
+        {'dbName': 'completed_events', 'displayName': 'Completed Events', 'visible': 0, 'sortable': true},
+        {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0, 'sortable': true},
+        {'dbName': 'history', 'displayName': 'History', 'visible': 0, 'sortable': true},
+        {'dbName': 'memory', 'displayName': 'Memory', 'visible': 0, 'sortable': true},
         {'dbName': 'lumisections', 'displayName': 'Lumisections', 'visible': 0},
         {'dbName': 'output_datasets', 'displayName': 'Output datasets', 'visible': 0},
-        {'dbName': 'priority', 'displayName': 'Priority', 'visible': 0},
+        {'dbName': 'priority', 'displayName': 'Priority', 'visible': 0, 'sortable': true},
         {'dbName': 'runs', 'displayName': 'Runs', 'visible': 0},
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
-        {'dbName': 'size_per_event', 'displayName': 'Size per Event', 'visible': 0},
-        {'dbName': 'time_per_event', 'displayName': 'Time per Event', 'visible': 0},
-        {'dbName': 'total_events', 'displayName': 'Total Events', 'visible': 0},
+        {'dbName': 'size_per_event', 'displayName': 'Size per Event', 'visible': 0, 'sortable': true},
+        {'dbName': 'time_per_event', 'displayName': 'Time per Event', 'visible': 0, 'sortable': true},
+        {'dbName': 'total_events', 'displayName': 'Total Events', 'visible': 0, 'sortable': true},
         {'dbName': 'workflows', 'displayName': 'Workflows', 'visible': 0},
       ],
       headers: [],
@@ -235,6 +236,7 @@ export default {
         description: ''
       },
       isDev: false,
+      optionsSync: {},
     }
   },
   computed: {
@@ -242,9 +244,62 @@ export default {
       return this.columns.filter(col => col.visible)
     }
   },
+  watch: {
+    optionsSync: {
+      handler (newOptions, oldOptions) {
+        if (!oldOptions.sortBy || !oldOptions.sortDesc || !newOptions.sortBy || !newOptions.sortDesc) {
+          return;
+        }
+        let oldSortBy = undefined;
+        if (oldOptions.sortBy.length) {
+          oldSortBy = oldOptions.sortBy[0];
+        }
+        let oldSortAsc = undefined;
+        if (oldOptions.sortDesc.length) {
+          oldSortAsc = oldOptions.sortDesc[0];
+        }
+        let sortBy = undefined;
+        if (newOptions.sortBy.length) {
+          sortBy = newOptions.sortBy[0];
+        }
+        let sortAsc = undefined;
+        if (newOptions.sortDesc.length) {
+          sortAsc = newOptions.sortDesc[0];
+        }
+        if (oldSortBy === sortBy && oldSortAsc === sortAsc) {
+          return;
+        }
+        let query = Object.assign({}, this.$route.query);
+        if (sortBy !== undefined) {
+          if (sortBy == 'history') {
+            query['sort'] = 'created_on';
+          } else {
+            query['sort'] = sortBy;
+          }
+        } else {
+          delete query['sort']
+        }
+        if (sortAsc !== undefined) {
+          query['sort_asc'] = sortAsc ? 'true' : 'false';
+        } else {
+          delete query['sort_asc']
+        }
+        this.$router.replace({query: query}).catch(() => {});
+        this.fetchObjects();
+      },
+      deep: true,
+    },
+  },
   created () {
     this.clearDialog();
     this.isDev = document.location.origin.includes('dev');
+    let query = Object.assign({}, this.$route.query);
+    if ('sort' in query) {
+      this.optionsSync.sortBy = [query['sort']];
+    }
+    if ('sort_asc' in query) {
+      this.optionsSync.sortDesc = [query['sort_asc'] == 'true'];
+    }
   },
   methods: {
     fetchObjects () {

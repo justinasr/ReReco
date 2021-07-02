@@ -13,7 +13,8 @@
                       :items="dataItems"
                       :items-per-page="itemsPerPage"
                       :loading="loading"
-                      disable-sort
+                      :options.sync="optionsSync"
+                      :server-items-length="totalItems"
                       hide-default-footer
                       class="elevation-1"
                       dense>
@@ -145,14 +146,14 @@ export default {
     return {
       databaseName: undefined,
       columns: [
-        {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1},
+        {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1, 'sortable': true},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
-        {'dbName': 'status', 'displayName': 'Status', 'visible': 1},
+        {'dbName': 'status', 'displayName': 'Status', 'visible': 1, 'sortable': true},
         {'dbName': 'steps', 'displayName': 'Steps', 'visible': 1},
         {'dbName': 'input_datasets', 'displayName': 'Input Datasets', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
         {'dbName': 'created_requests', 'displayName': 'Created Requests', 'visible': 0},
-        {'dbName': 'history', 'displayName': 'History', 'visible': 0},
+        {'dbName': 'history', 'displayName': 'History', 'visible': 0, 'sortable': true},
       ],
       headers: [],
       dataItems: [],
@@ -170,7 +171,8 @@ export default {
         visible: false,
         title: '',
         description: ''
-      }
+      },
+      optionsSync: {},
     }
   },
   computed: {
@@ -178,8 +180,61 @@ export default {
       return this.columns.filter(col => col.visible)
     }
   },
+  watch: {
+    optionsSync: {
+      handler (newOptions, oldOptions) {
+        if (!oldOptions.sortBy || !oldOptions.sortDesc || !newOptions.sortBy || !newOptions.sortDesc) {
+          return;
+        }
+        let oldSortBy = undefined;
+        if (oldOptions.sortBy.length) {
+          oldSortBy = oldOptions.sortBy[0];
+        }
+        let oldSortAsc = undefined;
+        if (oldOptions.sortDesc.length) {
+          oldSortAsc = oldOptions.sortDesc[0];
+        }
+        let sortBy = undefined;
+        if (newOptions.sortBy.length) {
+          sortBy = newOptions.sortBy[0];
+        }
+        let sortAsc = undefined;
+        if (newOptions.sortDesc.length) {
+          sortAsc = newOptions.sortDesc[0];
+        }
+        if (oldSortBy === sortBy && oldSortAsc === sortAsc) {
+          return;
+        }
+        let query = Object.assign({}, this.$route.query);
+        if (sortBy !== undefined) {
+          if (sortBy == 'history') {
+            query['sort'] = 'created_on';
+          } else {
+            query['sort'] = sortBy;
+          }
+        } else {
+          delete query['sort']
+        }
+        if (sortAsc !== undefined) {
+          query['sort_asc'] = sortAsc ? 'true' : 'false';
+        } else {
+          delete query['sort_asc']
+        }
+        this.$router.replace({query: query}).catch(() => {});
+        this.fetchObjects();
+      },
+      deep: true,
+    },
+  },
   created () {
     this.clearDialog();
+    let query = Object.assign({}, this.$route.query);
+    if ('sort' in query) {
+      this.optionsSync.sortBy = [query['sort']];
+    }
+    if ('sort_asc' in query) {
+      this.optionsSync.sortDesc = [query['sort_asc'] == 'true'];
+    }
   },
   methods: {
     fetchObjects () {
