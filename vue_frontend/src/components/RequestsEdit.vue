@@ -129,7 +129,14 @@
         </tr>
         <tr>
           <td>Size per event</td>
-          <td><input type="number" v-model="editableObject.size_per_event" :disabled="!editingInfo.size_per_event">kB</td>
+          <td>
+            <div v-for="(sizePerEvent, sizePerEventIndex) in editableObject.size_per_event" :key="sizePerEventIndex" >
+              <input type="number"
+                     style="margin-top: 2px"
+                     v-model="editableObject.size_per_event[sizePerEventIndex]"
+                     :disabled="!editingInfo.size_per_event">kB
+            </div>
+          </td>
         </tr>
         <tr>
           <td>Subcampaign</td>
@@ -143,7 +150,14 @@
         </tr>
         <tr>
           <td>Time per event</td>
-          <td><input type="number" v-model="editableObject.time_per_event" :disabled="!editingInfo.time_per_event">s</td>
+          <td>
+            <div v-for="(timePerEvent, timePerEventIndex) in editableObject.time_per_event" :key="timePerEventIndex" >
+              <input type="number"
+                     style="margin-top: 2px"
+                     v-model="editableObject.time_per_event[timePerEventIndex]"
+                     :disabled="!editingInfo.time_per_event">kB
+            </div>
+          </td>
         </tr>
       </table>
       <v-btn small class="mr-1 mt-1" color="primary" @click="save()">Save</v-btn>
@@ -292,6 +306,8 @@ export default {
       let component = this;
       axios.get('api/subcampaigns/get_default_sequence/' + this.editableObject.subcampaign).then(response => {
         component.editableObject.sequences.push(response.data.response);
+        component.editableObject.size_per_event.push(1.0);
+        component.editableObject.time_per_event.push(1.0);
         component.loading = false;
       }).catch(error => {
         component.loading = false;
@@ -300,6 +316,8 @@ export default {
     },
     deleteSequence: function(index) {
       this.editableObject.sequences.splice(index, 1);
+      this.editableObject.size_per_event.splice(index, 1);
+      this.editableObject.time_per_event.splice(index, 1);
     },
     getRuns: function() {
       let component = this;
@@ -335,7 +353,7 @@ export default {
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
     },
-    getSubcampaignSuggestions: function(value, callback) {
+    getSubcampaignSuggestions: function(_, value, callback) {
       if (!value || value.length == 0) {
         callback([]);
       }
@@ -345,7 +363,7 @@ export default {
         callback([]);
       });
     },
-    getRequestSuggestions: function(value, callback) {
+    getRequestSuggestions: function(_, value, callback) {
       if (!value || value.length == 0) {
         callback([]);
       }

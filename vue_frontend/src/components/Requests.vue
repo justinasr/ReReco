@@ -65,10 +65,10 @@
             <pre v-if="item.notes.length" v-html="sanitize(item.notes)" class="notes" v-linkified></pre>
           </template>
           <template v-slot:item.time_per_event="{ item }">
-            {{item.time_per_event}}s
+            {{item.time_per_event.join(' s, ')}} s
           </template>
           <template v-slot:item.size_per_event="{ item }">
-            {{item.size_per_event}} kB
+            {{item.size_per_event.join(' kB, ')}} kB
           </template>
           <template v-slot:item.completed_events="{ item }">
             {{item.completed_events}} <small v-if="item.total_events > 0">({{(100.0 * item.completed_events / item.total_events).toFixed(2)}}%)</small>

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div style="position: relative">
     <input type="text"
            v-model="realValue"
            :disabled="disabled"
@@ -9,6 +9,14 @@
            v-on:keydown.up.capture.prevent="arrowKey(-1)"
            v-on:keydown.down.capture.prevent="arrowKey(1)"
            v-on:keydown.enter.capture.prevent="enterKey()">
+    <v-progress-circular
+      :size="18"
+      :width="2"
+      style="margin: 4px 0; position: absolute; right: 4px;"
+      color="primary"
+      indeterminate
+      v-if="getSuggestionsTimer || loading"
+    ></v-progress-circular>
     <div class="suggestion-list-wrapper"
          @mouseover="mouseEnteredList(true)"
          @mouseleave="mouseEnteredList(false)">
@@ -35,11 +43,10 @@
   export default {
     props:{
       value: String,
+      identifier: String,
       getSuggestions: Function,
-      getSuggestionsWait: {
-        type: Number,
-        default: 333,
-      },
+      onBlur: Function,
+      onSelect: Function,
       disabled: {
         type: Boolean,
         default: false,
@@ -47,8 +54,11 @@
     },
     data () {
       return {
+        getSuggestionsWait: 250, // Milliseconds to wait before fetching suggestions
         items: [],
+        savedItems: [],
         isFocused: false,
+        loading: false,
         realValue: undefined,
         mouseInside: false,
         getSuggestionsTimer: undefined,
@@ -62,7 +72,14 @@
     watch: {
       isFocused (focused) {
         if (!focused) {
+          this.savedItems = this.items;
           this.items = [];
+          if (this.onBlur) {
+            this.onBlur(this.identifier, this.realValue);
+          }
+        } else {
+          this.items = this.savedItems;
+          this.savedItems = [];
         }
       },
       value (value) {
@@ -92,10 +109,12 @@
           this.items = [];
           this.getSuggestionsTimer = setTimeout(() => {
             const component = this;
-            component.getSuggestions(value, function(items) {
+            this.loading = true;
+            component.getSuggestions(this.identifier, value, function(items) {
               items = items.filter(s => s != component.realValue);
               component.items = items;
               component.getSuggestionsTimer = undefined;
+              component.loading = false;
             });
           }, this.getSuggestionsWait);
         }
@@ -107,6 +126,9 @@
         this.realValue = value;
         this.items = [];
         this.updateValue();
+        if (this.onSelect) {
+          this.onSelect(this.identifier, this.realValue);
+        }
       },
       updateValue () {
         this.$emit('input', this.realValue);
@@ -135,7 +157,7 @@
           highlighted += item.slice(lastIndex, foundIndex);
           lastIndex += foundIndex - lastIndex;
           let highlightedPiece = item.slice(foundIndex, foundIndex + split.length);
-          highlighted += '<span style="background: #dadada">' + highlightedPiece + '</span>';
+          highlighted += '<b style="background: #dadada">' + highlightedPiece + '</b>';
           lastIndex += split.length;
         }
         highlighted += item.slice(lastIndex);

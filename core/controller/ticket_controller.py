@@ -46,11 +46,6 @@ class TicketController(ControllerBase):
 
     def check_for_create(self, obj):
         subcampaign_database = Database('subcampaigns')
-        subcampaign_names = [x['subcampaign'] for x in obj.get('steps')]
-        for subcampaign_name in subcampaign_names:
-            if not subcampaign_database.document_exists(subcampaign_name):
-                raise Exception('Subcampaign %s does not exist' % (subcampaign_name))
-
         dataset_blacklist = set(Settings().get('dataset_blacklist'))
         for input_dataset in obj.get('input_datasets'):
             dataset = input_dataset.split('/')[1]
@@ -58,15 +53,45 @@ class TicketController(ControllerBase):
                 raise Exception(f'Input dataset {input_dataset} is not '
                                 f'allowed because {dataset} is in blacklist')
 
+        for index, step in enumerate(obj.get('steps')):
+            subcampaign_name = step['subcampaign']
+            subcampaign = subcampaign_database.get(subcampaign_name)
+            if not subcampaign:
+                raise Exception(f'Subcampaign {subcampaign_name} does not exist')
+
+            subcampaign_sequences = subcampaign['sequences']
+            time_per_event = step['time_per_event']
+            size_per_event = step['size_per_event']
+            if len(time_per_event) != len(subcampaign_sequences):
+                raise Exception(f'Step {index + 1} has {len(time_per_event)} time per '
+                                f'event values, expected {len(subcampaign_sequences)}')
+
+            if len(size_per_event) != len(subcampaign_sequences):
+                raise Exception(f'Step {index + 1} has {len(size_per_event)} size per '
+                                f'event values, expected {len(subcampaign_sequences)}')
+
+
         return True
 
     def check_for_update(self, old_obj, new_obj, changed_values):
         if 'steps' in changed_values:
             subcampaign_database = Database('subcampaigns')
-            subcampaign_names = [x['subcampaign'] for x in new_obj.get('steps')]
-            for subcampaign_name in subcampaign_names:
-                if not subcampaign_database.document_exists(subcampaign_name):
-                    raise Exception('Subcampaign %s does not exist' % (subcampaign_name))
+            for index, step in enumerate(new_obj.get('steps')):
+                subcampaign_name = step['subcampaign']
+                subcampaign = subcampaign_database.get(subcampaign_name)
+                if not subcampaign:
+                    raise Exception(f'Subcampaign {subcampaign_name} does not exist')
+
+                subcampaign_sequences = subcampaign['sequences']
+                time_per_event = step['time_per_event']
+                size_per_event = step['size_per_event']
+                if len(time_per_event) != len(subcampaign_sequences):
+                    raise Exception(f'Step {index + 1} has {len(time_per_event)} time per '
+                                    f'event values, expected {len(subcampaign_sequences)}')
+
+                if len(size_per_event) != len(subcampaign_sequences):
+                    raise Exception(f'Step {index + 1} has {len(size_per_event)} size per '
+                                    f'event values, expected {len(subcampaign_sequences)}')
 
         if 'input_datasets' in changed_values:
             dataset_blacklist = set(Settings().get('dataset_blacklist'))

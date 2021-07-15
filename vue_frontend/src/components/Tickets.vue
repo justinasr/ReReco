@@ -54,8 +54,8 @@
                 <ul>
                   <li>Subcampaign: <a :href="'subcampaigns?prepid=' + step.subcampaign" :title="'Open ' + step.subcampaign + ' subcampaign'">{{step.subcampaign}}</a></li>
                   <li>Processing string: <a :href="'requests?processing_string=' + step.processing_string" :title="'Show all requests with ' + step.processing_string + ' processing string'">{{step.processing_string}}</a></li>
-                  <li>Time per event: {{step.time_per_event}} s</li>
-                  <li>Size per event: {{step.size_per_event}} kB</li>
+                  <li>Time per event: {{step.time_per_event.join(' s, ')}} s</li>
+                  <li>Size per event: {{step.size_per_event.join(' kB, ')}} kB</li>
                 </ul>
               </li>
             </ul>
