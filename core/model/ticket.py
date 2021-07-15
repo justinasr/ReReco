@@ -69,11 +69,11 @@ class Ticket(ModelBase):
 
                 time_per_event = step['time_per_event']
                 if [t for t in time_per_event if t <= 0.0]:
-                    raise Exception(f'Time per event must be > 0')
+                    raise Exception('Time per event must be > 0')
 
                 size_per_event = step['size_per_event']
                 if [s for s in size_per_event if s <= 0.0]:
-                    raise Exception(f'Size per event must be > 0')
+                    raise Exception('Size per event must be > 0')
 
                 priority = step['priority']
                 if not ModelBase.lambda_check('priority')(priority):
