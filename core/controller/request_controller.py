@@ -164,7 +164,7 @@ class RequestController(ControllerBase):
         """
         self.logger.debug('Getting cmsDriver commands for %s', request.get_prepid())
         cms_driver = '#!/bin/bash\n\n'
-        cms_driver += cmssw_setup(request.get('cmssw_release'))
+        cms_driver += cmssw_setup(request.get('cmssw_release'), reuse=for_submission)
         cms_driver += '\n\n'
         if for_submission:
             cms_driver += request.get_cmsdrivers('_placeholder_.root')
@@ -195,7 +195,7 @@ class RequestController(ControllerBase):
 
         # Set up CMSSW environment
         command += '\n\n'
-        command += cmssw_setup(request.get('cmssw_release'), reuse_cmssw=for_submission)
+        command += cmssw_setup(request.get('cmssw_release'), reuse=for_submission)
         # Use ConfigCacheLite and TweakMakerLite instead of WMCore
         command += '\n\n'
         command += config_cache_lite_setup(reuse_files=for_submission)
