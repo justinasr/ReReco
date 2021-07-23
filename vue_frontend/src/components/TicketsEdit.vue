@@ -19,7 +19,10 @@
                   <td>
                     <autocompleter
                       v-model="step.subcampaign"
+                      :identifier="'Step' + index"
                       :getSuggestions="getSubcampaignSuggestions"
+                      :onBlur="getSubcampaign"
+                      :onSelect="getSubcampaign"
                       :disabled="!editingInfo.steps[index].subcampaign">
                     </autocompleter>
                   </td>
@@ -30,17 +33,27 @@
                              v-model="step.processing_string"
                              :disabled="!editingInfo.steps[index].processing_string"></td>
                 </tr>
-                <tr>
+                <tr v-if="step.size_per_event.length">
                   <td>Size per event</td>
-                  <td><input type="number"
-                             v-model="step.size_per_event"
-                             :disabled="!editingInfo.steps[index].size_per_event">kB</td>
+                  <td>
+                    <div v-for="(sizePerEvent, sizePerEventIndex) in step.size_per_event" :key="sizePerEventIndex" >
+                      <input type="number"
+                             style="margin-top: 2px"
+                             v-model="step.size_per_event[sizePerEventIndex]"
+                             :disabled="!editingInfo.steps[index].size_per_event">kB
+                    </div>
+                  </td>
                 </tr>
-                <tr>
+                <tr v-if="step.time_per_event.length">
                   <td>Time per event</td>
-                  <td><input type="number"
-                             v-model="step.time_per_event"
-                             :disabled="!editingInfo.steps[index].time_per_event">s</td>
+                  <td>
+                    <div v-for="(timePerEvent, timePerEventIndex) in step.time_per_event" :key="timePerEventIndex">
+                      <input type="number"
+                             style="margin-top: 2px"
+                             v-model="step.time_per_event[timePerEventIndex]"
+                             :disabled="!editingInfo.steps[index].time_per_event">s
+                    </div>
+                  </td>
                 </tr>
                 <tr>
                   <td>Priority</td>
@@ -223,6 +236,25 @@ export default {
         this.showError('Error saving ticket', component.getError(error));
       });
     },
+    getSubcampaign: function(stepIdentifier, subcampaignName) {
+      let stepIndex = parseInt(stepIdentifier.replace('Step', ''));
+      let component = this;
+      let step = this.editableObject.steps[stepIndex]
+      let url = 'api/subcampaigns/get/' + subcampaignName;
+      // Timeout 120000ms is 2 minutes
+      this.loading = true;
+      let httpRequest = axios.get(url, {timeout: 120000});
+      httpRequest.then(response => {
+        component.loading = false;
+        let sequencesLength = response.data.response.sequences.length;
+        component.$set(step, 'size_per_event', Array(sequencesLength).fill(1.0));
+        component.$set(step, 'time_per_event', Array(sequencesLength).fill(1.0));
+      }).catch(_ => {
+        component.loading = false;
+        component.$set(step, 'size_per_event', []);
+        component.$set(step, 'time_per_event', []);
+      });
+    },
     getDatasets: function(replace) {
       this.loading = true;
       let component = this;
@@ -264,8 +296,8 @@ export default {
       this.editableObject.steps.push({'subcampaign': '',
                                       'processing_string': '',
                                       'priority': 110000,
-                                      'size_per_event': 1.0,
-                                      'time_per_event': 1.0});
+                                      'size_per_event': [],
+                                      'time_per_event': []});
       this.editingInfo.steps.push({'subcampaign': true,
                                    'processing_string': true,
                                    'priority': true,
@@ -293,7 +325,7 @@ export default {
       this.errorDialog.description = description;
       this.errorDialog.visible = true;
     },
-    getSubcampaignSuggestions: function(value, callback) {
+    getSubcampaignSuggestions: function(stepIdentifier, value, callback) {
       if (!value || value.length == 0) {
         callback([]);
       }

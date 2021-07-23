@@ -43,6 +43,12 @@ class RequestController(ControllerBase):
         if not json_data.get('sequences'):
             new_request.set('sequences', subcampaign.get('sequences'))
 
+        if not json_data.get('time_per_event'):
+            new_request.set('time_per_event', [1.0] * len(subcampaign.get('sequences')))
+
+        if not json_data.get('size_per_event'):
+            new_request.set('size_per_event', [1.0] * len(subcampaign.get('sequences')))
+
         if not json_data.get('memory'):
             new_request.set('memory', subcampaign.get('memory'))
 
@@ -57,7 +63,7 @@ class RequestController(ControllerBase):
         # Only one must be provided
         self.logger.info(request_input)
         if input_dataset and input_request_prepid:
-            raise Exception('Request cannot have both input request and input dataset, only one')
+            raise Exception('Request cannot have both input request and input dataset')
 
         if input_dataset and not input_request_prepid:
             input_dataset_parts = [x for x in input_dataset.split('/') if x]
@@ -87,11 +93,36 @@ class RequestController(ControllerBase):
 
         return new_request_json
 
+    def check_for_create(self, obj):
+        sequences = obj.get('sequences')
+        size_per_event = obj.get('size_per_event')
+        time_per_event = obj.get('time_per_event')
+        if len(sequences) != len(size_per_event):
+            raise Exception(f'Expected {len(sequences)} size per event '
+                            f'values, found {len(size_per_event)}')
+
+        if len(sequences) != len(time_per_event):
+            raise Exception(f'Expected {len(sequences)} time per event '
+                            f'values, found {len(time_per_event)}')
+
+        return super().check_for_create(obj)
+
     def check_for_update(self, old_obj, new_obj, changed_values):
         if old_obj.get('status') == 'submitting':
             raise Exception('You are now allowed to update request while it is being submitted')
 
-        return True
+        sequences = new_obj.get('sequences')
+        size_per_event = new_obj.get('size_per_event')
+        time_per_event = new_obj.get('time_per_event')
+        if len(sequences) != len(size_per_event):
+            raise Exception(f'Expected {len(sequences)} size per event '
+                            f'values, found {len(size_per_event)}')
+
+        if len(sequences) != len(time_per_event):
+            raise Exception(f'Expected {len(sequences)} time per event '
+                            f'values, found {len(time_per_event)}')
+
+        return super().check_for_update(old_obj, new_obj, changed_values)
 
     def check_for_delete(self, obj):
         if obj.get('status') != 'new':
@@ -235,8 +266,8 @@ class RequestController(ControllerBase):
         job_dict['RequestPriority'] = request.get('priority')
         job_dict['RequestString'] = request_string
         job_dict['ScramArch'] = get_scram_arch(request.get('cmssw_release'))
-        job_dict['SizePerEvent'] = request.get('size_per_event')
-        job_dict['TimePerEvent'] = request.get('time_per_event')
+        job_dict['SizePerEvent'] = request.get('size_per_event')[0]
+        job_dict['TimePerEvent'] = request.get('time_per_event')[0]
         if len(sequences) <= 1:
             job_dict.update(self.get_job_dict_singletask(request, sequences))
         else:
@@ -274,8 +305,8 @@ class RequestController(ControllerBase):
             task_dict['TaskName'] = f'Task{index + 1}'
             task_dict['GlobalTag'] = sequence.get('conditions')
             task_dict['Multicore'] = sequence.get('nThreads')
-            task_dict['TimePerEvent'] = time_per_event
-            task_dict['SizePerEvent'] = size_per_event
+            task_dict['TimePerEvent'] = time_per_event[index]
+            task_dict['SizePerEvent'] = size_per_event[index]
             task_dict['KeepOutput'] = True
             if index == 0:
                 lumisections = request.get('lumisections')

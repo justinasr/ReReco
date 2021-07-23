@@ -46,13 +46,13 @@ class Request(ModelBase):
         # List of dictionaries that have cmsDriver options
         'sequences': [],
         # Disk size per event in kB
-        'size_per_event': 1.0,
+        'size_per_event': [],
         # Status is either new, approved, submitted or done
         'status': 'new',
         # Subcampaign name
         'subcampaign': '',
         # Time per event in seconds
-        'time_per_event': 1.0,
+        'time_per_event': [],
         # Total events
         'total_events': 0,
         # List of workflows in computing
@@ -75,10 +75,10 @@ class Request(ModelBase):
         'processing_string': ModelBase.lambda_check('processing_string'),
         '__runs': lambda r: isinstance(r, int) and r > 0,
         '__sequences': lambda s: isinstance(s, Sequence),
-        'size_per_event': lambda spe: spe > 0.0,
+        '__size_per_event': lambda spe: spe > 0.0,
         'status': lambda status: status in {'new', 'approved', 'submitting', 'submitted', 'done'},
         'subcampaign': ModelBase.lambda_check('subcampaign'),
-        'time_per_event': lambda tpe: tpe > 0.0,
+        '__time_per_event': lambda tpe: tpe > 0.0,
         'total_events': lambda events: events >= 0,
     }
 

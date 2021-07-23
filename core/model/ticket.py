@@ -45,8 +45,8 @@ class Ticket(ModelBase):
             for step in json_input.get('steps', []):
                 steps.append({'subcampaign': step.get('subcampaign', ''),
                               'processing_string': step.get('processing_string', ''),
-                              'time_per_event': float(step.get('time_per_event', 0)),
-                              'size_per_event': float(step.get('size_per_event', 0)),
+                              'time_per_event': [float(t) for t in step.get('time_per_event', 0)],
+                              'size_per_event': [float(s) for s in step.get('size_per_event', 0)],
                               'priority': int(step.get('priority', 0))})
 
             json_input['steps'] = steps
@@ -68,12 +68,12 @@ class Ticket(ModelBase):
                     raise Exception(f'Bad processing string {processing_string}')
 
                 time_per_event = step['time_per_event']
-                if time_per_event <= 0.0:
-                    raise Exception(f'Bad time per event {time_per_event}')
+                if [t for t in time_per_event if t <= 0.0]:
+                    raise Exception('Time per event must be > 0')
 
                 size_per_event = step['size_per_event']
-                if size_per_event <= 0.0:
-                    raise Exception(f'Bad size per event {size_per_event}')
+                if [s for s in size_per_event if s <= 0.0]:
+                    raise Exception('Size per event must be > 0')
 
                 priority = step['priority']
                 if not ModelBase.lambda_check('priority')(priority):
