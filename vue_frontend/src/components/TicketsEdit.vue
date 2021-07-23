@@ -249,7 +249,7 @@ export default {
         let sequencesLength = response.data.response.sequences.length;
         component.$set(step, 'size_per_event', Array(sequencesLength).fill(1.0));
         component.$set(step, 'time_per_event', Array(sequencesLength).fill(1.0));
-      }).catch(_ => {
+      }).catch(() => {
         component.loading = false;
         component.$set(step, 'size_per_event', []);
         component.$set(step, 'time_per_event', []);
