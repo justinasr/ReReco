@@ -287,6 +287,8 @@ export default {
       editableObject['notes'] = editableObject['notes'].trim();
       editableObject['runs'] = this.cleanSplit(editableObject['runs']);
       editableObject['lumisections'] = editableObject['lumisections'] ? JSON.parse(editableObject['lumisections']) : {};
+      editableObject['size_per_event'] = editableObject['size_per_event'].map(x => parseFloat(x));
+      editableObject['time_per_event'] = editableObject['time_per_event'].map(x => parseFloat(x));
       let httpRequest;
       if (this.creatingNew) {
         httpRequest = axios.put('api/requests/create', editableObject)
