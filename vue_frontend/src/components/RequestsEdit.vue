@@ -155,7 +155,7 @@
               <input type="number"
                      style="margin-top: 2px"
                      v-model="editableObject.time_per_event[timePerEventIndex]"
-                     :disabled="!editingInfo.time_per_event">kB
+                     :disabled="!editingInfo.time_per_event">s
             </div>
           </td>
         </tr>
