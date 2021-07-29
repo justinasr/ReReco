@@ -63,7 +63,8 @@ class Sequence(ModelBase):
                              s.startswith('ALCA') or
                              s.startswith('DQM') or
                              s.startswith('SKIM') or
-                             s.startswith('HARVESTING:@'))
+                             s.startswith('HARVESTING:@') or
+                             s.startswith('FILTER'))
     }
 
     def __init__(self, json_input=None, parent=None, check_attributes=True):
