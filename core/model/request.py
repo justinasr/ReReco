@@ -174,3 +174,13 @@ class Request(ModelBase):
         era = self.get_era()
         dataset = self.get_dataset()
         return f'{era}_{dataset}_{processing_string}'.strip('_')
+
+    def get_datatiers(self):
+        """
+        Return datatiers of all sequences
+        """
+        datatiers = []
+        for sequence in self.get('sequences'):
+            datatiers.extend(sequence.get('datatier'))
+
+        return datatiers

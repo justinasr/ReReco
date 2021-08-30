@@ -7,6 +7,7 @@ from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.connection_wrapper import ConnectionWrapper
 from core_lib.utils.common_utils import cmssw_setup, get_scram_arch, config_cache_lite_setup
 from core_lib.utils.global_config import Config
+from core_lib.utils.settings import Settings
 from core_lib.controller.controller_base import ControllerBase
 from core.model.request import Request
 from core.model.subcampaign import Subcampaign
@@ -61,7 +62,7 @@ class RequestController(ControllerBase):
         # Prepid is made of era, dataset and processing string
         # Either they are taken from input dataset or input request
         # Only one must be provided
-        self.logger.info(request_input)
+        self.logger.info('Input of request is %s', request_input)
         if input_dataset and input_request_prepid:
             raise Exception('Request cannot have both input request and input dataset')
 
@@ -310,10 +311,11 @@ class RequestController(ControllerBase):
             task_dict['KeepOutput'] = True
             if index == 0:
                 lumisections = request.get('lumisections')
+                runs = request.get('runs')
                 if lumisections:
                     task_dict['LumiList'] = lumisections
-                else:
-                    task_dict['RunWhitelist'] = request.get('runs')
+                elif runs:
+                    task_dict['RunWhitelist'] = runs
 
                 if input_dataset:
                     task_dict['InputDataset'] = input_dataset
@@ -355,10 +357,11 @@ class RequestController(ControllerBase):
         job_dict['Multicore'] = sequence.get('nThreads')
         job_dict['Scenario'] = sequence.get('scenario')
         lumisections = request.get('lumisections')
+        runs = request.get('runs')
         if lumisections:
             job_dict['LumiList'] = lumisections
-        else:
-            job_dict['RunWhitelist'] = request.get('runs')
+        elif runs:
+            job_dict['RunWhitelist'] = runs
 
         if input_dataset:
             job_dict['InputDataset'] = input_dataset
@@ -378,29 +381,59 @@ class RequestController(ControllerBase):
         """
         Update input dataset name from input request (if exists)
         Update runs from input request if they are not specified yet
+        Input dataset is datatier aware, so if input request produced
+        AOD + MiniAOD and this request is reMini, it should select AOD of input
+        request and not MiniAOD
         """
         prepid = request.get_prepid()
         input_request_prepid = request.get('input')['request']
         if input_request_prepid:
             input_request = self.get(input_request_prepid)
-            input_dataset = input_request.get('input')['dataset']
             output_datasets = input_request.get('output_datasets')
+            new_input_dataset = self.pick_input_dataset(request, input_request)
             should_update = False
-            if output_datasets and input_dataset != output_datasets[-1]:
-                request.get('input')['dataset'] = output_datasets[-1]
+            if output_datasets and new_input_dataset:
+                request.get('input')['dataset'] = new_input_dataset
                 should_update = True
             elif not output_datasets:
                 request.get('input')['dataset'] = ''
-                should_update = True
-
-            if not request.get('runs'):
-                request.set('runs', input_request.get('runs'))
                 should_update = True
 
             if should_update:
                 self.update(request.get_json(), force_update=True)
         else:
             self.logger.info('Did not update %s input dataset', prepid)
+
+    def pick_input_dataset(self, request, input_request):
+        """
+        Pick input dataset from the given input request using datatier mapping
+        or default to the last output dataset of input request
+        """
+        settings = Settings()
+        datatiers = request.get_datatiers()
+        datasets = input_request.get('output_datasets')
+        if datatiers:
+            datatier = datatiers[0]
+            mapping = settings.get('datatier_mapping', {})
+            self.logger.debug('Request %s datatier is %s mapping %s',
+                              request.get_prepid(),
+                              datatier,
+                              mapping)
+            input_datatiers = mapping.get(datatier, [])
+            for input_datatier in input_datatiers:
+                for dataset in datasets:
+                    if dataset.endswith(f'/{input_datatier}'):
+                        return dataset
+
+            self.logger.warning('Could not find input dataset for %s in %s',
+                                request.get_prepid(),
+                                input_request.get_prepid())
+
+        if datasets:
+            return datasets[-1]
+
+        return ''
+
 
     def update_status(self, request, status, timestamp=None):
         """
@@ -453,10 +486,6 @@ class RequestController(ControllerBase):
         Try to move rquest to approved
         """
         self.update_input_dataset(request)
-        prepid = request.get_prepid()
-        if not request.get('runs'):
-            raise Exception(f'No runs are specified in {prepid}')
-
         self.update_status(request, 'approved')
         return request
 
@@ -585,6 +614,14 @@ class RequestController(ControllerBase):
         """
         Try to move rquest back to new
         """
+        request_input = request.get('input')
+        input_dataset = request_input.get('dataset')
+        input_request_prepid = request_input.get('request')
+        # If request has both input request and input dataset set, set input
+        # dataset value to empty string
+        if input_dataset and input_request_prepid:
+            request_input['dataset'] = ''
+
         self.update_status(request, 'new')
         return request
 

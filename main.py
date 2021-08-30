@@ -104,6 +104,11 @@ def api_documentation(_path):
         #pylint: disable=protected-access
         urls = sorted([r.rule for r in app.url_map._rules_by_endpoint[endpoint]])
         #pylint: enable=protected-access
+        if _path:
+            urls = [u for u in urls if u.startswith(f'/api/{_path}')]
+            if not urls:
+                continue
+
         category = [x for x in urls[0].split('/') if x][1]
         if category not in docs:
             docs[category] = {}
