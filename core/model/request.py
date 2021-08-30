@@ -180,7 +180,7 @@ class Request(ModelBase):
         Return datatiers of all sequences
         """
         datatiers = []
-        for s in self.get('sequences'):
-            datatiers.extend(s.get('datatier'))
+        for sequence in self.get('sequences'):
+            datatiers.extend(sequence.get('datatier'))
 
         return datatiers

@@ -389,7 +389,6 @@ class RequestController(ControllerBase):
         input_request_prepid = request.get('input')['request']
         if input_request_prepid:
             input_request = self.get(input_request_prepid)
-            input_dataset = input_request.get('input')['dataset']
             output_datasets = input_request.get('output_datasets')
             new_input_dataset = self.pick_input_dataset(request, input_request)
             should_update = False
