@@ -500,6 +500,14 @@ class RequestController(ControllerBase):
             raise Exception(f'Could not move {prepid} to submitting '
                             'because it does not have input dataset')
 
+        input_request_prepid = request.get('input')['request']
+        if input_request_prepid:
+            input_request = self.get(input_request_prepid)
+            input_request_status = input_request.get('status')
+            if input_request_status != 'done':
+                raise Exception(f'Input request {input_request_prepid} status is '
+                                f'"{input_request_status}", not "done"')
+
         # Make sure input dataset is VALID
         grid_cert = Config.get('grid_user_cert')
         grid_key = Config.get('grid_user_key')
@@ -512,6 +520,9 @@ class RequestController(ControllerBase):
                                     {'dataset': input_dataset,
                                      'detail': 1})
         dbs_response = json.loads(dbs_response.decode('utf-8'))
+        if not dbs_response:
+            raise Exception(f'Empty response from DBS about {input_dataset}')
+
         dataset_access_type = dbs_response[0].get('dataset_access_type', 'unknown')
         self.logger.info('%s access type is %s', input_dataset, dataset_access_type)
         if dataset_access_type != 'VALID':
