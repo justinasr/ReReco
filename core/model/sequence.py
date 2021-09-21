@@ -287,7 +287,7 @@ class Sequence(ModelBase):
         arguments_dict = dict(self.get_json())
         # Delete sequence metadata
         for attr in ('config_id', 'harvesting_config_id', 'customise', 'datatier',
-                     'eventcontent', 'nThreads', 'extra', 'scenario'):
+                     'eventcontent', 'nThreads', 'extra'):
             arguments_dict.pop(attr, None)
 
         # Get correct configuration of DQM step, e.g.
