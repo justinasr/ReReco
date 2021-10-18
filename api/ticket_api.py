@@ -106,7 +106,7 @@ class GetTicketDatasetsAPI(APIBase):
     @APIBase.ensure_role('manager')
     def get(self):
         """
-        Get a single with given prepid
+        Get a list of dataset names for the query
         """
         query = request.args.get('q')
         if not query:
@@ -115,6 +115,28 @@ class GetTicketDatasetsAPI(APIBase):
         exclude = request.args.get('exclude', '')
         exclude = clean_split(exclude)
         obj = ticket_controller.get_datasets(query, exclude)
+        return self.output_text({'response': obj, 'success': True, 'message': ''})
+
+
+class GetTicketRequestsAPI(APIBase):
+    """
+    Endpoint for getting list of requests for ticket
+    """
+
+    def __init__(self):
+        APIBase.__init__(self)
+
+    @APIBase.exceptions_to_errors
+    @APIBase.ensure_role('manager')
+    def get(self):
+        """
+        Get a list of prepids for the query
+        """
+        query = request.args.get('q')
+        if not query:
+            raise Exception('No input was supplied')
+
+        obj = ticket_controller.get_requests(query)
         return self.output_text({'response': obj, 'success': True, 'message': ''})
 
 

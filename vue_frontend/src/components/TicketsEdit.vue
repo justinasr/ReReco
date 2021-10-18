@@ -81,12 +81,13 @@
           <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
         </tr>
         <tr>
-          <td>Input Datasets ({{listLength(editableObject.input)}})</td>
+          <td>Input ({{listLength(editableObject.input)}})</td>
           <td><textarea v-model="editableObject.input" :disabled="!editingInfo.input"></textarea></td>
         </tr>
       </table>
       <v-btn small class="mr-1 mt-1" color="primary" @click="save()" :disabled="!listLength(editableObject.steps) || !listLength(editableObject.input)">Save</v-btn>
-      <v-btn v-if="editingInfo.input" small class="mr-1 mt-1" color="primary" @click="showGetDatasetsDialog()">Get dataset list from DBS</v-btn>
+      <v-btn v-if="editingInfo.input" small class="mr-1 mt-1" color="primary" @click="showGetDatasetsDialog()">Query for datasets</v-btn>
+      <v-btn v-if="editingInfo.input" small class="mr-1 mt-1" color="primary" @click="showGetRequestsDialog()">Query for requests</v-btn>
       <v-btn small class="mr-1 mt-1" color="error" @click="cancel()">Cancel</v-btn>
     </v-card>
     <v-dialog v-model="getDatasetsDialog.visible"
@@ -106,6 +107,24 @@
           <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(true)" title="Fetch list and replace existing list with newly fetched one">Fetch and replace</v-btn>
           <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(false)" title="Fetch list and append it to an existing list">Fetch and append</v-btn>
           <v-btn small class="mr-1 mb-1" color="error" @click="closeGetDatasetsDialog()">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="getRequestsDialog.visible"
+              max-width="50%">
+      <v-card class="page-card mb-0" style="max-width: none !important;">
+        <v-card-title class="headline">Fetch request list</v-card-title>
+        <v-card-text>
+          Fetch a list of request PrepIDs from ReReco machine
+          <input type="text" v-model="getRequestsDialog.input" class="mb-2" placeholder="PrepID query, for example *-Commissioning2018-ZeroBias-*">
+        </v-card-text>
+        <small style="opacity: 0.4">Note: for performance reasons query result is limited to 1000 PrepIDs</small>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn small class="mr-1 mb-1" color="primary" v-if="!listLength(editableObject.input)" :disabled="!getRequestsDialog.input.length" @click="getRequests(true)">Fetch</v-btn>
+          <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input)" :disabled="!getRequestsDialog.input.length" @click="getRequests(true)" title="Fetch list and replace existing list with newly fetched one">Fetch and replace</v-btn>
+          <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input)" :disabled="!getRequestsDialog.input.length" @click="getRequests(false)" title="Fetch list and append it to an existing list">Fetch and append</v-btn>
+          <v-btn small class="mr-1 mb-1" color="error" @click="closeGetRequestsDialog()">Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -162,6 +181,10 @@ export default {
         visible: false,
         input: '',
         exclude: 'validation,pilot',
+      },
+      getRequestsDialog: {
+        visible: false,
+        input: '',
       }
     }
   },
@@ -202,7 +225,11 @@ export default {
           component.showError('Error fetching editing information', component.getError(error));
         });
       } else {
-        objectInfo.input = objectInfo.input.filter(Boolean).join('\n');
+        if (query.input_requests && query.input_requests.length) {
+          objectInfo.input = query.input_requests.split(',').filter(Boolean).join('\n');
+        } else {
+          objectInfo.input = objectInfo.input.filter(Boolean).join('\n');
+        }
         component.editableObject = objectInfo;
         component.editingInfo = editingInfo;
         if (component.creatingNew) {
@@ -270,13 +297,13 @@ export default {
         if (replace) {
           component.editableObject.input = response.data.response.filter(Boolean).join('\n');
         } else {
-          let existingDatasets = component.cleanSplit(component.editableObject.input);
-          for (let dataset of response.data.response.filter(Boolean)) {
-            if (!existingDatasets.includes(dataset)) {
-              existingDatasets.push(dataset);
+          let existingItems = component.cleanSplit(component.editableObject.input);
+          for (let item of response.data.response.filter(Boolean)) {
+            if (!existingItems.includes(item)) {
+              existingItems.push(item);
             }
           }
-          component.editableObject.input = existingDatasets.join('\n');
+          component.editableObject.input = existingItems.join('\n');
         }
         component.loading = false;
       }).catch(error => {
@@ -291,6 +318,39 @@ export default {
     closeGetDatasetsDialog: function() {
       this.getDatasetsDialog.visible = false;
       this.getDatasetsDialog.input = '';
+    },
+    getRequests: function(replace) {
+      this.loading = true;
+      let component = this;
+      let url = 'api/tickets/get_requests?q=' + this.getRequestsDialog.input;
+      // Timeout 120000ms is 2 minutes
+      let httpRequest = axios.get(url, {timeout: 120000});
+      this.closeGetRequestsDialog();
+      httpRequest.then(response => {
+        if (replace) {
+          component.editableObject.input = response.data.response.filter(Boolean).join('\n');
+        } else {
+          let existingItems = component.cleanSplit(component.editableObject.input);
+          for (let item of response.data.response.filter(Boolean)) {
+            if (!existingItems.includes(item)) {
+              existingItems.push(item);
+            }
+          }
+          component.editableObject.input = existingItems.join('\n');
+        }
+        component.loading = false;
+      }).catch(error => {
+        component.loading = false;
+        this.showError('Error getting datasets for ticket', component.getError(error))
+      });
+    },
+    showGetRequestsDialog: function() {
+      this.getRequestsDialog.visible = true;
+      this.getRequestsDialog.input = '';
+    },
+    closeGetRequestsDialog: function() {
+      this.getRequestsDialog.visible = false;
+      this.getRequestsDialog.input = '';
     },
     addStep: function() {
       this.editableObject.steps.push({'subcampaign': '',

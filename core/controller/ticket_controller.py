@@ -1,6 +1,7 @@
 """
 Module that contains TicketController class
 """
+from flask.globals import request
 from core.model.model_base import ModelBase
 from core_lib.utils.settings import Settings
 from core_lib.database.database import Database
@@ -144,6 +145,16 @@ class TicketController(ControllerBase):
 
         self.logger.info('Got %s datasets from DBS for query %s', len(datasets), query)
         return datasets
+
+    def get_requests(self, query):
+        """
+        Query database for list of requests
+        """
+        requests_db = Database('requests')
+        requests = requests_db.query(f'prepid={query}', limit=1000)
+        requests = [x['prepid'] for x in requests]
+        self.logger.info('Got %s requests from database for query %s', len(requests), query)
+        return requests
 
     def get_editing_info(self, obj):
         editing_info = super().get_editing_info(obj)

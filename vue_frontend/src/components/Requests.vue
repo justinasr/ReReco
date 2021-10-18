@@ -167,6 +167,7 @@
         <a v-if="role('manager') && selectedItems.length" @click="deleteManyRequests(selectedItems)" title="Delete selected requests">Delete</a>
         <a v-if="role('manager') && selectedItems.length" @click="previousMany(selectedItems)" title="Move selected requests to previous status">Previous</a>
         <a v-if="role('manager') && selectedItems.length" @click="nextStatusMany(selectedItems)" title="Move selected requets to next status">Next</a>
+        <a v-if="role('manager') && selectedItems.length" @click="createTicket(selectedItems)" title="Create a ticket with selected requests as input">Create ticket</a>
         <a v-if="role('administrator') && selectedItems.length" @click="updateWorkflowsMany(selectedItems)" title="Update selected requests' information from Stats2">Update from Stats2</a>
         <a v-if="role('manager') && selectedItems.length" @click="optionResetMany(selectedItems)" title="Refetch selected requests' values from their subcampaigns">Option Reset</a>
         <a v-if="selectedItems.length" @click="openPmpMany(selectedItems)" title="Show selected requests in pMp">pMp</a>
@@ -528,6 +529,10 @@ export default {
     editRequests: function(requests) {
       let prepids = requests.map(x => x['prepid']);
       window.location = 'requests/edit_many?prepid=' + prepids.join(',');
+    },
+    createTicket: function(requests) {
+      let prepids = requests.map(x => x['prepid']);
+      window.location = 'tickets/edit?input_requests=' + prepids.join(',');
     },
   }
 }
