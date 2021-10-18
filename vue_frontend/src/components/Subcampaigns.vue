@@ -19,10 +19,12 @@
                       class="elevation-1"
                       dense>
           <template v-slot:item._actions="{ item }">
-            <a :href="'subcampaigns/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit subcampaign">Edit</a>&nbsp;
-            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager')" title="Delete subcampaign">Delete</a>&nbsp;
-            <a v-if="role('manager')" :href="'subcampaigns/edit?clone=' + item.prepid" title="Clone subcampaign">Clone</a>&nbsp;
-            <a :href="'requests?subcampaign=' + item.prepid" :title="'Show all requests in '+ item.prepid">Show requests</a>&nbsp;
+            <div class="actions">
+              <a :href="'subcampaigns/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit subcampaign">Edit</a>
+              <a @click="showDeleteDialog(item)" v-if="role('manager')" title="Delete subcampaign">Delete</a>
+              <a v-if="role('manager')" :href="'subcampaigns/edit?clone=' + item.prepid" title="Clone subcampaign">Clone</a>
+              <a :href="'requests?subcampaign=' + item.prepid" :title="'Show all requests in '+ item.prepid">Show requests</a>
+            </div>
           </template>
           <template v-slot:item.prepid="{ item }">
             <a :href="'subcampaigns?prepid=' + item.prepid" title="Show only this subcampaign">{{item.prepid}}</a>
@@ -95,7 +97,9 @@
     </v-dialog>
 
     <footer>
-      <a :href="'subcampaigns/edit'" v-if="role('manager')" title="Create new subcampaign">New subcampaign</a>
+      <div class="actions" style="float: left; line-height: 52px">
+        <a :href="'subcampaigns/edit'" v-if="role('manager')" title="Create new subcampaign">New subcampaign</a>
+      </div>
       <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>

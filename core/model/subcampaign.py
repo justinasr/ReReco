@@ -32,13 +32,12 @@ class Subcampaign(ModelBase):
         'sequences': [],
     }
 
-    __runs_json_regex = '[a-zA-Z0-9/\\-_]{0,150}(\\.json|\\.txt)?'
     lambda_checks = {
-        'prepid': ModelBase.lambda_check('subcampaign'),
-        'cmssw_release': ModelBase.lambda_check('cmssw_release'),
+        'prepid': ModelBase.subcampaign_id_check,
+        'cmssw_release': ModelBase.cmssw_check,
         'energy': ModelBase.lambda_check('energy'),
         'memory': ModelBase.lambda_check('memory'),
-        'runs_json_path': lambda rjp: ModelBase.matches_regex(rjp, Subcampaign.__runs_json_regex),
+        'runs_json_path': ModelBase.runs_json_path_check,
         'sequences': lambda s: len(s) > 0,
         '__sequences': lambda s: isinstance(s, Sequence),
     }

@@ -22,16 +22,18 @@
                       v-model="selectedItems"
                       dense>
           <template v-slot:item._actions="{ item }">
-            <a v-if="role('manager')" :href="'requests/edit?prepid=' + item.prepid" title="Edit request">Edit</a>&nbsp;
-            <a v-if="role('manager') && item.status == 'new'" style="text-decoration: underline;" @click="deleteRequest(item)" title="Delete request">Delete</a>&nbsp;
-            <a v-if="role('manager')" :href="'requests/edit?clone=' + item.prepid" title="Clone request">Clone</a>&nbsp;
-            <a :href="'api/requests/get_cmsdriver/' + item.prepid" title="Show cmsDriver.py command for this request">cmsDriver</a>&nbsp;
-            <a :href="'api/requests/get_dict/' + item.prepid" title="Show JSON dictionary for ReqMgr2">Job dict</a>&nbsp;
-            <a style="text-decoration: underline;" @click="previousStatus(item)" v-if="role('manager') && item.status != 'new'" title="Move to previous status">Previous</a>&nbsp;
-            <a style="text-decoration: underline;" @click="nextStatus(item)" v-if="role('manager') && item.status != 'done'" title="Move to next status">Next</a>&nbsp;
-            <a style="text-decoration: underline;" @click="updateWorkflows(item)" v-if="role('administrator') && item.status == 'submitted' && !isDev" title="Update request information from Stats2">Update from Stats2</a>&nbsp;
-            <a style="text-decoration: underline;" @click="optionReset(item)" v-if="role('manager') && item.status == 'new'" :title="'Refetch values from ' + item.subcampaign + ' subcampaign'">Option reset</a>&nbsp;
-            <a target="_blank" :href="'https://cms-pdmv.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done' && !isDev" title="Show workflows of this request in Stats2">Stats2</a>
+            <div class="actions">
+              <a v-if="role('manager')" :href="'requests/edit?prepid=' + item.prepid" title="Edit request">Edit</a>
+              <a v-if="role('manager') && item.status == 'new'" @click="deleteRequest(item)" title="Delete request">Delete</a>
+              <a v-if="role('manager')" :href="'requests/edit?clone=' + item.prepid" title="Clone request">Clone</a>
+              <a :href="'api/requests/get_cmsdriver/' + item.prepid" title="Show cmsDriver.py command for this request">cmsDriver</a>
+              <a :href="'api/requests/get_dict/' + item.prepid" title="Show JSON dictionary for ReqMgr2">Job dict</a>
+              <a @click="previousStatus(item)" v-if="role('manager') && item.status != 'new'" title="Move to previous status">Previous</a>
+              <a @click="nextStatus(item)" v-if="role('manager') && item.status != 'done'" title="Move to next status">Next</a>
+              <a @click="updateWorkflows(item)" v-if="role('administrator') && item.status == 'submitted' && !isDev" title="Update request information from Stats2">Update from Stats2</a>
+              <a @click="optionReset(item)" v-if="role('manager') && item.status == 'new'" :title="'Refetch values from ' + item.subcampaign + ' subcampaign'">Option reset</a>
+              <a target="_blank" :href="'https://cms-pdmv.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done' && !isDev" title="Show workflows of this request in Stats2">Stats2</a>
+            </div>
           </template>
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
@@ -158,15 +160,18 @@
     </v-dialog>
 
     <footer>
-      <a :href="'requests/edit'" v-if="role('manager') && !selectedItems.length" title="Create new request">New request</a>
-      <span v-if="role('manager') && selectedItems.length">Selected items ({{selectedItems.length}}) actions:</span>
-      <a v-if="role('manager') && selectedItems.length > 1" @click="editRequests(selectedItems)" title="Edit selected requests">Edit</a>
-      <a v-if="role('manager') && selectedItems.length" @click="deleteManyRequests(selectedItems)" title="Delete selected requests">Delete</a>
-      <a v-if="role('manager') && selectedItems.length" @click="previousMany(selectedItems)" title="Move selected requests to previous status">Previous</a>
-      <a v-if="role('manager') && selectedItems.length" @click="nextStatusMany(selectedItems)" title="Move selected requets to next status">Next</a>
-      <a v-if="role('administrator') && selectedItems.length" @click="updateWorkflowsMany(selectedItems)" title="Update selected requests' information from Stats2">Update from Stats2</a>
-      <a v-if="role('manager') && selectedItems.length" @click="optionResetMany(selectedItems)" title="Refetch selected requests' values from their subcampaigns">Option Reset</a>
-      <a v-if="selectedItems.length" @click="openPmpMany(selectedItems)" title="Show selected requests in pMp">pMp</a>
+      <div class="actions" style="float: left; line-height: 52px">
+        <a :href="'requests/edit'" v-if="role('manager') && !selectedItems.length" title="Create new request">New request</a>
+        <span v-if="role('manager') && selectedItems.length">Selected items ({{selectedItems.length}}) actions:</span>
+        <a v-if="role('manager') && selectedItems.length > 1" @click="editRequests(selectedItems)" title="Edit selected requests">Edit</a>
+        <a v-if="role('manager') && selectedItems.length" @click="deleteManyRequests(selectedItems)" title="Delete selected requests">Delete</a>
+        <a v-if="role('manager') && selectedItems.length" @click="previousMany(selectedItems)" title="Move selected requests to previous status">Previous</a>
+        <a v-if="role('manager') && selectedItems.length" @click="nextStatusMany(selectedItems)" title="Move selected requets to next status">Next</a>
+        <a v-if="role('manager') && selectedItems.length" @click="createTicket(selectedItems)" title="Create a ticket with selected requests as input">Create ticket</a>
+        <a v-if="role('administrator') && selectedItems.length" @click="updateWorkflowsMany(selectedItems)" title="Update selected requests' information from Stats2">Update from Stats2</a>
+        <a v-if="role('manager') && selectedItems.length" @click="optionResetMany(selectedItems)" title="Refetch selected requests' values from their subcampaigns">Option Reset</a>
+        <a v-if="selectedItems.length" @click="openPmpMany(selectedItems)" title="Show selected requests in pMp">pMp</a>
+      </div>
       <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
@@ -524,6 +529,10 @@ export default {
     editRequests: function(requests) {
       let prepids = requests.map(x => x['prepid']);
       window.location = 'requests/edit_many?prepid=' + prepids.join(',');
+    },
+    createTicket: function(requests) {
+      let prepids = requests.map(x => x['prepid']);
+      window.location = 'tickets/edit?input_requests=' + prepids.join(',');
     },
   }
 }

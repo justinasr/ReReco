@@ -571,7 +571,7 @@ class RequestController(ControllerBase):
         """
         request_db = Database('requests')
         prepid = request.get_prepid()
-        query = f'input.request={prepid}'
+        query = f'input.request={prepid}&&status=approved'
         subsequent_requests = request_db.query(query)
         self.logger.info('Found %s subsequent requests for %s: %s',
                          len(subsequent_requests),
@@ -582,12 +582,7 @@ class RequestController(ControllerBase):
             try:
                 subsequent_request = self.get(subsequent_request_prepid)
                 self.update_input_dataset(subsequent_request)
-                if subsequent_request.get('status') == 'new':
-                    self.next_status(subsequent_request)
-
-                if subsequent_request.get('status') == 'approved':
-                    self.next_status(subsequent_request)
-
+                self.next_status(subsequent_request)
             except Exception as ex:
                 self.logger.error('Error moving %s to next status: %s',
                                   subsequent_request_prepid,

@@ -1,13 +1,12 @@
 """
 Module that contains TicketController class
 """
-import json
-import time
+from flask.globals import request
+from core.model.model_base import ModelBase
 from core_lib.utils.settings import Settings
 from core_lib.database.database import Database
 from core_lib.controller.controller_base import ControllerBase
-from core_lib.utils.connection_wrapper import ConnectionWrapper
-from core_lib.utils.global_config import Config
+from core_lib.utils.common_utils import dbs_datasetlist
 from core.model.ticket import Ticket
 from core.controller.request_controller import RequestController
 
@@ -43,17 +42,47 @@ class TicketController(ControllerBase):
 
         return new_ticket_json
 
+    def check_input(self, ticket):
+        """
+        Check ticket's input, if all datasets and requests exist and are not
+        blacklisted
+        """
+        ticket_input = ticket.get('input')
+        duplicates = list(set(x for x in ticket_input if ticket_input.count(x) > 1))
+        if duplicates:
+            raise Exception(f'Duplicates in input: {", ".join(duplicates)}')
 
-    def check_for_create(self, obj):
-        subcampaign_database = Database('subcampaigns')
         dataset_blacklist = set(Settings().get('dataset_blacklist'))
-        for input_dataset in obj.get('input_datasets'):
-            dataset = input_dataset.split('/')[1]
+        request_controller = RequestController()
+        datasets = []
+        for input_item in ticket_input:
+            if ModelBase.dataset_check(input_item):
+                datasets.append(input_item)
+                dataset = input_item.split('/')[1]
+
+            elif ModelBase.request_id_check(input_item):
+                request = request_controller.get(input_item)
+                dataset = request.get_dataset()
+
             if dataset in dataset_blacklist:
-                raise Exception(f'Input dataset {input_dataset} is not '
+                raise Exception(f'Input dataset {input_item} is not '
                                 f'allowed because {dataset} is in blacklist')
 
-        for index, step in enumerate(obj.get('steps')):
+        dataset_info = {x['dataset']: x['dataset_access_type'] for x in dbs_datasetlist(datasets)}
+        self.logger.info(dataset_info)
+        for dataset in datasets:
+            dataset_status = dataset_info.get(dataset, 'NONE')
+            if dataset_status not in {'VALID', 'PRODUCTION'}:
+                raise Exception(f'Input dataset {dataset} status is {dataset_status} or it could '
+                                'not be found. Required status is either VALID or PRODUCTION')
+
+    def check_steps(self, ticket):
+        """
+        Check ticket's steps: whether subcampaign exists and step has correct
+        number of time per event and size per event values
+        """
+        subcampaign_database = Database('subcampaigns')
+        for index, step in enumerate(ticket.get('steps')):
             subcampaign_name = step['subcampaign']
             subcampaign = subcampaign_database.get(subcampaign_name)
             if not subcampaign:
@@ -70,37 +99,14 @@ class TicketController(ControllerBase):
                 raise Exception(f'Step {index + 1} has {len(size_per_event)} size per '
                                 f'event values, expected {len(subcampaign_sequences)}')
 
-
+    def check_for_create(self, obj):
+        self.check_input(obj)
+        self.check_steps(obj)
         return True
 
     def check_for_update(self, old_obj, new_obj, changed_values):
-        if 'steps' in changed_values:
-            subcampaign_database = Database('subcampaigns')
-            for index, step in enumerate(new_obj.get('steps')):
-                subcampaign_name = step['subcampaign']
-                subcampaign = subcampaign_database.get(subcampaign_name)
-                if not subcampaign:
-                    raise Exception(f'Subcampaign {subcampaign_name} does not exist')
-
-                subcampaign_sequences = subcampaign['sequences']
-                time_per_event = step['time_per_event']
-                size_per_event = step['size_per_event']
-                if len(time_per_event) != len(subcampaign_sequences):
-                    raise Exception(f'Step {index + 1} has {len(time_per_event)} time per '
-                                    f'event values, expected {len(subcampaign_sequences)}')
-
-                if len(size_per_event) != len(subcampaign_sequences):
-                    raise Exception(f'Step {index + 1} has {len(size_per_event)} size per '
-                                    f'event values, expected {len(subcampaign_sequences)}')
-
-        if 'input_datasets' in changed_values:
-            dataset_blacklist = set(Settings().get('dataset_blacklist'))
-            for input_dataset in new_obj.get('input_datasets'):
-                dataset = input_dataset.split('/')[1]
-                if dataset in dataset_blacklist:
-                    raise Exception(f'Input dataset {input_dataset} is not '
-                                    f'allowed because {dataset} is in blacklist')
-
+        self.check_input(new_obj)
+        self.check_steps(new_obj)
         return True
 
     def check_for_delete(self, obj):
@@ -116,25 +122,14 @@ class TicketController(ControllerBase):
         """
         Query DBS for list of datasets
         """
-        if not query:
+        with self.locker.get_lock('get-ticket-datasets'):
+            datasets = dbs_datasetlist(query)
+
+        if not datasets:
             return []
 
-        grid_cert = Config.get('grid_user_cert')
-        grid_key = Config.get('grid_user_key')
-        with self.locker.get_lock('get-ticket-datasets'):
-            start_time = time.time()
-            connection_wrapper = ConnectionWrapper(host='cmsweb-prod.cern.ch',
-                                                   port=8443,
-                                                   max_attempts=1,
-                                                   cert_file=grid_cert,
-                                                   key_file=grid_key)
-            response = connection_wrapper.api('POST',
-                                              '/dbs/prod/global/DBSReader/datasetlist',
-                                              {'dataset': query, 'detail': 1})
-
-        response = json.loads(response.decode('utf-8'))
-        valid_types = ('VALID', 'PRODUCTION')
-        datasets = [x['dataset'] for x in response if x['dataset_access_type'] in valid_types]
+        valid_types = {'VALID', 'PRODUCTION'}
+        datasets = [x['dataset'] for x in datasets if x['dataset_access_type'] in valid_types]
         dataset_blacklist = set(Settings().get('dataset_blacklist'))
         datasets = [x for x in datasets if x.split('/')[1] not in dataset_blacklist]
         if exclude_list:
@@ -148,12 +143,18 @@ class TicketController(ControllerBase):
 
             datasets = filtered_datasets
 
-        end_time = time.time()
-        self.logger.info('Got %s datasets from DBS for query %s in %.2fs',
-                         len(datasets),
-                         query,
-                         end_time - start_time)
+        self.logger.info('Got %s datasets from DBS for query %s', len(datasets), query)
         return datasets
+
+    def get_requests(self, query):
+        """
+        Query database for list of requests
+        """
+        requests_db = Database('requests')
+        requests = requests_db.query(f'prepid={query}', limit=1000)
+        requests = [x['prepid'] for x in requests]
+        self.logger.info('Got %s requests from database for query %s', len(requests), query)
+        return requests
 
     def get_editing_info(self, obj):
         editing_info = super().get_editing_info(obj)
@@ -161,7 +162,7 @@ class TicketController(ControllerBase):
         editing_info['notes'] = True
         editing_info['steps'] = []
         not_done = status != 'done'
-        editing_info['input_datasets'] = not_done
+        editing_info['input'] = not_done
         editing_info['__steps'] = not_done
         for step_index, _ in enumerate(obj.get('steps')):
             editing_info['steps'].append({'subcampaign': step_index > 0 and not_done,
@@ -179,7 +180,6 @@ class TicketController(ControllerBase):
         database = Database(self.database_name)
         ticket_prepid = ticket.get_prepid()
         created_requests = []
-        dataset_blacklist = set(Settings().get('dataset_blacklist'))
         request_controller = RequestController()
         with self.locker.get_lock(ticket_prepid):
             ticket = Ticket(json_input=database.get(ticket_prepid))
@@ -190,50 +190,43 @@ class TicketController(ControllerBase):
                                 f'{len(created_requests)} requests created')
 
             # In case black list was updated after ticket was created
-            for input_dataset in ticket.get('input_datasets'):
-                dataset = input_dataset.split('/')[1]
-                if dataset in dataset_blacklist:
-                    raise Exception(f'Input dataset {input_dataset} is not '
-                                    f'allowed because {dataset} is in blacklist')
-
+            self.check_input(ticket)
+            self.check_steps(ticket)
             try:
-                for input_dataset in ticket.get('input_datasets'):
+                for input_item in ticket.get('input'):
                     last_request_prepid = None
                     for step_index, step in enumerate(ticket.get('steps')):
                         subcampaign_name = step['subcampaign']
-                        processing_string = step['processing_string']
-                        time_per_event = step['time_per_event']
-                        size_per_event = step['size_per_event']
-                        priority = step['priority']
                         new_request_json = {'subcampaign': subcampaign_name,
-                                            'priority': priority,
-                                            'processing_string': processing_string,
-                                            'time_per_event': time_per_event,
-                                            'size_per_event': size_per_event,
+                                            'priority': step['priority'],
+                                            'processing_string': step['processing_string'],
+                                            'time_per_event': step['time_per_event'],
+                                            'size_per_event': step['size_per_event'],
                                             'input': {'dataset': '',
                                                       'request': ''}}
 
                         if step_index == 0:
-                            new_request_json['input']['dataset'] = input_dataset
+                            if ModelBase.dataset_check(input_item):
+                                new_request_json['input']['dataset'] = input_item
+                            elif ModelBase.request_id_check(input_item):
+                                new_request_json['input']['request'] = input_item
                         else:
                             new_request_json['input']['request'] = last_request_prepid
 
                         try:
-                            runs = request_controller.get_runs(subcampaign_name, input_dataset)
+                            runs = request_controller.get_runs(subcampaign_name, input_item)
                             new_request_json['runs'] = runs
                             lumis = request_controller.get_lumisections(subcampaign_name, runs)
                             new_request_json['lumisections'] = lumis
                         except Exception as ex:
-                            self.logger.error('Error getting runs or lumis for %s %s %s: \n%s',
+                            self.logger.error('Error getting runs or lumis for %s %s: \n%s',
                                               subcampaign_name,
-                                              input_dataset,
-                                              processing_string,
+                                              input_item,
                                               ex)
 
                         request = request_controller.create(new_request_json)
                         created_requests.append(request)
                         last_request_prepid = request.get('prepid')
-
                         self.logger.info('Created %s', last_request_prepid)
 
                 created_request_prepids = [r.get('prepid') for r in created_requests]
@@ -263,14 +256,12 @@ class TicketController(ControllerBase):
         for request_prepid in ticket.get('created_requests'):
             request = request_controller.get(request_prepid)
             acquisition_era = request.get_era()
-            if acquisition_era not in acquisition_eras:
-                acquisition_eras[acquisition_era] = []
-
-            acquisition_eras[acquisition_era].append(request)
+            acquisition_eras.setdefault(acquisition_era, []).append(request)
 
         output_strings = []
         pmp_url = 'https://cms-pdmv.cern.ch/pmp/historical?r='
-        for acquisition_era, requests in acquisition_eras.items():
+        for acquisition_era in sorted(acquisition_eras.keys()):
+            requests = acquisition_eras[acquisition_era]
             output_strings.append(f'---+++ !{acquisition_era}\n')
             output_strings.append('| *Dataset* | *Monitoring link* | *Runs* |')
             for request in requests:

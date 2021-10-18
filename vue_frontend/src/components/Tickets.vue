@@ -19,12 +19,14 @@
                       class="elevation-1"
                       dense>
           <template v-slot:item._actions="{ item }">
-            <a :href="'tickets/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit ticket">Edit</a>&nbsp;
-            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager') && item.created_requests.length < 1" title="Delete ticket">Delete</a>&nbsp;
-            <a v-if="role('manager')" :href="'tickets/edit?clone=' + item.prepid" title="Clone ticket">Clone</a>&nbsp;
-            <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'" title="Create requests from this ticket">Create requests</a>&nbsp;
-            <a :href="'requests?ticket=' + item.prepid" v-if="item.created_requests && item.created_requests.length > 0" title="Show all requests created from this ticket">Show requests</a>&nbsp;
-            <a :href="'api/tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'" title="Show a snippet for TWiki">TWiki</a>&nbsp;
+            <div class="actions">
+              <a :href="'tickets/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit ticket">Edit</a>
+              <a @click="showDeleteDialog(item)" v-if="role('manager') && item.created_requests.length < 1" title="Delete ticket">Delete</a>
+              <a v-if="role('manager')" :href="'tickets/edit?clone=' + item.prepid" title="Clone ticket">Clone</a>
+              <a @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'" title="Create requests from this ticket">Create requests</a>
+              <a :href="'requests?ticket=' + item.prepid" v-if="item.created_requests && item.created_requests.length > 0" title="Show all requests created from this ticket">Show requests</a>
+              <a :href="'api/tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'" title="Show a snippet for TWiki">TWiki</a>
+            </div>
           </template>
           <template v-slot:item.prepid="{ item }">
             <a :href="'tickets?prepid=' + item.prepid" title="Show only this ticket">{{item.prepid}}</a>
@@ -35,13 +37,16 @@
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
           </template>
-          <template v-slot:item.input_datasets="{ item }">
-            {{item.input_datasets.length}} input datasets:
+          <template v-slot:item.input="{ item }">
+            {{item.input.length}} input items:
             <ul style="line-height: 95%">
-              <li v-for="dataset in item.input_datasets" :key="dataset">
+              <li v-for="inputItem in item.input" :key="item.prepid + inputItem">
                 <small>
-                  <a target="_blank" title="Open dataset in DAS" :href="makeDASLink(dataset)">
-                    {{dataset}}
+                  <a v-if="inputItem[0] == '/'" target="_blank" title="Open dataset in DAS" :href="makeDASLink(inputItem)">
+                    {{inputItem}}
+                  </a>
+                  <a v-else title="Show request" :href="'requests?prepid=' + inputItem">
+                    {{inputItem}}
                   </a>
                 </small>
               </li>
@@ -119,7 +124,9 @@
     </v-dialog>
 
     <footer>
-      <a :href="'tickets/edit'" v-if="role('manager')" title="Create new ticket">New ticket</a>
+      <div class="actions" style="float: left; line-height: 52px">
+        <a :href="'tickets/edit'" v-if="role('manager')" title="Create new ticket">New ticket</a>
+      </div>
       <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
@@ -150,7 +157,7 @@ export default {
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'status', 'displayName': 'Status', 'visible': 1, 'sortable': true},
         {'dbName': 'steps', 'displayName': 'Steps', 'visible': 1},
-        {'dbName': 'input_datasets', 'displayName': 'Input Datasets', 'visible': 1},
+        {'dbName': 'input', 'displayName': 'Input', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
         {'dbName': 'created_requests', 'displayName': 'Created Requests', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0, 'sortable': true},

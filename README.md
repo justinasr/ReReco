@@ -77,7 +77,7 @@ List of input datasets can be filled manually or fetched from DBS using a query.
 * `_id` - unique document identifier in database (required by DB)
 * `created_requests` - list of prepids of requests that were created from this ticket
 * `history` - action history of this object
-* `input_datasets` - list of datasets that will be used as inputs. Each input dataset will result in a new request
+* `input` - list of dataset names or requests that will be used as inputs. Each item will result in a new ReReco request
 * `notes` - free form user notes
 * `status` - status is either new or done, when ticket is done, it can no longer be edited
 * `steps` - list of dictionaries where each step will result in one request in the ReReco pipeline. Request created from second step will have first request as input, third will have second as input, etc. Each step has these attributes:

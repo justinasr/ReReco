@@ -25,6 +25,7 @@ from api.ticket_api import (CreateTicketAPI,
                             UpdateTicketAPI,
                             GetTicketAPI,
                             GetTicketDatasetsAPI,
+                            GetTicketRequestsAPI,
                             GetEditableTicketAPI,
                             CreateRequestsForTicketAPI,
                             GetTicketTwikiAPI)
@@ -159,6 +160,7 @@ api.add_resource(GetEditableTicketAPI,
                  '/api/tickets/get_editable',
                  '/api/tickets/get_editable/<string:prepid>')
 api.add_resource(GetTicketDatasetsAPI, '/api/tickets/get_datasets')
+api.add_resource(GetTicketRequestsAPI, '/api/tickets/get_requests')
 api.add_resource(CreateRequestsForTicketAPI,
                  '/api/tickets/create_requests')
 api.add_resource(GetTicketTwikiAPI,
