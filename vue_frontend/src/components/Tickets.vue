@@ -19,12 +19,14 @@
                       class="elevation-1"
                       dense>
           <template v-slot:item._actions="{ item }">
-            <a :href="'tickets/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit ticket">Edit</a>&nbsp;
-            <a style="text-decoration: underline;" @click="showDeleteDialog(item)" v-if="role('manager') && item.created_requests.length < 1" title="Delete ticket">Delete</a>&nbsp;
-            <a v-if="role('manager')" :href="'tickets/edit?clone=' + item.prepid" title="Clone ticket">Clone</a>&nbsp;
-            <a style="text-decoration: underline;" @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'" title="Create requests from this ticket">Create requests</a>&nbsp;
-            <a :href="'requests?ticket=' + item.prepid" v-if="item.created_requests && item.created_requests.length > 0" title="Show all requests created from this ticket">Show requests</a>&nbsp;
-            <a :href="'api/tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'" title="Show a snippet for TWiki">TWiki</a>&nbsp;
+            <div class="actions">
+              <a :href="'tickets/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit ticket">Edit</a>
+              <a @click="showDeleteDialog(item)" v-if="role('manager') && item.created_requests.length < 1" title="Delete ticket">Delete</a>
+              <a v-if="role('manager')" :href="'tickets/edit?clone=' + item.prepid" title="Clone ticket">Clone</a>
+              <a @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'" title="Create requests from this ticket">Create requests</a>
+              <a :href="'requests?ticket=' + item.prepid" v-if="item.created_requests && item.created_requests.length > 0" title="Show all requests created from this ticket">Show requests</a>
+              <a :href="'api/tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'" title="Show a snippet for TWiki">TWiki</a>
+            </div>
           </template>
           <template v-slot:item.prepid="{ item }">
             <a :href="'tickets?prepid=' + item.prepid" title="Show only this ticket">{{item.prepid}}</a>
@@ -122,7 +124,9 @@
     </v-dialog>
 
     <footer>
-      <a :href="'tickets/edit'" v-if="role('manager')" title="Create new ticket">New ticket</a>
+      <div class="actions" style="float: left; line-height: 52px">
+        <a :href="'tickets/edit'" v-if="role('manager')" title="Create new ticket">New ticket</a>
+      </div>
       <Paginator :totalRows="totalItems"
                  v-on:update="onPaginatorUpdate"/>
     </footer>
