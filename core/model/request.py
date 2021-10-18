@@ -59,25 +59,24 @@ class Request(ModelBase):
         'workflows': []
     }
 
-    __prepid_regex = '[a-zA-Z0-9\\-_]{1,100}'
     lambda_checks = {
-        'prepid': lambda prepid: ModelBase.matches_regex(prepid, Request.__prepid_regex),
-        'cmssw_release': ModelBase.lambda_check('cmssw_release'),
+        'prepid': ModelBase.request_id_check,
+        'cmssw_release': ModelBase.cmssw_check,
         'completed_events': lambda events: events >= 0,
         'energy': ModelBase.lambda_check('energy'),
-        '_input': {'dataset': lambda ds: not ds or ModelBase.lambda_check('dataset')(ds),
+        '_input': {'dataset': lambda ds: not ds or ModelBase.dataset_check(ds),
                    'request': lambda r:
                               not r
-                              or ModelBase.matches_regex(r, Request.__prepid_regex)},
+                              or ModelBase.request_id_check(r)},
         'memory': ModelBase.lambda_check('memory'),
-        '__output_datasets': ModelBase.lambda_check('dataset'),
+        '__output_datasets': ModelBase.dataset_check,
         'priority': ModelBase.lambda_check('priority'),
-        'processing_string': ModelBase.lambda_check('processing_string'),
+        'processing_string': ModelBase.processing_string_check,
         '__runs': lambda r: isinstance(r, int) and r > 0,
         '__sequences': lambda s: isinstance(s, Sequence),
         '__size_per_event': lambda spe: spe > 0.0,
         'status': lambda status: status in {'new', 'approved', 'submitting', 'submitted', 'done'},
-        'subcampaign': ModelBase.lambda_check('subcampaign'),
+        'subcampaign': ModelBase.subcampaign_id_check,
         '__time_per_event': lambda tpe: tpe > 0.0,
         'total_events': lambda events: events >= 0,
     }

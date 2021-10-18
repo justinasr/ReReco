@@ -31,9 +31,9 @@ class Ticket(ModelBase):
     }
 
     lambda_checks = {
-        'prepid': lambda prepid: ModelBase.matches_regex(prepid, '[a-zA-Z0-9_\\-]{1,75}'),
-        '__created_requests': lambda pi: ModelBase.matches_regex(pi, '[a-zA-Z0-9\\-_]{1,100}'),
-        '__input_datasets': ModelBase.lambda_check('dataset'),
+        'prepid': ModelBase.ticket_id_check,
+        '__created_requests': ModelBase.request_id_check,
+        '__input_datasets': lambda i: ModelBase.dataset_check(i) or ModelBase.request_id_check(i),
         'status': lambda status: status in {'new', 'done'},
         'steps': lambda s: len(s) > 0,
     }
