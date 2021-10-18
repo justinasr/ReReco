@@ -20,8 +20,8 @@ class Ticket(ModelBase):
         'created_requests': [],
         # Action history
         'history': [],
-        # List of input dataset names
-        'input_datasets': [],
+        # List of input dataset names or request prepids
+        'input': [],
         # User notes
         'notes': '',
         # Status is either new or done
@@ -33,7 +33,7 @@ class Ticket(ModelBase):
     lambda_checks = {
         'prepid': ModelBase.ticket_id_check,
         '__created_requests': ModelBase.request_id_check,
-        '__input_datasets': lambda i: ModelBase.dataset_check(i) or ModelBase.request_id_check(i),
+        '__input': lambda i: ModelBase.dataset_check(i) or ModelBase.request_id_check(i),
         'status': lambda status: status in {'new', 'done'},
         'steps': lambda s: len(s) > 0,
     }

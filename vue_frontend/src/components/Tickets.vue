@@ -35,13 +35,16 @@
           <template v-slot:item.history="{ item }">
             <HistoryCell :data="item.history"/>
           </template>
-          <template v-slot:item.input_datasets="{ item }">
-            {{item.input_datasets.length}} input datasets:
+          <template v-slot:item.input="{ item }">
+            {{item.input.length}} input items:
             <ul style="line-height: 95%">
-              <li v-for="dataset in item.input_datasets" :key="dataset">
+              <li v-for="inputItem in item.input" :key="item.prepid + inputItem">
                 <small>
-                  <a target="_blank" title="Open dataset in DAS" :href="makeDASLink(dataset)">
-                    {{dataset}}
+                  <a v-if="inputItem[0] == '/'" target="_blank" title="Open dataset in DAS" :href="makeDASLink(inputItem)">
+                    {{inputItem}}
+                  </a>
+                  <a v-else title="Show request" :href="'requests?prepid=' + inputItem">
+                    {{inputItem}}
                   </a>
                 </small>
               </li>
@@ -150,7 +153,7 @@ export default {
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'status', 'displayName': 'Status', 'visible': 1, 'sortable': true},
         {'dbName': 'steps', 'displayName': 'Steps', 'visible': 1},
-        {'dbName': 'input_datasets', 'displayName': 'Input Datasets', 'visible': 1},
+        {'dbName': 'input', 'displayName': 'Input', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
         {'dbName': 'created_requests', 'displayName': 'Created Requests', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0, 'sortable': true},

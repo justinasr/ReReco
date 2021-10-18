@@ -143,6 +143,7 @@ class WildSearchAPI(APIBase):
                     # Tickets
                     ('tickets', tickets_db, 'subcampaign', True),
                     ('tickets', tickets_db, 'processing_string', True),
+                    ('tickets', tickets_db, 'input', True),
                     # Requests
                     ('requests', requests_db, 'subcampaign', True),
                     ('requests', requests_db, 'processing_string', True),
@@ -193,7 +194,7 @@ class WildSearchAPI(APIBase):
         Return a list of one or multiple values got from an object
         One object might have multiple values, e.g. output datasets
         """
-        if attribute in item:
+        if attribute in item and attribute != 'input':
             return [item[attribute]]
 
         values = []
@@ -206,14 +207,19 @@ class WildSearchAPI(APIBase):
         if db_name == 'tickets':
             if attribute in ('subcampaign', 'processing_string'):
                 for step in item['steps']:
-                    self.logger.info('Checking step...')
                     if matcher.fullmatch(step[attribute]):
-                        self.logger.info('%s fits!', step[attribute])
                         values.append(step[attribute])
+            elif attribute == 'input':
+                for input_item in item['input']:
+                    if matcher.fullmatch(input_item):
+                        values.append(input_item)
 
         elif db_name == 'requests':
             if attribute == 'input_dataset':
                 values.append(item['input']['dataset'])
+
+            elif attribute == 'input_request':
+                values.append(item['input']['request'])
 
             elif attribute == 'output_dataset':
                 for dataset in item['output_datasets']:

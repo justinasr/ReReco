@@ -81,12 +81,12 @@
           <td><textarea v-model="editableObject.notes" :disabled="!editingInfo.notes"></textarea></td>
         </tr>
         <tr>
-          <td>Input Datasets ({{listLength(editableObject.input_datasets)}})</td>
-          <td><textarea v-model="editableObject.input_datasets" :disabled="!editingInfo.input_datasets"></textarea></td>
+          <td>Input Datasets ({{listLength(editableObject.input)}})</td>
+          <td><textarea v-model="editableObject.input" :disabled="!editingInfo.input"></textarea></td>
         </tr>
       </table>
-      <v-btn small class="mr-1 mt-1" color="primary" @click="save()" :disabled="!listLength(editableObject.steps) || !listLength(editableObject.input_datasets)">Save</v-btn>
-      <v-btn v-if="editingInfo.input_datasets" small class="mr-1 mt-1" color="primary" @click="showGetDatasetsDialog()">Get dataset list from DBS</v-btn>
+      <v-btn small class="mr-1 mt-1" color="primary" @click="save()" :disabled="!listLength(editableObject.steps) || !listLength(editableObject.input)">Save</v-btn>
+      <v-btn v-if="editingInfo.input" small class="mr-1 mt-1" color="primary" @click="showGetDatasetsDialog()">Get dataset list from DBS</v-btn>
       <v-btn small class="mr-1 mt-1" color="error" @click="cancel()">Cancel</v-btn>
     </v-card>
     <v-dialog v-model="getDatasetsDialog.visible"
@@ -102,9 +102,9 @@
         <small style="opacity: 0.4">Note: some primary datasets are blacklisted and will not appear in fetched list</small>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn small class="mr-1 mb-1" color="primary" v-if="!listLength(editableObject.input_datasets)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(true)">Fetch</v-btn>
-          <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input_datasets)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(true)" title="Fetch list and replace existing list with newly fetched one">Fetch and replace</v-btn>
-          <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input_datasets)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(false)" title="Fetch list and append it to an existing list">Fetch and append</v-btn>
+          <v-btn small class="mr-1 mb-1" color="primary" v-if="!listLength(editableObject.input)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(true)">Fetch</v-btn>
+          <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(true)" title="Fetch list and replace existing list with newly fetched one">Fetch and replace</v-btn>
+          <v-btn small class="mr-1 mb-1" color="primary" v-if="listLength(editableObject.input)" :disabled="!getDatasetsDialog.input.length" @click="getDatasets(false)" title="Fetch list and append it to an existing list">Fetch and append</v-btn>
           <v-btn small class="mr-1 mb-1" color="error" @click="closeGetDatasetsDialog()">Close</v-btn>
         </v-card-actions>
       </v-card>
@@ -193,7 +193,7 @@ export default {
                                     'size_per_event': true,
                                     'time_per_event': true})
           }
-          templateInfo.input_datasets = templateInfo.input_datasets.filter(Boolean).join('\n');
+          templateInfo.input = templateInfo.input.filter(Boolean).join('\n');
           component.editableObject = templateInfo;
           component.editingInfo = editingInfo;
           component.loading = false;
@@ -202,7 +202,7 @@ export default {
           component.showError('Error fetching editing information', component.getError(error));
         });
       } else {
-        objectInfo.input_datasets = objectInfo.input_datasets.filter(Boolean).join('\n');
+        objectInfo.input = objectInfo.input.filter(Boolean).join('\n');
         component.editableObject = objectInfo;
         component.editingInfo = editingInfo;
         if (component.creatingNew) {
@@ -220,7 +220,7 @@ export default {
       this.loading = true;
       let editableObject = this.makeCopy(this.editableObject);
       editableObject.notes = editableObject.notes.trim();
-      editableObject.input_datasets = editableObject.input_datasets.split('\n').map(function(s) { return s.trim() }).filter(Boolean);
+      editableObject.input = editableObject.input.split('\n').map(function(s) { return s.trim() }).filter(Boolean);
       let httpRequest;
       if (this.creatingNew) {
         httpRequest = axios.put('api/tickets/create', editableObject);
@@ -268,15 +268,15 @@ export default {
       this.closeGetDatasetsDialog();
       httpRequest.then(response => {
         if (replace) {
-          component.editableObject.input_datasets = response.data.response.filter(Boolean).join('\n');
+          component.editableObject.input = response.data.response.filter(Boolean).join('\n');
         } else {
-          let existingDatasets = component.cleanSplit(component.editableObject.input_datasets);
+          let existingDatasets = component.cleanSplit(component.editableObject.input);
           for (let dataset of response.data.response.filter(Boolean)) {
             if (!existingDatasets.includes(dataset)) {
               existingDatasets.push(dataset);
             }
           }
-          component.editableObject.input_datasets = existingDatasets.join('\n');
+          component.editableObject.input = existingDatasets.join('\n');
         }
         component.loading = false;
       }).catch(error => {

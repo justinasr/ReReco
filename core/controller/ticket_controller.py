@@ -46,20 +46,25 @@ class TicketController(ControllerBase):
         Check ticket's input, if all datasets and requests exist and are not
         blacklisted
         """
+        ticket_input = ticket.get('input')
+        duplicates = list(set(x for x in ticket_input if ticket_input.count(x) > 1))
+        if duplicates:
+            raise Exception(f'Duplicates in input: {", ".join(duplicates)}')
+
         dataset_blacklist = set(Settings().get('dataset_blacklist'))
         request_controller = RequestController()
         datasets = []
-        for input_dataset in ticket.get('input_datasets'):
-            if ModelBase.dataset_check(input_dataset):
-                datasets.append(input_dataset)
-                dataset = input_dataset.split('/')[1]
+        for input_item in ticket_input:
+            if ModelBase.dataset_check(input_item):
+                datasets.append(input_item)
+                dataset = input_item.split('/')[1]
 
-            elif ModelBase.request_id_check(input_dataset):
-                request = request_controller.get(input_dataset)
+            elif ModelBase.request_id_check(input_item):
+                request = request_controller.get(input_item)
                 dataset = request.get_dataset()
 
             if dataset in dataset_blacklist:
-                raise Exception(f'Input dataset {input_dataset} is not '
+                raise Exception(f'Input dataset {input_item} is not '
                                 f'allowed because {dataset} is in blacklist')
 
         dataset_info = {x['dataset']: x['dataset_access_type'] for x in dbs_datasetlist(datasets)}
@@ -146,7 +151,7 @@ class TicketController(ControllerBase):
         editing_info['notes'] = True
         editing_info['steps'] = []
         not_done = status != 'done'
-        editing_info['input_datasets'] = not_done
+        editing_info['input'] = not_done
         editing_info['__steps'] = not_done
         for step_index, _ in enumerate(obj.get('steps')):
             editing_info['steps'].append({'subcampaign': step_index > 0 and not_done,
@@ -177,7 +182,7 @@ class TicketController(ControllerBase):
             self.check_input(ticket)
             self.check_steps(ticket)
             try:
-                for input_dataset in ticket.get('input_datasets'):
+                for input_item in ticket.get('input'):
                     last_request_prepid = None
                     for step_index, step in enumerate(ticket.get('steps')):
                         subcampaign_name = step['subcampaign']
@@ -190,19 +195,22 @@ class TicketController(ControllerBase):
                                                       'request': ''}}
 
                         if step_index == 0:
-                            new_request_json['input']['dataset'] = input_dataset
+                            if ModelBase.dataset_check(input_item):
+                                new_request_json['input']['dataset'] = input_item
+                            elif ModelBase.request_id_check(input_item):
+                                new_request_json['input']['request'] = input_item
                         else:
                             new_request_json['input']['request'] = last_request_prepid
 
                         try:
-                            runs = request_controller.get_runs(subcampaign_name, input_dataset)
+                            runs = request_controller.get_runs(subcampaign_name, input_item)
                             new_request_json['runs'] = runs
                             lumis = request_controller.get_lumisections(subcampaign_name, runs)
                             new_request_json['lumisections'] = lumis
                         except Exception as ex:
                             self.logger.error('Error getting runs or lumis for %s %s: \n%s',
                                               subcampaign_name,
-                                              input_dataset,
+                                              input_item,
                                               ex)
 
                         request = request_controller.create(new_request_json)
