@@ -767,7 +767,7 @@ class RequestController(ControllerBase):
         for sequence in request.get('sequences'):
             output_datatiers.extend(sequence.get('datatier'))
 
-        output_datatiers = set(output_datatiers)
+        output_datatiers_set = set(output_datatiers)
         self.logger.info('%s output datatiers are: %s', prepid, ', '.join(output_datatiers))
         output_datasets_tree = {k: {} for k in output_datatiers}
         ignore_status = {'aborted', 'aborted-archived', 'rejected', 'rejected-archived', 'failed'}
@@ -782,7 +782,7 @@ class RequestController(ControllerBase):
                 output_dataset_datatier = output_dataset_parts[-1]
                 output_dataset_no_datatier = '/'.join(output_dataset_parts[:-1])
                 output_dataset_no_version = '-'.join(output_dataset_no_datatier.split('-')[:-1])
-                if output_dataset_datatier in output_datatiers:
+                if output_dataset_datatier in output_datatiers_set:
                     datatier_tree = output_datasets_tree[output_dataset_datatier]
                     if output_dataset_no_version not in datatier_tree:
                         datatier_tree[output_dataset_no_version] = []
@@ -801,21 +801,8 @@ class RequestController(ControllerBase):
 
         def tier_level_comparator(dataset):
             dataset_tier = dataset.split('/')[-1:][0]
-            # DQMIO priority is the lowest because it does not produce any
-            # events and is used only for some statistical reasons
-            tier_priority = ['DQM',
-                             'DQMIO',
-                             'USER',
-                             'ALCARECO',
-                             'RAW',
-                             'RECO',
-                             'AOD',
-                             'MINIAOD',
-                             'NANOAOD']
-
-            for (priority, tier) in enumerate(tier_priority):
-                if tier == dataset_tier:
-                    return priority
+            if dataset_tier in output_datatiers_set:
+                return output_datatiers.index(dataset_tier)
 
             return -1
 
