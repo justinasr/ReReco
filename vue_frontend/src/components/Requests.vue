@@ -611,10 +611,10 @@ export default {
 }
 
 .zebra-datasets > li:nth-child(2n) > div {
-    background: #f5f5fc;
-    background: linear-gradient(90deg, #f5f5fc 0%, rgba(0,212,255,0) 100%);
-    padding-left: 24px;
-    margin-left: -24px;
+  background: #f5f5fc;
+  background: linear-gradient(90deg, #f5f5fc 0%, rgba(0,212,255,0) 100%);
+  padding-left: 24px;
+  margin-left: -24px;
 }
 
 </style>
