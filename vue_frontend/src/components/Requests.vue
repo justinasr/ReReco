@@ -335,11 +335,14 @@ export default {
           item.niceTotalEvents = item.total_events.toLocaleString('en-US');
           item.niceCompletedEvents = item.completed_events.toLocaleString('en-US');
           if (item.workflows && item.workflows.length) {
-            item.workflows[item.workflows.length - 1].output_datasets.forEach(ds => {
-              ds.datatier = ds.name.split('/').pop();
-              ds.completed = (item.total_events > 0 ? (ds.events / item.total_events * 100) : 0).toFixed(2);
-              ds.niceEvents = ds.events.toLocaleString('en-US');
-            })
+            const lastWorkflow = item.workflows[item.workflows.length - 1];
+            if (lastWorkflow.output_datasets) {
+              lastWorkflow.output_datasets.forEach(ds => {
+                ds.datatier = ds.name.split('/').pop();
+                ds.completed = (item.total_events > 0 ? (ds.events / item.total_events * 100) : 0).toFixed(2);
+                ds.niceEvents = ds.events.toLocaleString('en-US');
+              });
+            }
           }
         })
         component.totalItems = response.data.response.total_rows;
