@@ -33,6 +33,7 @@
               <a @click="updateWorkflows(item)" v-if="role('administrator') && item.status == 'submitted' && !isDev" title="Update request information from Stats2">Update from Stats2</a>
               <a @click="optionReset(item)" v-if="role('manager') && item.status == 'new'" :title="'Refetch values from ' + item.subcampaign + ' subcampaign'">Option reset</a>
               <a target="_blank" :href="'https://cms-pdmv.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done' && !isDev" title="Show workflows of this request in Stats2">Stats2</a>
+              <a :href="'tickets?created_requests=' + item.prepid" title="Show ticket that was used to create this request">Ticket</a>
             </div>
           </template>
           <template v-slot:item.history="{ item }">
