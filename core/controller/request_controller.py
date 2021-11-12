@@ -233,7 +233,12 @@ class RequestController(ControllerBase):
         command += config_cache_lite_setup(reuse_files=for_submission)
         # Upload command will be identical for all configs
         command += '\n'
-        common_upload_part = ('\npython config_uploader.py --file $(pwd)/%s.py --label %s '
+        # Get python version from cmsDriver.py
+        command += 'PYTHON_INT="python"\n'
+        command += 'if [[ $(head -n 1 `which cmsDriver.py`) =~ "python3" ]]; then\n'
+        command += '  PYTHON_INT="python3"\n'
+        command += 'fi\n'
+        common_upload_part = ('\n$PYTHON_INT config_uploader.py --file $(pwd)/%s.py --label %s '
                               f'--group ppd --user $(echo $USER) --db {database_url} || exit $?')
         for configs in request.get_config_file_names():
             # Run config uploader
