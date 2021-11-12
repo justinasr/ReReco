@@ -27,6 +27,16 @@ class Sequence(ModelBase):
         'eventcontent': [],
         # Freeform attributes appended at the end
         'extra': '',
+        # GPU parameters
+        'gpu': {
+            'requires': 'forbidden',
+            'gpu_memory': '',
+            'cuda_capabilities': [],
+            'cuda_runtime': '',
+            'gpu_name': '',
+            'cuda_driver_version': '',
+            'cuda_runtime_version': ''
+        },
         # Hash of harvesting configuration file uploaded to ReqMgr2
         'harvesting_config_id': '',
         # How many threads should CMSSW use
@@ -56,6 +66,11 @@ class Sequence(ModelBase):
                                           'NANOEDMAOD',
                                           'ALCARECO',
                                           'RECO'},
+        '_gpu': {
+            'requires': lambda r: r in ('forbidden', 'optional', 'required'),
+            'cuda_capabilities': lambda l: isinstance(l, list),
+            'gpu_memory': lambda m: m == '' or int(m) > 0,
+        },
         'harvesting_config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
         'nThreads': lambda n: 0 < n < 64,
         'scenario': lambda s: s in {'pp', 'cosmics', 'nocoll', 'HeavyIons'},
@@ -69,6 +84,12 @@ class Sequence(ModelBase):
 
     def __init__(self, json_input=None, parent=None, check_attributes=True):
         self.parent = None
+        if json_input:
+            if json_input.get('gpu', {}).get('requires') not in ('optional', 'required'):
+                json_input['gpu'] = self.schema().get('gpu')
+                json_input['gpu']['requires'] = 'forbidden'
+                json_input['gpu_steps'] = []
+
         ModelBase.__init__(self, json_input, check_attributes)
         if parent:
             self.parent = weakref.ref(parent)
@@ -203,6 +224,7 @@ class Sequence(ModelBase):
         arguments_dict = dict(self.get_json())
         # Delete sequence metadata
         arguments_dict.pop('config_id', None)
+        arguments_dict.pop('gpu', None)
         arguments_dict.pop('harvesting_config_id', None)
 
         # Fetch list of files for specific runs
@@ -286,8 +308,8 @@ class Sequence(ModelBase):
 
         arguments_dict = dict(self.get_json())
         # Delete sequence metadata
-        for attr in ('config_id', 'harvesting_config_id', 'customise', 'datatier',
-                     'eventcontent', 'nThreads', 'extra'):
+        for attr in ('config_id', 'gpu', 'harvesting_config_id', 'customise',
+                     'datatier', 'eventcontent', 'nThreads', 'extra'):
             arguments_dict.pop(attr, None)
 
         # Get correct configuration of DQM step, e.g.
@@ -332,3 +354,25 @@ class Sequence(ModelBase):
             return ''
 
         return f'{eventcontent[0]}output'
+
+    def get_gpu_requires(self):
+        """
+        Return whether GPU is required, optional of forbidden
+        """
+        return self.get('gpu')['requires']
+
+    def get_gpu_dict(self):
+        """
+        Return a dictionary with GPU parameters for ReqMgr2
+        """
+        gpu_info = self.get('gpu')
+        keys = {'cuda_capabilities': 'CUDACapabilities',
+                'cuda_runtime': 'CUDARuntime',
+                'gpu_name': 'GPUName',
+                'cuda_driver_version': 'CUDADriverVersion',
+                'cuda_runtime_version': 'CUDARuntimeVersion'}
+        params = {key: gpu_info[attr] for attr, key in keys.items() if gpu_info.get(attr)}
+        if gpu_info.get('gpu_memory'):
+            params['GPUMemoryMB'] = int(gpu_info['gpu_memory'])
+
+        return params

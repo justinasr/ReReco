@@ -38,35 +38,35 @@
           <td>Runs ({{cleanSplit(editingObject.runs).length}})</td>
           <td><textarea v-model="editingObject.runs"></textarea></td>
         </tr>
-        <tr>
+        <tr v-if="editingObject.sequences">
           <td>Sequences ({{listLength(editingObject.sequences)}})</td>
           <td>
             <div v-for="(sequence, index) in editingObject.sequences" :key="index">
               <h3>Sequence {{index + 1}}</h3>
               <table v-if="!sequence.deleted">
                 <tr>
-                  <td>conditions</td><td><input type="text" v-model="sequence.conditions"></td>
+                  <td>--conditions</td><td><input type="text" v-model="sequence.conditions"></td>
                 </tr>
                 <tr>
-                  <td>customise</td><td><input type="text" v-model="sequence.customise"></td>
+                  <td>--customise</td><td><input type="text" v-model="sequence.customise"></td>
                 </tr>
                 <tr>
-                  <td>datatier</td><td><input type="text" v-model="sequence.datatier"></td>
+                  <td>--datatier</td><td><input type="text" v-model="sequence.datatier"></td>
                 </tr>
                 <tr>
-                  <td>era</td><td><input type="text" v-model="sequence.era"></td>
+                  <td>--era</td><td><input type="text" v-model="sequence.era"></td>
                 </tr>
                 <tr>
-                  <td>eventcontent</td><td><input type="text" v-model="sequence.eventcontent"></td>
+                  <td>--eventcontent</td><td><input type="text" v-model="sequence.eventcontent"></td>
                 </tr>
                 <tr>
-                  <td>extra</td><td><input type="text" v-model="sequence.extra"></td>
+                  <td>--extra</td><td><input type="text" v-model="sequence.extra"></td>
                 </tr>
                 <tr>
-                  <td>nThreads</td><td><input type="number" v-model="sequence.nThreads"></td>
+                  <td>--nThreads</td><td><input type="number" v-model="sequence.nThreads"></td>
                 </tr>
                 <tr>
-                  <td>scenario</td>
+                  <td>--scenario</td>
                   <td>
                     <select v-model="sequence.scenario">
                       <option>pp</option>
@@ -77,7 +77,48 @@
                   </td>
                 </tr>
                 <tr>
-                  <td>step</td><td><input type="text" v-model="sequence.step"></td>
+                  <td>--step</td><td><input type="text" v-model="sequence.step"></td>
+                </tr>
+                <tr>
+                  <td>GPU</td>
+                  <td>
+                    <!-- <select v-model="sequence.gpu.requires">
+                      <option>forbidden</option>
+                      <option>optional</option>
+                      <option>required</option>
+                    </select> -->
+                  </td>
+                </tr>
+                <tr v-if="sequence.gpu.requires != 'forbidden'">
+                  <td>GPU Parameters</td>
+                  <td>
+                    <table>
+                      <tr>
+                        <td>GPU Memory</td>
+                        <td><input type="number" v-model="sequence.gpu.gpu_memory" min="0" max="32000" step="1000">MB</td>
+                      </tr>
+                      <tr>
+                        <td>CUDA Capabilities</td>
+                        <td><input type="text" v-model="sequence.gpu.cuda_capabilities" placeholder="E.g. 6.0,6.1,6.2"></td>
+                      </tr>
+                      <tr>
+                        <td>CUDA Runtime</td>
+                        <td><input type="text" v-model="sequence.gpu.cuda_runtime"></td>
+                      </tr>
+                      <tr>
+                        <td>GPU Name</td>
+                        <td><input type="text" v-model="sequence.gpu.gpu_name"></td>
+                      </tr>
+                      <tr>
+                        <td>CUDA Driver Version</td>
+                        <td><input type="text" v-model="sequence.gpu.cuda_driver_version"></td>
+                      </tr>
+                      <tr>
+                        <td>CUDA Runtime Version</td>
+                        <td><input type="text" v-model="sequence.gpu.cuda_runtime_version"></td>
+                      </tr>
+                    </table>
+                  </td>
                 </tr>
               </table>
               <span v-if="sequence.deleted">
@@ -129,7 +170,16 @@
             <div v-for="(sequence, index) in value" :key="index">
               <template v-if="!sequence.deleted">
                 <div v-for="(sequenceValue, sequenceKey) in sequence" :key="sequenceKey">
-                  <template v-if="sequenceKey != 'deleted'">
+                  <template v-if="['gpu'].includes(sequenceKey)">
+                    <li v-for="(driverValue, driverKey) in sequenceValue" :key="driverKey">
+                      <b>{{driverKey}}</b> in <b>Sequence {{index + 1}}</b> will be set to <b>{{driverValue}}</b>
+                      <v-btn small
+                             class="ml-1 mb-1"
+                             color="error"
+                             @click="editingObject.sequences[index][sequenceKey][driverKey] = originalEditingObject.sequences[index][sequenceKey][driverKey]">Remove edit</v-btn>
+                    </li>
+                  </template>
+                  <template v-if="!['deleted', 'gpu'].includes(sequenceKey)">
                     <li>
                       <b>{{sequenceKey}}</b> in <b>Sequence {{index + 1}}</b> will be set to <b>{{sequenceValue}}</b>
                       <v-btn small
@@ -258,10 +308,16 @@ export default {
         for (let i = 0; i < ref.sequences.length; i++) {
           let refSeq = ref.sequences[i];
           let tarSeq = tar.sequences[i];
-          let seqDiff = {'deleted': tarSeq.deleted};
+          let seqDiff = {'deleted': tarSeq.deleted, 'gpu': {}};
           sequencesDiffs.push(seqDiff);
           for (let key of Object.keys(refSeq)) {
-            if (refSeq[key] != tarSeq[key]) {
+            if (['gpu'].includes(key)) {
+              for (let driverKey of Object.keys(refSeq[key])) {
+                if (refSeq[key][driverKey] != tarSeq[key][driverKey]) {
+                  seqDiff[key][driverKey] = tarSeq[key][driverKey];
+                }
+              }
+            } else if (refSeq[key] != tarSeq[key]) {
               if (key == 'nThreads') {
                 seqDiff[key] = parseInt(tarSeq[key]);
               } else {
@@ -298,6 +354,7 @@ export default {
         sequence.datatier = sequence.datatier.join(',');
         sequence.eventcontent = sequence.eventcontent.join(',');
         sequence.step = sequence.step.join(',');
+        sequence.gpu.cuda_capabilities = sequence.gpu.cuda_capabilities.join(',');
       }
     },
     prepareObjectForSaving: function(obj) {
@@ -308,6 +365,7 @@ export default {
         sequence.datatier = this.cleanSplit(sequence.datatier);
         sequence.eventcontent = this.cleanSplit(sequence.eventcontent);
         sequence.step = this.cleanSplit(sequence.step);
+        sequence.gpu.cuda_capabilities = this.cleanSplit(sequence.gpu.cuda_capabilities);
       }
     },
     jsonDiff: function(obj1, obj2) {
@@ -330,12 +388,20 @@ export default {
       // Sequences
       editingObject.sequences = Array(Math.min(...requests.map(x => x.sequences.length)));
       for (let i = 0; i < editingObject.sequences.length; i++) {
-        editingObject.sequences[i] = {'deleted': false};
+        editingObject.sequences[i] = {'deleted': false, 'gpu': {}};
       }
       // Sequence attributes
       for (let key of Object.keys(requests[0].sequences[0])) {
-        for (let i = 0; i < editingObject.sequences.length; i++) {
-          editingObject.sequences[i][key] = this.getCommonValue(requests, (r) => r.sequences[i][key]);
+        if (['gpu'].includes(key)) {
+          for (let i = 0; i < editingObject.sequences.length; i++) {
+            for (let driverKey of Object.keys(requests[0].sequences[i][key])) {
+              editingObject.sequences[i][key][driverKey] = this.getCommonValue(requests, (r) => r.sequences[i][key][driverKey]);
+            }
+          }
+        } else {
+          for (let i = 0; i < editingObject.sequences.length; i++) {
+            editingObject.sequences[i][key] = this.getCommonValue(requests, (r) => r.sequences[i][key]);
+          }
         }
       }
       // Time per event and size per event
@@ -361,7 +427,11 @@ export default {
               } else {
                 let objSeq = obj.sequences[seqIndex];
                 for (let seqKey of Object.keys(diffSeq)) {
-                  if (seqKey != 'deleted') {
+                  if (['gpu'].includes(seqKey)) {
+                    for (let driverKey of Object.keys(diffSeq[seqKey])) {
+                      objSeq[seqKey][driverKey] = diffSeq[seqKey][driverKey];
+                    }
+                  } else if (seqKey != 'deleted') {
                     objSeq[seqKey] = diffSeq[seqKey];
                   }
                 }

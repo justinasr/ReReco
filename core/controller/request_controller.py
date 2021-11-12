@@ -331,6 +331,10 @@ class RequestController(ControllerBase):
                 if sequence.get('harvesting_config_id'):
                     job_dict['DQMConfigCacheID'] = sequence.get('harvesting_config_id')
 
+            if sequence.get_gpu_requires() != 'forbidden':
+                task_dict['GPUParams'] = json.dumps(sequence.get_gpu_dict(), sort_keys=True)
+                task_dict['RequiresGPU'] = sequence.get_gpu_requires()
+
             job_dict[f'Task{index + 1}'] = task_dict
 
         job_dict['TaskChain'] = len(sequences)
@@ -373,6 +377,10 @@ class RequestController(ControllerBase):
             job_dict['EnableHarvesting'] = True
             if sequence.get('harvesting_config_id'):
                 job_dict['DQMConfigCacheID'] = sequence.get('harvesting_config_id')
+
+        if sequence.get_gpu_requires() != 'forbidden':
+            job_dict['GPUParams'] = json.dumps(sequence.get_gpu_dict(), sort_keys=True)
+            job_dict['RequiresGPU'] = sequence.get_gpu_requires()
 
         self.logger.debug('Returning %s single task dict: %s', request.get_prepid(), job_dict)
         return job_dict

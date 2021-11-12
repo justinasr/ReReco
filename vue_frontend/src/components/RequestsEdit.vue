@@ -78,28 +78,28 @@
               <h3>Sequence {{index + 1}}</h3>
               <table>
                 <tr>
-                  <td>conditions</td><td><input type="text" v-model="sequence.conditions" :disabled="!editingInfo.sequences"></td>
+                  <td>--conditions</td><td><input type="text" v-model="sequence.conditions" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>customise</td><td><input type="text" v-model="sequence.customise" :disabled="!editingInfo.sequences"></td>
+                  <td>--customise</td><td><input type="text" v-model="sequence.customise" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>datatier</td><td><input type="text" v-model="sequence.datatier" :disabled="!editingInfo.sequences"></td>
+                  <td>--datatier</td><td><input type="text" v-model="sequence.datatier" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>era</td><td><input type="text" v-model="sequence.era" :disabled="!editingInfo.sequences"></td>
+                  <td>--era</td><td><input type="text" v-model="sequence.era" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>eventcontent</td><td><input type="text" v-model="sequence.eventcontent" :disabled="!editingInfo.sequences"></td>
+                  <td>--eventcontent</td><td><input type="text" v-model="sequence.eventcontent" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>extra</td><td><input type="text" v-model="sequence.extra" :disabled="!editingInfo.sequences"></td>
+                  <td>--extra</td><td><input type="text" v-model="sequence.extra" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>nThreads</td><td><input type="number" v-model="sequence.nThreads" :disabled="!editingInfo.sequences"></td>
+                  <td>--nThreads</td><td><input type="number" v-model="sequence.nThreads" :disabled="!editingInfo.sequences"></td>
                 </tr>
                 <tr>
-                  <td>scenario</td>
+                  <td>--scenario</td>
                   <td>
                     <select v-model="sequence.scenario" :disabled="!editingInfo.sequences">
                       <option>pp</option>
@@ -110,7 +110,48 @@
                   </td>
                 </tr>
                 <tr>
-                  <td>step</td><td><input type="text" v-model="sequence.step" :disabled="!editingInfo.sequences"></td>
+                  <td>--step</td><td><input type="text" v-model="sequence.step" :disabled="!editingInfo.sequences"></td>
+                </tr>
+                <tr>
+                  <td>GPU</td>
+                  <td>
+                    <select v-model="sequence.gpu.requires" :disabled="!editingInfo.sequences">
+                      <option>forbidden</option>
+                      <option>optional</option>
+                      <option>required</option>
+                    </select>
+                  </td>
+                </tr>
+                <tr v-if="sequence.gpu.requires != 'forbidden'">
+                  <td>GPU Parameters</td>
+                  <td>
+                    <table>
+                      <tr>
+                        <td>GPU Memory</td>
+                        <td><input type="number" v-model="sequence.gpu.gpu_memory" :disabled="!editingInfo.sequences" min="0" max="32000" step="1000">MB</td>
+                      </tr>
+                      <tr>
+                        <td>CUDA Capabilities</td>
+                        <td><input type="text" v-model="sequence.gpu.cuda_capabilities" placeholder="E.g. 6.0,6.1,6.2" :disabled="!editingInfo.sequences"></td>
+                      </tr>
+                      <tr>
+                        <td>CUDA Runtime</td>
+                        <td><input type="text" v-model="sequence.gpu.cuda_runtime" :disabled="!editingInfo.sequences"></td>
+                      </tr>
+                      <tr>
+                        <td>GPU Name</td>
+                        <td><input type="text" v-model="sequence.gpu.gpu_name" :disabled="!editingInfo.sequences"></td>
+                      </tr>
+                      <tr>
+                        <td>CUDA Driver Version</td>
+                        <td><input type="text" v-model="sequence.gpu.cuda_driver_version" :disabled="!editingInfo.sequences"></td>
+                      </tr>
+                      <tr>
+                        <td>CUDA Runtime Version</td>
+                        <td><input type="text" v-model="sequence.gpu.cuda_runtime_version" :disabled="!editingInfo.sequences"></td>
+                      </tr>
+                    </table>
+                  </td>
                 </tr>
               </table>
               <v-btn small
