@@ -51,21 +51,11 @@ class Sequence(ModelBase):
     lambda_checks = {
         'conditions': lambda c: ModelBase.matches_regex(c, '[a-zA-Z0-9_]{0,50}'),
         'config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
-        '__datatier': lambda s: s in {'AOD',
-                                      'MINIAOD',
-                                      'NANOAOD',
-                                      'DQMIO',
-                                      'USER',
-                                      'ALCARECO',
-                                      'RECO'},
+        '__datatier': lambda s: s in {'ALCARECO', 'AOD', 'DQMIO', 'MINIAOD',
+                                      'NANOAOD', 'RECO', 'USER'},
         'era': lambda e: ModelBase.matches_regex(e, '[a-zA-Z0-9_\\,]{0,50}'),
-        '__eventcontent': lambda s: s in {'AOD',
-                                          'MINIAOD',
-                                          'NANOAOD',
-                                          'DQM',
-                                          'NANOEDMAOD',
-                                          'ALCARECO',
-                                          'RECO'},
+        '__eventcontent': lambda s: s in {'ALCARECO', 'AOD', 'DQM', 'MINIAOD',
+                                          'NANOAOD', 'NANOEDMAOD', 'RECO'},
         '_gpu': {
             'requires': lambda r: r in ('forbidden', 'optional', 'required'),
             'cuda_capabilities': lambda l: isinstance(l, list),
@@ -74,12 +64,9 @@ class Sequence(ModelBase):
         'harvesting_config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
         'nThreads': lambda n: 0 < n < 64,
         'scenario': lambda s: s in {'pp', 'cosmics', 'nocoll', 'HeavyIons'},
-        '__step': lambda s: (s in {'RAW2DIGI', 'L1Reco', 'RECO', 'EI', 'PAT', 'NANO'} or
-                             s.startswith('ALCA') or
-                             s.startswith('DQM') or
-                             s.startswith('SKIM') or
-                             s.startswith('HARVESTING:@') or
-                             s.startswith('FILTER'))
+        '__step': lambda s: (s.split(':')[0] in {'ALCA', 'DQM', 'EI', 'FILTER', 'HARVESTING',
+                                                 'L1Reco', 'NANO', 'PAT', 'RAW2DIGI', 'RECO',
+                                                 'SKIM'})
     }
 
     def __init__(self, json_input=None, parent=None, check_attributes=True):
