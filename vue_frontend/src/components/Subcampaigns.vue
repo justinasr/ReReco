@@ -53,6 +53,23 @@
           <template v-slot:item.runs_json_path="{ item }">
             <a target="_blank" :href="'https://cms-service-dqmdc.web.cern.ch/CAF/certification/' + item.runs_json_path" title="Open JSON file with runs list">{{item.runs_json_path}}</a>
           </template>
+          <template v-slot:item._gpu="{ item }">
+            <ul style="padding-left: 0; list-style: none;">
+              <li v-for="(sequence, index) in item.sequences" :key="index">
+                <template v-if="sequenceSteps(sequence)">
+                  {{sequenceSteps(sequence)}}: {{sequence.gpu.requires}}
+                  <ul v-if="sequence.gpu.requires != 'forbidden'">
+                    <li v-if="sequence.gpu.gpu_memory">GPUMemory: {{sequence.gpu.gpu_memory}} MB</li>
+                    <li v-if="sequence.gpu.cuda_capabilities.length">CUDACapabilities: {{sequence.gpu.cuda_capabilities.join(',')}}</li>
+                    <li v-if="sequence.gpu.cuda_runtime">CUDARuntime: {{sequence.gpu.cuda_runtime}}</li>
+                    <li v-if="sequence.gpu.gpu_name">GPUName: {{sequence.gpu.gpu_name}}</li>
+                    <li v-if="sequence.gpu.cuda_driver_version">CUDADriverVersion: {{sequence.gpu.cuda_driver_version}}</li>
+                    <li v-if="sequence.gpu.cuda_runtime_version">CUDARuntimeVersion: {{sequence.gpu.cuda_runtime_version}}</li>
+                  </ul>
+                </template>
+              </li>
+            </ul>
+          </template>
         </v-data-table>
       </div>
     </div>
@@ -135,6 +152,7 @@ export default {
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 1, 'sortable': true},
         {'dbName': 'memory', 'displayName': 'Memory', 'visible': 1, 'sortable': true},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
+        {'dbName': '_gpu', 'displayName': 'GPU', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0, 'sortable': true},
         {'dbName': 'runs_json_path', 'displayName': 'Runs JSON', 'visible': 0, 'sortable': true},
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
@@ -285,6 +303,9 @@ export default {
     },
     getCampaign: function(prepid) {
       return prepid.split('-').filter(Boolean)[0];
+    },
+    sequenceSteps: function(sequence) {
+      return sequence.step.map(x => x.split(':')[0]).join(',')
     }
   }
 }

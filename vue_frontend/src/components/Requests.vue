@@ -129,6 +129,23 @@
           <template v-slot:item.lumisections="{ item }">
             <pre><small>{{stringifyLumis(item.lumisections)}}</small></pre>
           </template>
+          <template v-slot:item._gpu="{ item }">
+            <ul style="padding-left: 0; list-style: none;">
+              <li v-for="(sequence, index) in item.sequences" :key="index">
+                <template v-if="sequenceSteps(sequence)">
+                  {{sequenceSteps(sequence)}}: {{sequence.gpu.requires}}
+                  <ul v-if="sequence.gpu.requires != 'forbidden'">
+                    <li v-if="sequence.gpu.gpu_memory">GPUMemory: {{sequence.gpu.gpu_memory}} MB</li>
+                    <li v-if="sequence.gpu.cuda_capabilities.length">CUDACapabilities: {{sequence.gpu.cuda_capabilities.join(',')}}</li>
+                    <li v-if="sequence.gpu.cuda_runtime">CUDARuntime: {{sequence.gpu.cuda_runtime}}</li>
+                    <li v-if="sequence.gpu.gpu_name">GPUName: {{sequence.gpu.gpu_name}}</li>
+                    <li v-if="sequence.gpu.cuda_driver_version">CUDADriverVersion: {{sequence.gpu.cuda_driver_version}}</li>
+                    <li v-if="sequence.gpu.cuda_runtime_version">CUDARuntimeVersion: {{sequence.gpu.cuda_runtime_version}}</li>
+                  </ul>
+                </template>
+              </li>
+            </ul>
+          </template>
         </v-data-table>
       </div>
     </div>
@@ -223,6 +240,7 @@ export default {
         {'dbName': 'cmssw_release', 'displayName': 'CMSSW Release', 'visible': 0, 'sortable': true},
         {'dbName': 'completed_events', 'displayName': 'Completed Events', 'visible': 0, 'sortable': true},
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0, 'sortable': true},
+        {'dbName': '_gpu', 'displayName': 'GPU', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0, 'sortable': true},
         {'dbName': 'memory', 'displayName': 'Memory', 'visible': 0, 'sortable': true},
         {'dbName': 'lumisections', 'displayName': 'Lumisections', 'visible': 0},
@@ -561,6 +579,9 @@ export default {
       let prepids = requests.map(x => x['prepid']);
       window.location = 'tickets/edit?input_requests=' + prepids.join(',');
     },
+    sequenceSteps: function(sequence) {
+      return sequence.step.map(x => x.split(':')[0]).join(',')
+    }
   }
 }
 </script>
