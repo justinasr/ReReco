@@ -248,6 +248,14 @@ If these steps already have specification as `:ABC`, they will be left as is, e.
 - Era (`era`) - cmsDriver.py argument `--era`
 - Eventcontent (`eventcontent`) - cmsDriver.py argument `--eventcontent`, list of comma separated event contents
 - Extra (`extra`) - additional arguments that will be added to the end of built cmsDriver command, e.g. `--runUnscheduled` or `--data`
+- GPU (gpu.requires) - indicate whether GPU parameters should be added to Job Dict. Possible values: forbidden, optional, required
+- GPU Parameters (more info: https://github.com/dmwm/WMCore/wiki/GPU-Support#gpu-parameter-specification):
+  - GPU Memory (gpu.gpu_memory) - memory in MB
+  - CUDA Capabilities (gpu.cuda_capabilities) - comma separated values
+  - CUDA Runtime (gpu.cuda_runtime) - ?
+  - GPU Name (gpu.gpu_name) - ?
+  - CUDA Driver Version (gpu.cuda_driver_version) - ?
+  - CUDA Runtime Version (gpu.cuda_runtime_version) - ?
 - nThreads (`nThreads`) - cmsDriver.py argument `--nThreads`, number of CPU cores to use in production
 - Scenario (`scenario`) - cmsDriver.py argument `--scenario`, one of predefined values: `pp`, `cosmics`, `nocoll` or `HeavyIons`
 - Step (`step`) - cmsDriver.py argument `--step`, list of comma separated steps
