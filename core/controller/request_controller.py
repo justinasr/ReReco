@@ -196,7 +196,13 @@ class RequestController(ControllerBase):
         """
         self.logger.debug('Getting cmsDriver commands for %s', request.get_prepid())
         cms_driver = '#!/bin/bash\n\n'
-        cms_driver += cmssw_setup(request.get('cmssw_release'), reuse=for_submission)
+        if for_submission:
+            cms_driver += '\ncd $WORKSPACE_DIR\n'
+
+        cms_driver += cmssw_setup(request.get('cmssw_release'))
+        if for_submission:
+            cms_driver += '\ncd $REQUEST_DIR\n'
+
         cms_driver += '\n\n'
         if for_submission:
             cms_driver += request.get_cmsdrivers('_placeholder_.root')
@@ -227,10 +233,16 @@ class RequestController(ControllerBase):
 
         # Set up CMSSW environment
         command += '\n\n'
-        command += cmssw_setup(request.get('cmssw_release'), reuse=for_submission)
+        if for_submission:
+            command += '\ncd $WORKSPACE_DIR\n'
+
+        command += cmssw_setup(request.get('cmssw_release'))
         # Use ConfigCacheLite and TweakMakerLite instead of WMCore
         command += '\n\n'
-        command += config_cache_lite_setup(reuse_files=for_submission)
+        command += config_cache_lite_setup()
+        if for_submission:
+            command += '\ncd $REQUEST_DIR\n'
+
         # Upload command will be identical for all configs
         command += '\n'
         # Get python version from cmsDriver.py
