@@ -674,6 +674,7 @@ class RequestController(ControllerBase):
             sequence.set('config_id', '')
             sequence.set('harvesting_config_id', '')
 
+        request.set('output_datasets', [])
         self.update_status(request, 'approved')
         return request
 
