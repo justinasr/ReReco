@@ -114,7 +114,7 @@
                       <small>events:</small> {{dataset.niceEvents}},
                       <small>type:</small> <b :class="dataset.type.toLowerCase() + '-type'">{{dataset.type}}</b>
                       <br>
-                      <a target="_blank" title="Open dataset in DAS" :href="makeDASLink(dataset.name)">{{dataset.name}}</a>
+                      <small style="letter-spacing: -0.1px"><a target="_blank" title="Open dataset in DAS" :href="makeDASLink(dataset.name)">{{dataset.name}}</a></small>
                     </div>
                   </li>
                 </ul>
@@ -633,6 +633,15 @@ export default {
 
 .none-type {
   color: #8A8A8A;
+}
+
+.zebra-datasets {
+  margin-top: -5px;
+}
+.zebra-datasets > li > div {
+  padding-top: 5px;
+  padding-bottom: 5px;
+  line-height: 1;
 }
 
 .zebra-datasets > li:nth-child(2n) > div {

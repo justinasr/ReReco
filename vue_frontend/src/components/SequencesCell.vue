@@ -19,7 +19,8 @@
     },
     methods: {
       sequenceKeys: function(sequence) {
-        return Object.keys(sequence).filter(s => sequence[s] != '' && sequence[s] !== false && s != 'config_id' && s != 'harvesting_config_id');
+        const ignore = ['config_id', 'harvesting_config_id', 'gpu'];
+        return Object.keys(sequence).filter(s => sequence[s] != '' && sequence[s] !== false && !ignore.includes(s));
       },
       sequenceKey: function(key) {
         return key == 'extra' ? '' : ('--' + key);
@@ -39,6 +40,14 @@
 .monospace {
   font-family: monospace;
   font-size: 0.9em;
+}
+
+li {
+  margin-bottom: -4px;
+}
+
+ul {
+  margin-bottom: 4px;
 }
 
 </style>
