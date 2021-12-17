@@ -45,6 +45,7 @@ class SubcampaignController(ControllerBase):
         editing_info['memory'] = True
         editing_info['runs_json_path'] = True
         editing_info['cmssw_release'] = True
+        editing_info['enable_harvesting'] = True
 
         return editing_info
 

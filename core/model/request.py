@@ -22,6 +22,8 @@ class Request(ModelBase):
         'cmssw_release': '',
         # Completed events
         'completed_events': 0,
+        # Automatically add harvesting driver if sequence has DQM step
+        'enable_harvesting': True,
         # Energy in TeV
         'energy': 0.0,
         # Action history

@@ -18,6 +18,8 @@ class Subcampaign(ModelBase):
         'prepid': '',
         # CMSSW version
         'cmssw_release': '',
+        # Automatically add harvesting driver if sequence has DQM step
+        'enable_harvesting': True,
         # Energy in TeV
         'energy': 0.0,
         # Action history

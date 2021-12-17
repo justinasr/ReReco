@@ -114,6 +114,10 @@ class Sequence(ModelBase):
         Return if this sequence produces input file for harvesting
         and harvesting step is needed
         """
+        if self.parent and not self.parent().get('enable_harvesting'):
+            # Parent request has harvesting disabled
+            return False
+
         for step in self.get('step'):
             if step == 'DQM' or step.startswith('DQM:'):
                 return True

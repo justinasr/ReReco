@@ -57,6 +57,18 @@ export const utilsMixin = {
         outputLines = '\n' + outputLines.trimRight().slice(0, -1) + '\n';
       }
       return '{' + outputLines + '}';
+    },
+    hasStep: function(obj, step) {
+      for (let seq of obj.sequences) {
+        let steps = seq.step;
+        if (steps instanceof String) {
+          steps = steps.split(',').map(x => x.split(':')[0]);
+        }
+        if (steps.includes(step)) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 }

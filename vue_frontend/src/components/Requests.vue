@@ -146,6 +146,9 @@
               </li>
             </ul>
           </template>
+          <template v-slot:item.enable_harvesting="{ item }">
+            {{item.enable_harvesting ? 'Yes' : 'No'}}
+          </template>
         </v-data-table>
       </div>
     </div>
@@ -239,6 +242,7 @@ export default {
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
         {'dbName': 'cmssw_release', 'displayName': 'CMSSW Release', 'visible': 0, 'sortable': true},
         {'dbName': 'completed_events', 'displayName': 'Completed Events', 'visible': 0, 'sortable': true},
+        {'dbName': 'enable_harvesting', 'displayName': 'Enable Harvesting', 'visible': 0},
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0, 'sortable': true},
         {'dbName': '_gpu', 'displayName': 'GPU', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0, 'sortable': true},
