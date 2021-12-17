@@ -9,16 +9,16 @@
           <td><input type="text" v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
         </tr>
         <tr>
+          <td>CMSSW Version</td>
+          <td><input type="text" v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
+        </tr>
+        <tr>
           <td>Enable harvesting</td>
           <td><input type="checkbox" v-model="editableObject.enable_harvesting" :disabled="!editingInfo.enable_harvesting || !hasStep(editableObject, 'DQM')"/></td>
         </tr>
         <tr>
           <td>Energy</td>
           <td><input type="number" v-model="editableObject.energy" :disabled="!editingInfo.energy">TeV</td>
-        </tr>
-        <tr>
-          <td>CMSSW Version</td>
-          <td><input type="text" v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
         </tr>
         <tr>
           <td>Input</td>
