@@ -9,6 +9,10 @@
       <h2>Values to be updated in {{prepids.length}} requests</h2>
       <table v-if="editingObject">
         <tr>
+          <td>Enable harvesting</td>
+          <td><input type="checkbox" v-model="editingObject.enable_harvesting"/></td>
+        </tr>
+        <tr>
           <td>Energy</td>
           <td><input type="number" v-model="editingObject.energy">TeV</td>
         </tr>
@@ -82,11 +86,11 @@
                 <tr>
                   <td>GPU</td>
                   <td>
-                    <!-- <select v-model="sequence.gpu.requires">
+                    <select v-model="sequence.gpu.requires">
                       <option>forbidden</option>
                       <option>optional</option>
                       <option>required</option>
-                    </select> -->
+                    </select>
                   </td>
                 </tr>
                 <tr v-if="sequence.gpu.requires != 'forbidden'">
@@ -382,7 +386,7 @@ export default {
     makeEditingObject: function(requests) {
       let editingObject = {};
       // Primitive attributes
-      for (let key of ['energy', 'cmssw_release', 'lumisections', 'memory', 'notes', 'priority', 'runs']) {
+      for (let key of ['enable_harvesting', 'energy', 'cmssw_release', 'lumisections', 'memory', 'notes', 'priority', 'runs']) {
         editingObject[key] = this.getCommonValue(requests, (r) => r[key]);
       }
       // Sequences

@@ -70,6 +70,9 @@
               </li>
             </ul>
           </template>
+          <template v-slot:item.enable_harvesting="{ item }">
+            {{item.enable_harvesting ? 'Yes' : 'No'}}
+          </template>
         </v-data-table>
       </div>
     </div>
@@ -152,6 +155,7 @@ export default {
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 1, 'sortable': true},
         {'dbName': 'memory', 'displayName': 'Memory', 'visible': 1, 'sortable': true},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
+        {'dbName': 'enable_harvesting', 'displayName': 'Enable Harvesting', 'visible': 0},
         {'dbName': '_gpu', 'displayName': 'GPU', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0, 'sortable': true},
         {'dbName': 'runs_json_path', 'displayName': 'Runs JSON', 'visible': 0, 'sortable': true},

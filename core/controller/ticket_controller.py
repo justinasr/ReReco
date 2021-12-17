@@ -1,12 +1,11 @@
 """
 Module that contains TicketController class
 """
-from flask.globals import request
-from core.model.model_base import ModelBase
 from core_lib.utils.settings import Settings
 from core_lib.database.database import Database
 from core_lib.controller.controller_base import ControllerBase
 from core_lib.utils.common_utils import dbs_datasetlist
+from core.model.model_base import ModelBase
 from core.model.ticket import Ticket
 from core.controller.request_controller import RequestController
 
