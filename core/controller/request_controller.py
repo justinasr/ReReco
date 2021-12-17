@@ -39,7 +39,6 @@ class RequestController(ControllerBase):
 
         json_data['cmssw_release'] = subcampaign.get('cmssw_release')
         json_data['subcampaign'] = subcampaign.get_prepid()
-        json_data['enable_harvesting'] = subcampaign.get('enable_harvesting')
         json_data['prepid'] = 'PlaceholderPrepID'
         new_request = Request(json_input=json_data)
         if not json_data.get('sequences'):
@@ -56,6 +55,9 @@ class RequestController(ControllerBase):
 
         if not json_data.get('energy'):
             new_request.set('energy', subcampaign.get('energy'))
+
+        if json_data.get('enable_harvesting') is None:
+            json_data['enable_harvesting'] = subcampaign.get('enable_harvesting')
 
         request_input = new_request.get('input')
         input_dataset = request_input.get('dataset')
