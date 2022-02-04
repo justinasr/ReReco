@@ -55,7 +55,8 @@ class Sequence(ModelBase):
                                       'NANOAOD', 'RECO', 'USER'},
         'era': lambda e: ModelBase.matches_regex(e, '[a-zA-Z0-9_\\,]{0,50}'),
         '__eventcontent': lambda s: s in {'ALCARECO', 'AOD', 'DQM', 'MINIAOD',
-                                          'NANOAOD', 'NANOEDMAOD', 'RECO'},
+                                          'NANOAOD', 'NANOEDMAOD', 'RECO', 'FEVT',
+                                          'FEVTDEBUG', 'FEVTDEBUGHLT'},
         '_gpu': {
             'requires': lambda r: r in ('forbidden', 'optional', 'required'),
             'cuda_capabilities': lambda l: isinstance(l, list),
