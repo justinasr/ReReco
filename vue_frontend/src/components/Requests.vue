@@ -27,7 +27,7 @@
               <a v-if="role('manager') && item.status == 'new'" @click="deleteRequest(item)" title="Delete request">Delete</a>
               <a v-if="role('manager')" :href="'requests/edit?clone=' + item.prepid" title="Clone request">Clone</a>
               <a :href="'api/requests/get_cmsdriver/' + item.prepid" title="Show cmsDriver.py command for this request">cmsDriver</a>
-              <a :href="'api/requests/get_dict/' + item.prepid" title="Show JSON dictionary for ReqMgr2">Job dict</a>
+              <a :href="'api/requests/get_dict/' + item.prepid" title="Show JSON dictionary for ReqMgr2">Job dict<b v-if="Object.keys(item.job_dict_overwrite).length > 0" style="color: red"> !</b></a>
               <a @click="previousStatus(item)" v-if="role('manager') && item.status != 'new'" title="Move to previous status">Previous</a>
               <a @click="nextStatus(item)" v-if="role('manager') && item.status != 'done'" title="Move to next status">Next</a>
               <a @click="updateWorkflows(item)" v-if="role('administrator') && item.status == 'submitted' && !isDev" title="Update request information from Stats2">Update from Stats2</a>

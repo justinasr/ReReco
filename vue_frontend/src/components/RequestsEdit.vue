@@ -50,6 +50,13 @@
           </td>
         </tr>
         <tr>
+          <td>Job Dict overwrite</td>
+          <td>
+            <span class="show-job-dict-overwrite" v-if="!showJobDictOverwrite" v-on:click="toggleJobDictOverwrite()">Edit</span>
+            <JSONField v-show="showJobDictOverwrite" v-model="editableObject.job_dict_overwrite" :disabled="!editingInfo.job_dict_overwrite"/>
+          </td>
+        </tr>
+        <tr>
           <td>Lumisections</td>
           <td>
             <JSONField v-model="editableObject.lumisections" :disabled="!editingInfo.lumisections"/>
@@ -253,6 +260,7 @@ export default {
       prepid: undefined,
       editableObject: {},
       editingInfo: {},
+      showJobDictOverwrite: false,
       loading: true,
       creatingNew: true,
       inputType: 'dataset',
@@ -287,9 +295,9 @@ export default {
           templateInfo.total_events = objectInfo.total_events;
           templateInfo.output_datasets = objectInfo.output_datasets;
           templateInfo.runs = templateInfo.runs.join('\n');
-          templateInfo.lumisections = component.stringifyLumis(templateInfo.lumisections);
           component.editableObject = templateInfo;
           component.editingInfo = editingInfo;
+          component.showJobDictOverwrite = Object.keys(component.editableObject.job_dict_overwrite) != 0;
           if (component.editableObject.input.request != '') {
             component.inputType = 'request';
           } else {
@@ -303,8 +311,8 @@ export default {
       } else {
         component.editableObject = response.data.response.object;
         component.editingInfo = response.data.response.editing_info;
+        component.showJobDictOverwrite = Object.keys(component.editableObject.job_dict_overwrite) != 0;
         objectInfo.runs = objectInfo.runs.join('\n');
-        objectInfo.lumisections = component.stringifyLumis(objectInfo.lumisections);
         if (component.editableObject.input.request != '') {
           component.inputType = 'request';
         } else {
@@ -331,7 +339,6 @@ export default {
       }
       editableObject['notes'] = editableObject['notes'].trim();
       editableObject['runs'] = this.cleanSplit(editableObject['runs']);
-      editableObject['lumisections'] = editableObject['lumisections'] ? JSON.parse(editableObject['lumisections']) : {};
       editableObject['size_per_event'] = editableObject['size_per_event'].map(x => parseFloat(x));
       editableObject['time_per_event'] = editableObject['time_per_event'].map(x => parseFloat(x));
       let httpRequest;
@@ -382,7 +389,7 @@ export default {
       this.loading = true;
       let runs = this.cleanSplit(this.editableObject.runs);
       axios.post('api/requests/get_lumisections', {'subcampaign': component.editableObject.subcampaign, 'runs': runs}).then(response => {
-        component.editableObject.lumisections = response.data.response ? component.stringifyLumis(response.data.response) : {};
+        component.editableObject.lumisections = response.data.response;
         this.loading = false;
       }).catch(error => {
         component.loading = false;
@@ -430,6 +437,16 @@ export default {
     runListLength: function(list) {
       return this.cleanSplit(list).length;
     },
+    toggleJobDictOverwrite: function() {
+      if (this.showJobDictOverwrite) {
+        this.showJobDictOverwrite = false;
+        return;
+      }
+      const component = this;
+      if (confirm('Are you sure you know what you are doing? This is a very dangerous action!')) {
+        component.showJobDictOverwrite = true;
+      }
+    },
   }
 }
 </script>
@@ -440,5 +457,12 @@ textarea.lumisections {
   font-family: monospace;
   font-size: 0.85em;
 }
-
+.show-job-dict-overwrite {
+  color: var(--v-anchor-base);
+  cursor: pointer;
+}
+.show-job-dict-overwrite:hover {
+  color: red;
+  font-weight: 700;
+}
 </style>

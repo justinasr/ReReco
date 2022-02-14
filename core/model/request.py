@@ -31,6 +31,8 @@ class Request(ModelBase):
         # Input dataset name or request name
         'input': {'dataset': '',
                   'request': ''},
+        # Manual overwrite of job dict
+        'job_dict_overwrite': {},
         # Dictionary of runs and their lumisection ranges to be processed
         'lumisections': {},
         # Memory in MB
