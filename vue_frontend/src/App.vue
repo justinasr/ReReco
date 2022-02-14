@@ -120,6 +120,10 @@ table {
   margin: 4px;
   padding: 4px;
   border: 1px solid rgba(0, 0, 0, 0.5);
+  white-space: pre-wrap;
+  max-width: 500px;
+  min-width: 200px;
+  line-break: anywhere;
 }
 
 .v-data-table__wrapper {

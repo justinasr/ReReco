@@ -76,7 +76,6 @@ class Sequence(ModelBase):
             if json_input.get('gpu', {}).get('requires') not in ('optional', 'required'):
                 json_input['gpu'] = self.schema().get('gpu')
                 json_input['gpu']['requires'] = 'forbidden'
-                json_input['gpu_steps'] = []
 
         ModelBase.__init__(self, json_input, check_attributes)
         if parent:

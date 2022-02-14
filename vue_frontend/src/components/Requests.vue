@@ -202,7 +202,7 @@
         <a v-if="role('manager') && selectedItems.length" @click="nextStatusMany(selectedItems)" title="Move selected requets to next status">Next</a>
         <a v-if="role('manager') && selectedItems.length" @click="createTicket(selectedItems)" title="Create a ticket with selected requests as input">Create ticket</a>
         <a v-if="role('administrator') && selectedItems.length" @click="updateWorkflowsMany(selectedItems)" title="Update selected requests' information from Stats2">Update from Stats2</a>
-        <a v-if="role('manager') && selectedItems.length" @click="optionResetMany(selectedItems)" title="Refetch selected requests' values from their subcampaigns">Option Reset</a>
+        <a v-if="role('manager') && selectedItems.length" @click="optionResetMany(selectedItems)" title="Refetch selected requests' values from their subcampaigns">Option reset</a>
         <a v-if="selectedItems.length" @click="openPmpMany(selectedItems)" title="Show selected requests in pMp">pMp</a>
       </div>
       <Paginator :totalRows="totalItems"
@@ -237,12 +237,12 @@ export default {
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'status', 'displayName': 'Status', 'visible': 1, 'sortable': true},
         {'dbName': 'input', 'displayName': 'Input', 'visible': 1},
-        {'dbName': 'processing_string', 'displayName': 'Processing String', 'visible': 1, 'sortable': true},
+        {'dbName': 'processing_string', 'displayName': 'Processing string', 'visible': 1, 'sortable': true},
         {'dbName': 'subcampaign', 'displayName': 'Subcampaign', 'visible': 1, 'sortable': true},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
-        {'dbName': 'cmssw_release', 'displayName': 'CMSSW Release', 'visible': 0, 'sortable': true},
-        {'dbName': 'completed_events', 'displayName': 'Completed Events', 'visible': 0, 'sortable': true},
-        {'dbName': 'enable_harvesting', 'displayName': 'Enable Harvesting', 'visible': 0},
+        {'dbName': 'cmssw_release', 'displayName': 'CMSSW release', 'visible': 0, 'sortable': true},
+        {'dbName': 'completed_events', 'displayName': 'Completed events', 'visible': 0, 'sortable': true},
+        {'dbName': 'enable_harvesting', 'displayName': 'Enable harvesting', 'visible': 0},
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 0, 'sortable': true},
         {'dbName': '_gpu', 'displayName': 'GPU', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0, 'sortable': true},
@@ -252,9 +252,9 @@ export default {
         {'dbName': 'priority', 'displayName': 'Priority', 'visible': 0, 'sortable': true},
         {'dbName': 'runs', 'displayName': 'Runs', 'visible': 0},
         {'dbName': 'sequences', 'displayName': 'Sequences', 'visible': 0},
-        {'dbName': 'size_per_event', 'displayName': 'Size per Event', 'visible': 0, 'sortable': true},
-        {'dbName': 'time_per_event', 'displayName': 'Time per Event', 'visible': 0, 'sortable': true},
-        {'dbName': 'total_events', 'displayName': 'Total Events', 'visible': 0, 'sortable': true},
+        {'dbName': 'size_per_event', 'displayName': 'Size per event', 'visible': 0, 'sortable': true},
+        {'dbName': 'time_per_event', 'displayName': 'Time per event', 'visible': 0, 'sortable': true},
+        {'dbName': 'total_events', 'displayName': 'Total events', 'visible': 0, 'sortable': true},
         {'dbName': 'workflows', 'displayName': 'Workflows', 'visible': 0},
       ],
       headers: [],

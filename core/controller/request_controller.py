@@ -3,9 +3,15 @@ Module that contains RequestController class
 """
 import json
 from core_lib.database.database import Database
-from core_lib.utils.ssh_executor import SSHExecutor
-from core_lib.utils.connection_wrapper import ConnectionWrapper
-from core_lib.utils.common_utils import cmssw_setup, get_scram_arch, config_cache_lite_setup
+from core_lib.utils.common_utils import (change_workflow_priority,
+                                         cmssw_setup, cmsweb_reject_workflows,
+                                         dbs_dataset_runs,
+                                         get_scram_arch,
+                                         config_cache_lite_setup,
+                                         dbs_datasetlist,
+                                         get_workflows_from_stats,
+                                         get_workflows_from_stats_for_prepid,
+                                         refresh_workflows_in_stats)
 from core_lib.utils.global_config import Config
 from core_lib.utils.settings import Settings
 from core_lib.controller.controller_base import ControllerBase
@@ -43,6 +49,10 @@ class RequestController(ControllerBase):
         new_request = Request(json_input=json_data)
         if not json_data.get('sequences'):
             new_request.set('sequences', subcampaign.get('sequences'))
+
+        for sequence in new_request.get('sequences'):
+            sequence.set('config_id', '')
+            sequence.set('harvesting_config_id', '')
 
         if not json_data.get('time_per_event'):
             new_request.set('time_per_event', [1.0] * len(subcampaign.get('sequences')))
@@ -558,22 +568,11 @@ class RequestController(ControllerBase):
                 raise Exception(f'Input request {input_request_prepid} status is '
                                 f'"{input_request_status}", not "done"')
 
-        # Make sure input dataset is VALID
-        grid_cert = Config.get('grid_user_cert')
-        grid_key = Config.get('grid_user_key')
-        dbs_conn = ConnectionWrapper(host='cmsweb-prod.cern.ch',
-                                     port=8443,
-                                     cert_file=grid_cert,
-                                     key_file=grid_key)
-        dbs_response = dbs_conn.api('POST',
-                                    '/dbs/prod/global/DBSReader/datasetlist',
-                                    {'dataset': input_dataset,
-                                     'detail': 1})
-        dbs_response = json.loads(dbs_response.decode('utf-8'))
-        if not dbs_response:
-            raise Exception(f'Empty response from DBS about {input_dataset}')
+        input_dataset_info = dbs_datasetlist([input_dataset])
+        if not input_dataset_info:
+            raise Exception(f'Could not get info about input dataset "{input_dataset}"')
 
-        dataset_access_type = dbs_response[0].get('dataset_access_type', 'unknown')
+        dataset_access_type = input_dataset_info[0].get('dataset_access_type', 'unknown')
         self.logger.info('%s access type is %s', input_dataset, dataset_access_type)
         if dataset_access_type != 'VALID':
             raise Exception(f'{input_dataset} type is {dataset_access_type}, it must be VALID')
@@ -685,12 +684,12 @@ class RequestController(ControllerBase):
         """
         Try to move rquest back to approved
         """
-        active_workflows = self.__pick_active_workflows(request)
-        self.force_stats_to_refresh([x['name'] for x in active_workflows])
+        active_workflows = self.pick_active_workflows(request)
+        refresh_workflows_in_stats([w['name'] for w in active_workflows])
         # Take active workflows again in case any of them changed during Stats refresh
-        active_workflows = self.__pick_active_workflows(request)
+        active_workflows = self.pick_active_workflows(request)
         if active_workflows:
-            self.__reject_workflows(active_workflows)
+            self.reject_workflows(active_workflows)
 
         request.set('workflows', [])
         request.set('total_events', 0)
@@ -707,21 +706,7 @@ class RequestController(ControllerBase):
         """
         Fetch a list of runs from DBS for a given dataset
         """
-        if not dataset:
-            return []
-
-        conn = ConnectionWrapper(host='cmsweb-prod.cern.ch',
-                                 port=8443,
-                                 cert_file=Config.get('grid_user_cert'),
-                                 key_file=Config.get('grid_user_key'))
-        with self.locker.get_lock('get-dataset-runs'):
-            response = conn.api('GET', f'/dbs/prod/global/DBSReader/runs?dataset={dataset}')
-
-        response = json.loads(response.decode('utf-8'))
-        if not response:
-            return []
-
-        runs = response[0].get('run_num', [])
+        runs = dbs_dataset_runs(dataset)
         self.logger.debug('Fetched %s runs for %s from DBS', len(runs), dataset)
         return runs
 
@@ -779,7 +764,7 @@ class RequestController(ControllerBase):
 
         return self.get_lumisections(subcampaign_name, request.get('runs'))
 
-    def __pick_workflows(self, all_workflows, output_datasets):
+    def pick_workflows(self, all_workflows, output_datasets):
         """
         Pick, process and sort workflows from computing based on output datasets
         """
@@ -809,7 +794,7 @@ class RequestController(ControllerBase):
                          ', '.join([w['name'] for w in new_workflows]))
         return new_workflows
 
-    def __get_output_datasets(self, request, all_workflows):
+    def get_output_datasets(self, request, all_workflows):
         """
         Return a list of sorted output datasets for request from given workflows
         """
@@ -873,39 +858,27 @@ class RequestController(ControllerBase):
         with self.locker.get_lock(prepid):
             request_json = request_db.get(prepid)
             request = Request(json_input=request_json)
-            stats_conn = ConnectionWrapper(host='vocms074.cern.ch',
-                                           port=5984,
-                                           https=False,
-                                           keep_open=True)
-            stats_workflows = stats_conn.api(
-                'GET',
-                f'/requests/_design/_designDoc/_view/prepids?key="{prepid}"&include_docs=True'
-            )
-            stats_workflows = json.loads(stats_workflows)
-            stats_workflows = [x['doc'] for x in stats_workflows['rows']]
-            existing_workflows = [x['name'] for x in request.get('workflows')]
-            stats_workflows = [x['RequestName'] for x in stats_workflows]
-            all_workflow_names = list(set(existing_workflows) | set(stats_workflows))
-            self.logger.info('All workflows of %s are %s', prepid, ', '.join(all_workflow_names))
+            workflow_names = {w['name'] for w in request.get('workflows')}
+            workflows = get_workflows_from_stats_for_prepid(prepid)
+            workflow_names -= {w['RequestName'] for w in workflows}
+            self.logger.info('%s workflows that are not in stats: %s',
+                             len(workflow_names),
+                             workflow_names)
+            workflows += get_workflows_from_stats(list(workflow_names))
             all_workflows = {}
-            for workflow_name in all_workflow_names:
-                workflow = stats_conn.api('GET', f'/requests/{workflow_name}')
-                if not workflow:
-                    raise Exception(f'Could not find {workflow_name} in Stats2')
-
-                workflow = json.loads(workflow)
-                if not workflow.get('RequestName'):
-                    raise Exception(f'Could not find {workflow_name} in Stats2')
+            for workflow in workflows:
+                if not workflow or not workflow.get('RequestName'):
+                    raise Exception('Could not find workflow in Stats2')
 
                 if workflow.get('RequestType', '').lower() == 'resubmission':
                     continue
 
-                all_workflows[workflow_name] = workflow
-                self.logger.info('Fetched workflow %s', workflow_name)
+                name = workflow.get('RequestName')
+                all_workflows[name] = workflow
+                self.logger.info('Found workflow %s', name)
 
-            stats_conn.close()
-            output_datasets = self.__get_output_datasets(request, all_workflows)
-            new_workflows = self.__pick_workflows(all_workflows, output_datasets)
+            output_datasets = self.get_output_datasets(request, all_workflows)
+            new_workflows = self.pick_workflows(all_workflows, output_datasets)
             all_workflow_names = [x['name'] for x in new_workflows]
             for new_workflow in reversed(new_workflows):
                 completed_events = -1
@@ -942,15 +915,13 @@ class RequestController(ControllerBase):
 
         return request
 
-    def option_reset(self, request):
+    def option_reset(self, prepid):
         """
         Fetch and overwrite values from subcampaign
         """
-        prepid = request.get_prepid()
         request_db = Database('requests')
         with self.locker.get_nonblocking_lock(prepid):
-            request_json = request_db.get(prepid)
-            request = Request(json_input=request_json)
+            request = self.get(prepid)
             if request.get('status') != 'new':
                 raise Exception('It is not allowed to option reset '
                                 'requests that are not in status "new"')
@@ -977,65 +948,23 @@ class RequestController(ControllerBase):
         """
         prepid = request.get_prepid()
         request_db = Database('requests')
-        cmsweb_url = Config.get('cmsweb_url')
-        grid_cert = Config.get('grid_user_cert')
-        grid_key = Config.get('grid_user_key')
         self.logger.info('Will try to change %s priority to %s', prepid, priority)
-        with self.locker.get_nonblocking_lock(prepid):
-            request_json = request_db.get(prepid)
-            request = Request(json_input=request_json)
-            if request.get('status') != 'submitted':
-                raise Exception('It is not allowed to change priority of '
-                                'requests that are not in status "submitted"')
+        if request.get('status') != 'submitted':
+            raise Exception('It is not allowed to change priority of '
+                            'requests that are not in status "submitted"')
 
-            request.set('priority', priority)
-            updated_workflows = []
-            active_workflows = self.__pick_active_workflows(request)
-            connection = ConnectionWrapper(host=cmsweb_url,
-                                           keep_open=True,
-                                           cert_file=grid_cert,
-                                           key_file=grid_key)
-            for workflow in active_workflows:
-                workflow_name = workflow['name']
-                self.logger.info('Changing "%s" priority to %s', workflow_name, priority)
-                response = connection.api('PUT',
-                                          f'/reqmgr2/data/request/{workflow_name}',
-                                          {'RequestPriority': priority})
-                updated_workflows.append(workflow_name)
-                self.logger.debug(response)
-
-            connection.close()
-            # Update priority in Stats2
-            self.force_stats_to_refresh(updated_workflows)
-            # Finally save the request
-            request_db.save(request.get_json())
+        request.set('priority', priority)
+        active_workflows = self.pick_active_workflows(request)
+        workflow_names = [w['name'] for w in active_workflows]
+        change_workflow_priority(workflow_names, priority)
+        # Update priority in Stats2
+        refresh_workflows_in_stats(workflow_names)
+        # Finally save the request
+        request_db.save(request.get_json())
 
         return request
 
-    def force_stats_to_refresh(self, workflows):
-        """
-        Force Stats2 to update workflows with given workflow names
-        """
-        if not workflows:
-            return
-
-        credentials_file = Config.get('credentials_file')
-        with self.locker.get_lock('refresh-stats'):
-            workflow_update_commands = ['cd /home/pdmvserv/private',
-                                        'source setup_credentials.sh',
-                                        'cd /home/pdmvserv/Stats2']
-            for workflow_name in workflows:
-                workflow_update_commands.append(
-                    f'python3 stats_update.py --action update --name {workflow_name}'
-                )
-
-            self.logger.info('Will make Stats2 refresh these workflows: %s', ', '.join(workflows))
-            with SSHExecutor('vocms074.cern.ch', credentials_file) as ssh_executor:
-                ssh_executor.execute_command(workflow_update_commands)
-
-            self.logger.info('Finished making Stats2 refresh workflows')
-
-    def __pick_active_workflows(self, request):
+    def pick_active_workflows(self, request):
         """
         Filter out workflows that are rejected, aborted or failed
         """
@@ -1053,19 +982,11 @@ class RequestController(ControllerBase):
                          ', '.join([x['name'] for x in active_workflows]))
         return active_workflows
 
-    def __reject_workflows(self, workflows):
+    def reject_workflows(self, workflows):
         """
         Reject or abort list of workflows in ReqMgr2
         """
-        cmsweb_url = Config.get('cmsweb_url')
-        grid_cert = Config.get('grid_user_cert')
-        grid_key = Config.get('grid_user_key')
-        connection = ConnectionWrapper(host=cmsweb_url,
-                                       keep_open=True,
-                                       cert_file=grid_cert,
-                                       key_file=grid_key)
-        headers = {'Content-type': 'application/json',
-                   'Accept': 'application/json'}
+        workflow_status_pairs = []
         for workflow in workflows:
             workflow_name = workflow['name']
             status_history = workflow.get('status_history')
@@ -1074,27 +995,6 @@ class RequestController(ControllerBase):
                 status_history = [{'status': '<unknown>'}]
 
             last_workflow_status = status_history[-1]['status']
-            self.logger.info('%s last status is %s', workflow_name, last_workflow_status)
-            # Depending on current status of workflow,
-            # it might need to be either aborted or rejected
-            if last_workflow_status in ('assigned',
-                                        'staging',
-                                        'staged',
-                                        'acquired',
-                                        'running-open',
-                                        'running-closed'):
-                new_status = 'aborted'
-            else:
-                new_status = 'rejected'
+            workflow_status_pairs.append((workflow_name, last_workflow_status))
 
-            self.logger.info('Will change %s status %s to %s',
-                             workflow_name,
-                             last_workflow_status,
-                             new_status)
-            reject_response = connection.api('PUT',
-                                             f'/reqmgr2/data/request/{workflow_name}',
-                                             {'RequestStatus': new_status},
-                                             headers)
-            self.logger.info(reject_response)
-
-        connection.close()
+        cmsweb_reject_workflows(workflow_status_pairs)
