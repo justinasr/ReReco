@@ -24,7 +24,7 @@
               <a @click="showDeleteDialog(item)" v-if="role('manager') && item.created_requests.length < 1" title="Delete ticket">Delete</a>
               <a v-if="role('manager')" :href="'tickets/edit?clone=' + item.prepid" title="Clone ticket">Clone</a>
               <a @click="showCreateRequestsDialog(item)" v-if="role('manager') && item.status == 'new'" title="Create requests from this ticket">Create requests</a>
-              <a :href="'requests?ticket=' + item.prepid" v-if="item.created_requests && item.created_requests.length > 0" title="Show all requests created from this ticket">Show requests</a>
+              <a :href="'requests?ticket=' + item.prepid" v-if="item.created_requests && item.created_requests.length > 0" title="Show all requests created from this ticket">Requests</a>
               <a :href="'api/tickets/twiki_snippet/' + item.prepid" v-if="item.status == 'done'" title="Show a snippet for TWiki">TWiki</a>
             </div>
           </template>
@@ -159,7 +159,7 @@ export default {
         {'dbName': 'steps', 'displayName': 'Steps', 'visible': 1},
         {'dbName': 'input', 'displayName': 'Input', 'visible': 1},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
-        {'dbName': 'created_requests', 'displayName': 'Created Requests', 'visible': 0},
+        {'dbName': 'created_requests', 'displayName': 'Created requests', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0, 'sortable': true},
       ],
       headers: [],

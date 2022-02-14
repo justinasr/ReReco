@@ -9,7 +9,7 @@
           <td><input type="text" v-model="editableObject.prepid" :disabled="!editingInfo.prepid"></td>
         </tr>
         <tr>
-          <td>CMSSW Version</td>
+          <td>CMSSW release</td>
           <td><input type="text" v-model="editableObject.cmssw_release" :disabled="!editingInfo.cmssw_release"></td>
         </tr>
         <tr>
@@ -50,7 +50,7 @@
           </td>
         </tr>
         <tr>
-          <td>Job Dict overwrite</td>
+          <td>Job dict overwrite</td>
           <td>
             <span class="show-job-dict-overwrite" v-if="!showJobDictOverwrite" v-on:click="toggleJobDictOverwrite()">Edit</span>
             <JSONField v-show="showJobDictOverwrite" v-model="editableObject.job_dict_overwrite" :disabled="!editingInfo.job_dict_overwrite"/>
@@ -75,7 +75,7 @@
           <td><input type="number" v-model="editableObject.priority" :disabled="!editingInfo.priority"></td>
         </tr>
         <tr>
-          <td>Processing String</td>
+          <td>Processing string</td>
           <td><input type="text" v-model="editableObject.processing_string" :disabled="!editingInfo.processing_string"></td>
         </tr>
         <tr>
@@ -134,31 +134,31 @@
                   </td>
                 </tr>
                 <tr v-if="sequence.gpu.requires != 'forbidden'">
-                  <td>GPU Parameters</td>
+                  <td>GPU parameters</td>
                   <td>
                     <table>
                       <tr>
-                        <td>GPU Memory</td>
+                        <td>GPU memory</td>
                         <td><input type="number" v-model="sequence.gpu.gpu_memory" :disabled="!editingInfo.sequences" min="0" max="32000" step="1000">MB</td>
                       </tr>
                       <tr>
-                        <td>CUDA Capabilities</td>
+                        <td>CUDA capabilities</td>
                         <td><input type="text" v-model="sequence.gpu.cuda_capabilities" placeholder="E.g. 6.0,6.1,6.2" :disabled="!editingInfo.sequences"></td>
                       </tr>
                       <tr>
-                        <td>CUDA Runtime</td>
+                        <td>CUDA runtime</td>
                         <td><input type="text" v-model="sequence.gpu.cuda_runtime" :disabled="!editingInfo.sequences"></td>
                       </tr>
                       <tr>
-                        <td>GPU Name</td>
+                        <td>GPU name</td>
                         <td><input type="text" v-model="sequence.gpu.gpu_name" :disabled="!editingInfo.sequences"></td>
                       </tr>
                       <tr>
-                        <td>CUDA Driver Version</td>
+                        <td>CUDA driver version</td>
                         <td><input type="text" v-model="sequence.gpu.cuda_driver_version" :disabled="!editingInfo.sequences"></td>
                       </tr>
                       <tr>
-                        <td>CUDA Runtime Version</td>
+                        <td>CUDA runtime version</td>
                         <td><input type="text" v-model="sequence.gpu.cuda_runtime_version" :disabled="!editingInfo.sequences"></td>
                       </tr>
                     </table>

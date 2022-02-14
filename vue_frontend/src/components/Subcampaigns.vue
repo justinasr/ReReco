@@ -23,7 +23,7 @@
               <a :href="'subcampaigns/edit?prepid=' + item.prepid" v-if="role('manager')" title="Edit subcampaign">Edit</a>
               <a @click="showDeleteDialog(item)" v-if="role('manager')" title="Delete subcampaign">Delete</a>
               <a v-if="role('manager')" :href="'subcampaigns/edit?clone=' + item.prepid" title="Clone subcampaign">Clone</a>
-              <a :href="'requests?subcampaign=' + item.prepid" :title="'Show all requests in '+ item.prepid">Show requests</a>
+              <a :href="'requests?subcampaign=' + item.prepid" :title="'Show all requests in '+ item.prepid">Requests</a>
             </div>
           </template>
           <template v-slot:item.prepid="{ item }">
@@ -151,11 +151,11 @@ export default {
         {'dbName': 'prepid', 'displayName': 'PrepID', 'visible': 1, 'sortable': true},
         {'dbName': '_actions', 'displayName': 'Actions', 'visible': 1},
         {'dbName': 'campaign', 'displayName': 'Campaign', 'visible': 1},
-        {'dbName': 'cmssw_release', 'displayName': 'CMSSW Release', 'visible': 1, 'sortable': true},
+        {'dbName': 'cmssw_release', 'displayName': 'CMSSW release', 'visible': 1, 'sortable': true},
         {'dbName': 'energy', 'displayName': 'Energy', 'visible': 1, 'sortable': true},
         {'dbName': 'memory', 'displayName': 'Memory', 'visible': 1, 'sortable': true},
         {'dbName': 'notes', 'displayName': 'Notes', 'visible': 1},
-        {'dbName': 'enable_harvesting', 'displayName': 'Enable Harvesting', 'visible': 0},
+        {'dbName': 'enable_harvesting', 'displayName': 'Enable harvesting', 'visible': 0},
         {'dbName': '_gpu', 'displayName': 'GPU', 'visible': 0},
         {'dbName': 'history', 'displayName': 'History', 'visible': 0, 'sortable': true},
         {'dbName': 'runs_json_path', 'displayName': 'Runs JSON', 'visible': 0, 'sortable': true},

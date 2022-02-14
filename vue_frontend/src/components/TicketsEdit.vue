@@ -28,7 +28,7 @@
                   </td>
                 </tr>
                 <tr>
-                  <td>Processing String</td>
+                  <td>Processing string</td>
                   <td><input type="text"
                              v-model="step.processing_string"
                              :disabled="!editingInfo.steps[index].processing_string"></td>
