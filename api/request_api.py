@@ -394,15 +394,13 @@ class RequestOptionResetAPI(APIBase):
         request_json = json.loads(data.decode('utf-8'))
         if isinstance(request_json, dict):
             prepid = request_json.get('prepid')
-            request = request_controller.get(prepid)
-            results = request_controller.option_reset(request)
+            results = request_controller.option_reset(prepid)
             results = results.get_json()
         elif isinstance(request_json, list):
             results = []
             for single_request_json in request_json:
                 prepid = single_request_json.get('prepid')
-                request = request_controller.get(prepid)
-                results.append(request_controller.option_reset(request))
+                results.append(request_controller.option_reset(prepid))
 
             results = [x.get_json() for x in results]
         else:

@@ -69,11 +69,14 @@ class SubcampaignController(ControllerBase):
         if not runs_json_path:
             return {}
 
-        conn = ConnectionWrapper(host='cms-service-dqmdc.web.cern.ch',
-                                 cert_file=Config.get('grid_user_cert'),
-                                 key_file=Config.get('grid_user_key'))
-        with self.locker.get_lock('get-dcs-runs'):
-            response = conn.api('GET', f'/CAF/certification/{runs_json_path}')
+
+        grid_cert = Config.get('grid_user_cert')
+        grid_key = Config.get('grid_user_key')
+        with ConnectionWrapper('https://cms-service-dqmdc.web.cern.ch',
+                               grid_cert,
+                               grid_key) as connection:
+            with self.locker.get_lock('get-dcs-runs'):
+                response = connection.api('GET', f'/CAF/certification/{runs_json_path}')
 
         response = json.loads(response.decode('utf-8'))
         if not response:

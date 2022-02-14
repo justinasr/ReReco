@@ -9,7 +9,7 @@ from core_lib.utils.locker import Locker
 from core_lib.database.database import Database
 from core_lib.utils.connection_wrapper import ConnectionWrapper
 from core_lib.utils.submitter import Submitter as BaseSubmitter
-from core_lib.utils.common_utils import clean_split
+from core_lib.utils.common_utils import clean_split, refresh_workflows_in_stats
 from core_lib.utils.global_config import Config
 from core.utils.emailer import Emailer
 
@@ -240,20 +240,18 @@ class RequestSubmitter(BaseSubmitter):
                 cmsweb_url = Config.get('cmsweb_url')
                 grid_cert = Config.get('grid_user_cert')
                 grid_key = Config.get('grid_user_key')
-                connection = ConnectionWrapper(host=cmsweb_url,
-                                               cert_file=grid_cert,
-                                               key_file=grid_key)
-                workflow_name = self.submit_job_dict(job_dict, connection)
-                # Update request after successful submission
-                request.set('workflows', [{'name': workflow_name}])
-                request.set('status', 'submitted')
-                request.add_history('submission', 'succeeded', 'automatic')
-                request_db.save(request.get_json())
-                time.sleep(3)
-                self.approve_workflow(workflow_name, connection)
-                connection.close()
+                with ConnectionWrapper(cmsweb_url, grid_cert, grid_key) as connection:
+                    workflow_name = self.submit_job_dict(job_dict, connection)
+                    # Update request after successful submission
+                    request.set('workflows', [{'name': workflow_name}])
+                    request.set('status', 'submitted')
+                    request.add_history('submission', 'succeeded', 'automatic')
+                    request_db.save(request.get_json())
+                    time.sleep(3)
+                    self.approve_workflow(workflow_name, connection)
+
                 if not Config.get('development'):
-                    controller.force_stats_to_refresh([workflow_name])
+                    refresh_workflows_in_stats([workflow_name])
 
             except Exception as ex:
                 self.__handle_error(request, str(ex))
