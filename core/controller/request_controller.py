@@ -190,6 +190,7 @@ class RequestController(ControllerBase):
         editing_info['size_per_event'] = status_new
         editing_info['cmssw_release'] = status_new
         editing_info['enable_harvesting'] = status_new
+        editing_info['job_dict_overwrite'] = status_new
 
         return editing_info
 
@@ -303,7 +304,27 @@ class RequestController(ControllerBase):
                 # Upload to some dev DQM GUI
                 job_dict['DQMUploadUrl'] = 'https://cmsweb-testbed.cern.ch/dqm/dev'
 
+        job_dict_overwrite = request.get('job_dict_overwrite')
+        if job_dict_overwrite:
+            self.logger.info('Overwriting job dict for %s with %s', prepid, job_dict_overwrite)
+            self.apply_job_dict_overwrite(job_dict, job_dict_overwrite)
+
         return job_dict
+
+    def apply_job_dict_overwrite(self, job_dict, overwrite):
+        """
+        Apply overwrites to job dictionary
+        """
+        for key, value in overwrite.items():
+            obj = job_dict
+            key_parts = key.split('.')
+            for part in key_parts[:-1]:
+                if part in obj:
+                    obj = obj[part]
+                else:
+                    break
+            else:
+                obj[key_parts[-1]] = value
 
     def get_job_dict_taskchain(self, request, sequences):
         """
