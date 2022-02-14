@@ -5,7 +5,7 @@ import json
 from core_lib.database.database import Database
 from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.connection_wrapper import ConnectionWrapper
-from core_lib.utils.common_utils import cmssw_setup, get_scram_arch, config_cache_lite_setup
+from core_lib.utils.common_utils import cmssw_setup, get_scram_arch, config_cache_lite_setup, dbs_datasetlist
 from core_lib.utils.global_config import Config
 from core_lib.utils.settings import Settings
 from core_lib.controller.controller_base import ControllerBase
@@ -562,22 +562,11 @@ class RequestController(ControllerBase):
                 raise Exception(f'Input request {input_request_prepid} status is '
                                 f'"{input_request_status}", not "done"')
 
-        # Make sure input dataset is VALID
-        grid_cert = Config.get('grid_user_cert')
-        grid_key = Config.get('grid_user_key')
-        dbs_conn = ConnectionWrapper(host='cmsweb-prod.cern.ch',
-                                     port=8443,
-                                     cert_file=grid_cert,
-                                     key_file=grid_key)
-        dbs_response = dbs_conn.api('POST',
-                                    '/dbs/prod/global/DBSReader/datasetlist',
-                                    {'dataset': input_dataset,
-                                     'detail': 1})
-        dbs_response = json.loads(dbs_response.decode('utf-8'))
-        if not dbs_response:
-            raise Exception(f'Empty response from DBS about {input_dataset}')
+        input_dataset_info = dbs_datasetlist([input_dataset])
+        if not input_dataset_info:
+            raise Exception(f'Could not get info about input dataset "{input_dataset}"')
 
-        dataset_access_type = dbs_response[0].get('dataset_access_type', 'unknown')
+        dataset_access_type = input_dataset_info[0].get('dataset_access_type', 'unknown')
         self.logger.info('%s access type is %s', input_dataset, dataset_access_type)
         if dataset_access_type != 'VALID':
             raise Exception(f'{input_dataset} type is {dataset_access_type}, it must be VALID')
