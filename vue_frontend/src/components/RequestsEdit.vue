@@ -295,6 +295,7 @@ export default {
           templateInfo.total_events = objectInfo.total_events;
           templateInfo.output_datasets = objectInfo.output_datasets;
           templateInfo.runs = templateInfo.runs.join('\n');
+          templateInfo.sequences.map(seq => seq.config_id = seq.harvesting_config_id = '');
           component.editableObject = templateInfo;
           component.editingInfo = editingInfo;
           component.showJobDictOverwrite = Object.keys(component.editableObject.job_dict_overwrite) != 0;

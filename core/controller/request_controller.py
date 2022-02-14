@@ -44,6 +44,10 @@ class RequestController(ControllerBase):
         if not json_data.get('sequences'):
             new_request.set('sequences', subcampaign.get('sequences'))
 
+        for sequence in new_request.get('sequences'):
+            sequence.set('config_id', '')
+            sequence.set('harvesting_config_id', '')
+
         if not json_data.get('time_per_event'):
             new_request.set('time_per_event', [1.0] * len(subcampaign.get('sequences')))
 
