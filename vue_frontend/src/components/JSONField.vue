@@ -55,7 +55,7 @@
         }
       },
       value: function(value) {
-        if (!this.internalValue) {
+        if (!this.internalValue || JSON.stringify(JSON.parse(this.internalValue)) != JSON.stringify(value)) {
           this.internalValue = JSON.stringify(value, null, 2);
         }
       }
