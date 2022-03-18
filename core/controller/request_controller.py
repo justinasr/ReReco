@@ -22,6 +22,10 @@ from core.utils.request_submitter import RequestSubmitter
 from core.controller.subcampaign_controller import SubcampaignController
 
 
+DEAD_WORKFLOW_STATUS = {'rejected', 'aborted', 'failed', 'rejected-archived',
+                        'aborted-archived', 'failed-archived', 'aborted-completed'}
+
+
 class RequestController(ControllerBase):
     """
     Controller that has all actions related to a request
@@ -588,6 +592,7 @@ class RequestController(ControllerBase):
         prepid = request.get_prepid()
         request = self.update_workflows(request)
         workflows = request.get('workflows')
+        workflows = [w for w in workflows if w['type'].lower() != 'resubmission']
         if workflows:
             last_workflow = workflows[-1]
             for output_dataset in last_workflow['output_datasets']:
@@ -769,6 +774,9 @@ class RequestController(ControllerBase):
         Pick, process and sort workflows from computing based on output datasets
         """
         new_workflows = []
+        self.logger.info('Picking workflows %s for datasets %s',
+                         [x['RequestName'] for x in all_workflows.values()],
+                         output_datasets)
         for _, workflow in all_workflows.items():
             new_workflow = {'name': workflow['RequestName'],
                             'type': workflow['RequestType'],
@@ -806,10 +814,12 @@ class RequestController(ControllerBase):
         output_datatiers_set = set(output_datatiers)
         self.logger.info('%s output datatiers are: %s', prepid, ', '.join(output_datatiers))
         output_datasets_tree = {k: {} for k in output_datatiers}
-        ignore_status = {'aborted', 'aborted-archived', 'rejected', 'rejected-archived', 'failed'}
         for workflow_name, workflow in all_workflows.items():
+            if workflow.get('RequestType', '').lower() == 'resubmission':
+                continue
+
             status_history = set(x['Status'] for x in workflow.get('RequestTransition', []))
-            if ignore_status & status_history:
+            if DEAD_WORKFLOW_STATUS & status_history:
                 self.logger.debug('Ignoring %s', workflow_name)
                 continue
 
@@ -859,30 +869,33 @@ class RequestController(ControllerBase):
             request_json = request_db.get(prepid)
             request = Request(json_input=request_json)
             workflow_names = {w['name'] for w in request.get('workflows')}
-            workflows = get_workflows_from_stats_for_prepid(prepid)
-            workflow_names -= {w['RequestName'] for w in workflows}
+            stats_workflows = get_workflows_from_stats_for_prepid(prepid)
+            workflow_names -= {w['RequestName'] for w in stats_workflows}
             self.logger.info('%s workflows that are not in stats: %s',
                              len(workflow_names),
                              workflow_names)
-            workflows += get_workflows_from_stats(list(workflow_names))
+            stats_workflows += get_workflows_from_stats(list(workflow_names))
             all_workflows = {}
-            for workflow in workflows:
+            for workflow in stats_workflows:
                 if not workflow or not workflow.get('RequestName'):
                     raise Exception('Could not find workflow in Stats2')
 
-                if workflow.get('RequestType', '').lower() == 'resubmission':
-                    continue
-
                 name = workflow.get('RequestName')
                 all_workflows[name] = workflow
-                self.logger.info('Found workflow %s', name)
+                self.logger.info('Found workflow %s for %s', name, prepid)
 
             output_datasets = self.get_output_datasets(request, all_workflows)
-            new_workflows = self.pick_workflows(all_workflows, output_datasets)
-            all_workflow_names = [x['name'] for x in new_workflows]
-            for new_workflow in reversed(new_workflows):
+            workflows = self.pick_workflows(all_workflows, output_datasets)
+            newest_workflow = None
+            for workflow in reversed(workflows):
+                if workflow['type'].lower() == 'resubmission':
+                    continue
+
+                if not newest_workflow:
+                    newest_workflow = workflow
+
                 completed_events = -1
-                for output_dataset in new_workflow.get('output_datasets', []):
+                for output_dataset in workflow.get('output_datasets', []):
                     if output_datasets and output_dataset['name'] == output_datasets[-1]:
                         completed_events = output_dataset['events']
                         break
@@ -891,8 +904,7 @@ class RequestController(ControllerBase):
                     request.set('completed_events', completed_events)
                     break
 
-            if all_workflow_names:
-                newest_workflow = all_workflows[all_workflow_names[-1]]
+            if newest_workflow:
                 if 'RequestPriority' in newest_workflow:
                     request.set('priority', newest_workflow['RequestPriority'])
 
@@ -900,7 +912,7 @@ class RequestController(ControllerBase):
                     request.set('total_events', max(0, newest_workflow['TotalEvents']))
 
             request.set('output_datasets', output_datasets)
-            request.set('workflows', new_workflows)
+            request.set('workflows', workflows)
             request_db.save(request.get_json())
 
             if output_datasets:
@@ -971,10 +983,9 @@ class RequestController(ControllerBase):
         prepid = request.get_prepid()
         workflows = request.get('workflows')
         active_workflows = []
-        inactive_statuses = {'aborted', 'rejected', 'failed'}
         for workflow in workflows:
             status_history = set(x['status'] for x in workflow.get('status_history', []))
-            if not inactive_statuses & status_history:
+            if not DEAD_WORKFLOW_STATUS & status_history:
                 active_workflows.append(workflow)
 
         self.logger.info('Active workflows of %s are %s',
