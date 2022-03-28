@@ -888,11 +888,18 @@ class RequestController(ControllerBase):
             workflows = self.pick_workflows(all_workflows, output_datasets)
             newest_workflow = None
             for workflow in reversed(workflows):
+                workflow_name = workflow['name']
                 if workflow['type'].lower() == 'resubmission':
+                    self.logger.debug('Skipping %s because resubmission', workflow_name)
+                    continue
+
+                status_history = set(x['status'] for x in workflow.get('status_history', []))
+                if DEAD_WORKFLOW_STATUS & status_history:
+                    self.logger.debug('Skipping %s because dead', workflow_name)
                     continue
 
                 if not newest_workflow:
-                    newest_workflow = workflow
+                    newest_workflow = all_workflows[workflow_name]
 
                 completed_events = -1
                 for output_dataset in workflow.get('output_datasets', []):
@@ -906,10 +913,14 @@ class RequestController(ControllerBase):
 
             if newest_workflow:
                 if 'RequestPriority' in newest_workflow:
-                    request.set('priority', newest_workflow['RequestPriority'])
+                    priority = newest_workflow['RequestPriority']
+                    request.set('priority', priority)
+                    self.logger.info('Setting %s priority to %s', prepid, priority)
 
                 if 'TotalEvents' in newest_workflow:
-                    request.set('total_events', max(0, newest_workflow['TotalEvents']))
+                    total_events = max(0, newest_workflow['TotalEvents'])
+                    request.set('total_events', total_events)
+                    self.logger.info('Setting %s total events to %s', prepid, total_events)
 
             request.set('output_datasets', output_datasets)
             request.set('workflows', workflows)
