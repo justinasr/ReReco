@@ -639,9 +639,6 @@ export default {
   color: #8A8A8A;
 }
 
-.zebra-datasets {
-  margin-top: -5px;
-}
 .zebra-datasets > li > div {
   padding-top: 5px;
   padding-bottom: 5px;
