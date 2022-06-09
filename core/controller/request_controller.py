@@ -4,14 +4,15 @@ Module that contains RequestController class
 import json
 from core_lib.database.database import Database
 from core_lib.utils.common_utils import (change_workflow_priority,
-                                         cmssw_setup, cmsweb_reject_workflows,
+                                         cmssw_setup,
+                                         cmsweb_reject_workflows,
                                          dbs_dataset_runs,
                                          get_scram_arch,
                                          config_cache_lite_setup,
                                          dbs_datasetlist,
                                          get_workflows_from_stats,
                                          get_workflows_from_stats_for_prepid,
-                                         refresh_workflows_in_stats)
+                                         refresh_workflows_in_stats, run_commands_in_cmsenv)
 from core_lib.utils.global_config import Config
 from core_lib.utils.settings import Settings
 from core_lib.controller.controller_base import ControllerBase
@@ -214,70 +215,62 @@ class RequestController(ControllerBase):
         If script will be used for submission, replace input file with placeholder
         """
         self.logger.debug('Getting cmsDriver commands for %s', request.get_prepid())
-        cms_driver = '#!/bin/bash\n\n'
-        if for_submission:
-            cms_driver += '\ncd $WORKSPACE_DIR\n'
+        bash = ['#!/bin/bash',
+                '']
 
-        cms_driver += cmssw_setup(request.get('cmssw_release'))
         if for_submission:
-            cms_driver += '\ncd $REQUEST_DIR\n'
-
-        cms_driver += '\n\n'
-        if for_submission:
-            cms_driver += request.get_cmsdrivers('_placeholder_.root')
+            drivers = request.get_cmsdrivers('_placeholder_.root')
         else:
-            cms_driver += request.get_cmsdrivers()
+            drivers = request.get_cmsdrivers()
 
-        cms_driver += '\n\n'
+        cmssw_release = request.get('cmssw_release')
+        scram_arch = get_scram_arch(cmssw_release)
+        bash += run_commands_in_cmsenv(drivers, cmssw_release, scram_arch).split('\n')
+        return '\n'.join(bash)
 
-        return cms_driver
-
-    def get_config_upload_file(self, request, for_submission=False):
+    def get_config_upload_file(self, request):
         """
         Get bash script that would upload config files to ReqMgr2
         """
         self.logger.debug('Getting config upload script for %s', request.get_prepid())
         database_url = Config.get('cmsweb_url').replace('https://', '').replace('http://', '')
-        command = '#!/bin/bash'
+        bash = ['#!/bin/bash',
+                '']
+        config_names = []
+        for configs in request.get_config_file_names():
+            config_names.append(configs['config'])
+            if configs.get('harvest'):
+                config_names.append(configs['harvest'])
+
+
         # Check if all expected config files are present
-        common_check_part = '\n\nif [ ! -s "%s.py" ]; then\n'
-        common_check_part += '  echo "File %s.py is missing" >&2\n'
-        common_check_part += '  exit 1\n'
-        common_check_part += 'fi'
-        for configs in request.get_config_file_names():
-            # Run config uploader
-            command += common_check_part % (configs['config'], configs['config'])
-            if configs.get('harvest'):
-                command += common_check_part % (configs['harvest'], configs['harvest'])
+        for config_name in config_names:
+            bash += [f'if [ ! -s "{config_name}.py" ]; then',
+                     f'  echo "File {config_name}.py is missing" >&2',
+                     '  exit 1',
+                     'fi',
+                     '']
 
-        # Set up CMSSW environment
-        command += '\n\n'
-        if for_submission:
-            command += '\ncd $WORKSPACE_DIR\n'
-
-        command += cmssw_setup(request.get('cmssw_release'))
         # Use ConfigCacheLite and TweakMakerLite instead of WMCore
-        command += '\n\n'
-        command += config_cache_lite_setup()
-        if for_submission:
-            command += '\ncd $REQUEST_DIR\n'
+        bash += config_cache_lite_setup().split('\n')
+        bash += ['']
 
-        # Upload command will be identical for all configs
-        command += '\n'
-        # Get python version from cmsDriver.py
-        command += 'PYTHON_INT="python"\n'
-        command += 'if [[ $(head -n 1 `which cmsDriver.py`) =~ "python3" ]]; then\n'
-        command += '  PYTHON_INT="python3"\n'
-        command += 'fi\n'
-        common_upload_part = ('\n$PYTHON_INT config_uploader.py --file $(pwd)/%s.py --label %s '
-                              f'--group ppd --user $(echo $USER) --db {database_url} || exit $?')
-        for configs in request.get_config_file_names():
+        commands = []
+        for config_name in config_names:
             # Run config uploader
-            command += common_upload_part % (configs['config'], configs['config'])
-            if configs.get('harvest'):
-                command += common_upload_part % (configs['harvest'], configs['harvest'])
+            commands.append(('$PYTHON_INT config_uploader.py '
+                             f'--file $(pwd)/{config_name}.py '
+                             f'--label {config_name} '
+                             '--group ppd '
+                             '--user $(echo $USER) '
+                             f'--db {database_url} || exit $?'))
 
-        return command
+        if commands:
+            cmssw_release = request.get('cmssw_release')
+            scram_arch = get_scram_arch(cmssw_release)
+            bash += run_commands_in_cmsenv(commands, cmssw_release, scram_arch).split('\n')
+
+        return '\n'.join(bash)
 
     def get_job_dict(self, request):
         """
