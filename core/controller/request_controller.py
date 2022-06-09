@@ -4,7 +4,6 @@ Module that contains RequestController class
 import json
 from core_lib.database.database import Database
 from core_lib.utils.common_utils import (change_workflow_priority,
-                                         cmssw_setup,
                                          cmsweb_reject_workflows,
                                          dbs_dataset_runs,
                                          get_scram_arch,
