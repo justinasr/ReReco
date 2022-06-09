@@ -2,7 +2,6 @@
 Module that has all classes used for request submission to computing
 """
 
-import os
 import time
 from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.locker import Locker
@@ -72,41 +71,31 @@ class RequestSubmitter(BaseSubmitter):
         recipients = emailer.get_recipients(request)
         emailer.send(subject, body, recipients)
 
-    def prepare_workspace(self, request, controller, ssh_executor, workspace_dir):
+    def prepare_workspace(self, request, controller, ssh_executor, request_dir):
         """
         Clean or create a remote directory and upload all needed files
         """
         prepid = request.get_prepid()
         self.logger.debug('Will prepare remote workspace for %s', prepid)
-        # Dump config generation to file
-        with open(f'/tmp/{prepid}_generate.sh', 'w') as temp_file:
-            config_file_content = controller.get_cmsdriver(request, for_submission=True)
-            temp_file.write(config_file_content)
-
-        # Dump config upload to file
-        with open(f'/tmp/{prepid}_upload.sh', 'w') as temp_file:
-            upload_file_content = controller.get_config_upload_file(request, for_submission=True)
-            temp_file.write(upload_file_content)
+        # Get cmsDriver script
+        config_script = controller.get_cmsdriver(request, for_submission=True)
+        # Get config upload script
+        upload_script = controller.get_config_upload_file(request)
 
         # Re-create the directory and create a voms proxy there
-        command = [f'rm -rf {workspace_dir}/{prepid}',
-                   f'mkdir -p {workspace_dir}/{prepid}',
-                   f'cd {workspace_dir}/{prepid}',
+        command = [f'rm -rf {request_dir}',
+                   f'mkdir -p {request_dir}',
+                   f'cd {request_dir}',
                    'voms-proxy-init -voms cms --valid 4:00 --out $(pwd)/proxy.txt']
         ssh_executor.execute_command(command)
 
         # Upload config generation script - cmsDrivers
-        ssh_executor.upload_file(f'/tmp/{prepid}_generate.sh',
-                                 f'{workspace_dir}/{prepid}/config_generate.sh')
+        ssh_executor.upload_as_file(config_script, f'{request_dir}/config_generate.sh')
         # Upload config upload to ReqMgr2 script
-        ssh_executor.upload_file(f'/tmp/{prepid}_upload.sh',
-                                 f'{workspace_dir}/{prepid}/config_upload.sh')
+        ssh_executor.upload_as_file(upload_script, f'{request_dir}/config_upload.sh')
         # Upload python script used by upload script
         ssh_executor.upload_file('./core_lib/utils/config_uploader.py',
-                                 f'{workspace_dir}/{prepid}/config_uploader.py')
-
-        os.remove(f'/tmp/{prepid}_generate.sh')
-        os.remove(f'/tmp/{prepid}_upload.sh')
+                                 f'{request_dir}/config_uploader.py')
 
     def check_for_submission(self, request):
         """
@@ -123,16 +112,13 @@ class RequestSubmitter(BaseSubmitter):
             request_db.save(request.get_json())
             raise Exception('Cannot submit a request without input dataset')
 
-    def generate_configs(self, request, ssh_executor, workspace_dir):
+    def generate_configs(self, request, ssh_executor, request_dir):
         """
         SSH to a remote machine and generate cmsDriver config files
         """
         prepid = request.get_prepid()
         self.logger.debug('Will generate configs for %s', prepid)
-        command = [f'cd {workspace_dir}',
-                   'export WORKSPACE_DIR=$(pwd)',
-                   f'cd {prepid}',
-                   'export REQUEST_DIR=$(pwd)',
+        command = [f'cd {request_dir}',
                    'chmod +x config_generate.sh',
                    'export X509_USER_PROXY=$(pwd)/proxy.txt',
                    './config_generate.sh']
@@ -142,16 +128,13 @@ class RequestSubmitter(BaseSubmitter):
 
         return stdout
 
-    def upload_configs(self, request, ssh_executor, workspace_dir):
+    def upload_configs(self, request, ssh_executor, request_dir):
         """
         SSH to a remote machine and upload cmsDriver config files to ReqMgr2
         """
         prepid = request.get_prepid()
         self.logger.debug('Will upload configs for %s', prepid)
-        command = [f'cd {workspace_dir}',
-                   'export WORKSPACE_DIR=$(pwd)',
-                   f'cd {prepid}',
-                   'export REQUEST_DIR=$(pwd)',
+        command = [f'cd {request_dir}',
                    'chmod +x config_upload.sh',
                    'export X509_USER_PROXY=$(pwd)/proxy.txt',
                    './config_upload.sh']
@@ -215,6 +198,7 @@ class RequestSubmitter(BaseSubmitter):
         prepid = request.get_prepid()
         credentials_file = Config.get('credentials_file')
         workspace_dir = Config.get('remote_path').rstrip('/')
+        request_dir = f'{workspace_dir}/{prepid}'
         self.logger.debug('Will try to acquire lock for %s', prepid)
         with Locker().get_lock(prepid):
             self.logger.info('Locked %s for submission', prepid)
@@ -224,13 +208,13 @@ class RequestSubmitter(BaseSubmitter):
                 self.check_for_submission(request)
                 with SSHExecutor('lxplus.cern.ch', credentials_file) as ssh:
                     # Start executing commands
-                    self.prepare_workspace(request, controller, ssh, workspace_dir)
+                    self.prepare_workspace(request, controller, ssh, request_dir)
                     # Create configs
-                    self.generate_configs(request, ssh, workspace_dir)
+                    self.generate_configs(request, ssh, request_dir)
                     # Upload configs
-                    config_hashes = self.upload_configs(request, ssh, workspace_dir)
+                    config_hashes = self.upload_configs(request, ssh, request_dir)
                     # Remove remote request directory
-                    ssh.execute_command([f'rm -rf {workspace_dir}/{prepid}'])
+                    ssh.execute_command([f'rm -rf {request_dir}'])
 
                 self.logger.debug(config_hashes)
                 # Iterate through uploaded configs and save their hashes in request sequences

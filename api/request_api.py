@@ -179,8 +179,7 @@ class GetConfigUploadAPI(APIBase):
         Get a text file with request's cmsDriver.py commands
         """
         request = request_controller.get(prepid)
-        for_submission = flask.request.args.get('submission', '').lower() == 'true'
-        commands = request_controller.get_config_upload_file(request, for_submission)
+        commands = request_controller.get_config_upload_file(request)
         return self.output_text(commands, content_type='text/plain')
 
 
