@@ -52,7 +52,7 @@ class Sequence(ModelBase):
         'conditions': lambda c: ModelBase.matches_regex(c, '[a-zA-Z0-9_]{0,50}'),
         'config_id': lambda cid: ModelBase.matches_regex(cid, '[a-f0-9]{0,50}'),
         '__datatier': lambda s: s in {'ALCARECO', 'AOD', 'DQMIO', 'MINIAOD',
-                                      'NANOAOD', 'RECO', 'USER'},
+                                      'NANOAOD', 'RECO', 'USER', 'FEVTDEBUGHLT'},
         'era': lambda e: ModelBase.matches_regex(e, '[a-zA-Z0-9_\\,]{0,50}'),
         '__eventcontent': lambda s: s in {'ALCARECO', 'AOD', 'DQM', 'MINIAOD',
                                           'NANOAOD', 'NANOEDMAOD', 'RECO', 'FEVT',
@@ -67,7 +67,7 @@ class Sequence(ModelBase):
         'scenario': lambda s: s in {'pp', 'cosmics', 'nocoll', 'HeavyIons'},
         '__step': lambda s: (s.split(':')[0] in {'ALCA', 'DQM', 'EI', 'FILTER', 'HARVESTING',
                                                  'L1Reco', 'NANO', 'PAT', 'RAW2DIGI', 'RECO',
-                                                 'SKIM'})
+                                                 'SKIM', 'L1REPACK', 'HLT'})
     }
 
     def __init__(self, json_input=None, parent=None, check_attributes=True):
