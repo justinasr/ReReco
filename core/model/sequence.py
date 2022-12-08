@@ -274,7 +274,7 @@ class Sequence(ModelBase):
             dataset = self.parent().get_dataset()
             steps[step_index] = f'${step}_STEP'
             # Build a small python program to get value from CMSSW on the go
-            step_var = f'{step}_STEP=$(python -c "'
+            step_var = f'{step}_STEP=$($PYTHON_INT -c "'
             if step == 'ALCA':
                 step_var += 'from Configuration.AlCa.autoAlca import AlCaRecoMatrix as ds;'
             elif step == 'SKIM':
