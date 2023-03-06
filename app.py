@@ -9,6 +9,7 @@ import logging.handlers
 from flask_restful import Api
 from flask_cors import CORS
 from flask import Flask, request, session, render_template
+from werkzeug.middleware.proxy_fix import ProxyFix
 from jinja2.exceptions import TemplateNotFound
 from core_lib.middlewares.auth import AuthenticationMiddleware
 from core_lib.database.database import Database
@@ -76,6 +77,9 @@ logging.getLogger("werkzeug").setLevel(logging.WARNING)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 app.url_map.strict_slashes = False
+# Handle redirections from a reverse proxy
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
 api = Api(app)
 CORS(
     app,
