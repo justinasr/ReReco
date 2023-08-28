@@ -54,7 +54,7 @@ def move_to_done(host, client_credentials):
     Try to move all submitted requests to next status
 
     Args:
-        host (str): RelVal web application domain
+        host (str): ReReco web application domain
         client_credentials (dict[str, str]): Credentials for requesting access tokens
             to authenticate request to the SSO
     """
@@ -89,7 +89,7 @@ def main():
     # Retrieve database credentials
     database_credentials = get_database_credentials()
 
-    # RelVal Service URL
+    # ReReco domain URL
     rereco_service_domain = os.getenv("SERVICE_DOMAIN", "cms-pdmv-prod.web.cern.ch")
 
     # Set database configuration

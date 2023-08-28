@@ -46,7 +46,7 @@ import pprint
 DEVELOPMENT: bool = not bool(os.getenv("PRODUCTION"))
 DEBUG: bool = bool(os.getenv("DEBUG"))
 REMOTE_PATH: str = os.getenv("REMOTE_PATH", "")
-SERVICE_URL: str = os.getenv("SERVICE_URL", "https://cms-pdmv-dev.web.cern.ch/relval")
+SERVICE_URL: str = os.getenv("SERVICE_URL", "https://cms-pdmv-dev.web.cern.ch/rereco")
 CMSWEB_URL: str = os.getenv("CMSWEB_URL", "")
 REMOTE_SSH_USERNAME: str = os.getenv("REMOTE_SSH_USERNAME", "")
 REMOTE_SSH_PASSWORD: str = os.getenv("REMOTE_SSH_PASSWORD", "")
