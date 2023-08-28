@@ -291,7 +291,7 @@ def main():
         # Do only once, before the reloader
         pid = os.getpid()
         logger.info("PID: %s", pid)
-        with open("relval.pid", "w") as pid_file:
+        with open("rereco.pid", "w") as pid_file:
             pid_file.write(str(pid))
 
     logger.info(
