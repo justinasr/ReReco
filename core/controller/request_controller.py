@@ -1,6 +1,7 @@
 """
 Module that contains RequestController class
 """
+import environment
 import json
 from core_lib.database.database import Database
 from core_lib.utils.common_utils import (change_workflow_priority,
@@ -12,7 +13,6 @@ from core_lib.utils.common_utils import (change_workflow_priority,
                                          get_workflows_from_stats,
                                          get_workflows_from_stats_for_prepid,
                                          refresh_workflows_in_stats, run_commands_in_cmsenv)
-from core_lib.utils.global_config import Config
 from core_lib.utils.settings import Settings
 from core_lib.controller.controller_base import ControllerBase
 from core.model.request import Request
@@ -232,7 +232,7 @@ class RequestController(ControllerBase):
         Get bash script that would upload config files to ReqMgr2
         """
         self.logger.debug('Getting config upload script for %s', request.get_prepid())
-        database_url = Config.get('cmsweb_url').replace('https://', '').replace('http://', '')
+        database_url = environment.CMSWEB_URL.replace('https://', '').replace('http://', '')
         bash = ['#!/bin/bash',
                 '']
         config_names = []
@@ -278,7 +278,7 @@ class RequestController(ControllerBase):
         prepid = request.get_prepid()
         self.logger.debug('Getting job dict for %s', prepid)
         sequences = request.get('sequences')
-        database_url = Config.get('cmsweb_url') + '/couchdb'
+        database_url = environment.CMSWEB_URL + '/couchdb'
         request_string = request.get_request_string()
         campaign_name = request.get('subcampaign').split('-')[0]
         job_dict = {}
@@ -303,7 +303,7 @@ class RequestController(ControllerBase):
             job_dict.update(self.get_job_dict_taskchain(request, sequences))
 
         if job_dict.get('EnableHarvesting'):
-            if not Config.get('development'):
+            if not environment.DEVELOPMENT:
                 # Do not upload to prod DQM GUI in dev
                 job_dict['DQMUploadUrl'] = 'https://cmsweb.cern.ch/dqm/offline'
             else:
