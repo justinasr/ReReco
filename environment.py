@@ -36,7 +36,7 @@ Attributes:
         updates in Stats2 (refresh_workflows_in_stats function in core_lib). 
     APPLICATION_CLIENT_ID (str): This is ID for target application (audience),
         registered in CERN Application Portal, that handles OIDC authentication flow 
-        for PdmV applications or RelVal application.
+        for PdmV applications or this application.
 """
 import os
 import inspect
