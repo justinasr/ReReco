@@ -1,15 +1,14 @@
 """
 Module that has all classes used for request submission to computing
 """
-
 import time
+import environment
 from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.locker import Locker
 from core_lib.database.database import Database
 from core_lib.utils.connection_wrapper import ConnectionWrapper
 from core_lib.utils.submitter import Submitter as BaseSubmitter
 from core_lib.utils.common_utils import clean_split, refresh_workflows_in_stats
-from core_lib.utils.global_config import Config
 from core.utils.emailer import Emailer
 
 
@@ -37,7 +36,7 @@ class RequestSubmitter(BaseSubmitter):
         request.set('status', 'new')
         request.add_history('submission', 'failed', 'automatic')
         request_db.save(request.get_json())
-        service_url = Config.get('service_url')
+        service_url = environment.SERVICE_URL
         emailer = Emailer()
         prepid = request.get_prepid()
         self.logger.warning('Submission of %s failed', prepid)
@@ -55,16 +54,16 @@ class RequestSubmitter(BaseSubmitter):
         """
         prepid = request.get_prepid()
         last_workflow = request.get('workflows')[-1]['name']
-        cmsweb_url = Config.get('cmsweb_url')
+        cmsweb_url = environment.CMSWEB_URL
         self.logger.info('Submission of %s succeeded', prepid)
-        service_url = Config.get('service_url')
+        service_url = environment.SERVICE_URL
         emailer = Emailer()
         subject = f'Request {prepid} submission succeeded'
         body = f'Hello,\n\nSubmission of {prepid} succeeded.\n'
         body += (f'You can find this request at '
                  f'{service_url}/requests?prepid={prepid}\n')
         body += f'Workflow in ReqMgr2 {cmsweb_url}/reqmgr2/fetch?rid={last_workflow}'
-        if Config.get('development'):
+        if environment.DEVELOPMENT:
             body += '\nNOTE: This was submitted from a development instance of ReReco machine '
             body += 'and this job will never start running in computing!\n'
 
@@ -104,13 +103,13 @@ class RequestSubmitter(BaseSubmitter):
         prepid = request.get_prepid()
         self.logger.debug('Final check before submission for %s', prepid)
         if request.get('status') != 'submitting':
-            raise Exception(f'Cannot submit a request with status {request.get("status")}')
+            raise AssertionError(f'Cannot submit a request with status {request.get("status")}')
 
         if not request.get('input')['dataset']:
             request_db = Database('requests')
             request.set('status', 'approved')
             request_db.save(request.get_json())
-            raise Exception('Cannot submit a request without input dataset')
+            raise AssertionError('Cannot submit a request without input dataset')
 
     def generate_configs(self, request, ssh_executor, request_dir):
         """
@@ -124,7 +123,7 @@ class RequestSubmitter(BaseSubmitter):
                    './config_generate.sh']
         stdout, stderr, exit_code = ssh_executor.execute_command(command)
         if exit_code != 0:
-            raise Exception(f'Error generating configs for {prepid}.\n{stderr}')
+            raise RuntimeError(f'Error generating configs for {prepid}.\n{stderr}')
 
         return stdout
 
@@ -140,7 +139,7 @@ class RequestSubmitter(BaseSubmitter):
                    './config_upload.sh']
         stdout, stderr, exit_code = ssh_executor.execute_command(command)
         if exit_code != 0:
-            raise Exception(f'Error uploading configs for {prepid}.\n{stderr}')
+            raise RuntimeError(f'Error uploading configs for {prepid}.\n{stderr}')
 
         stdout = [x for x in clean_split(stdout, '\n') if 'DocID' in x]
         # Get all lines that have DocID as tuples split by space
@@ -176,7 +175,7 @@ class RequestSubmitter(BaseSubmitter):
                                       sequence_name)
 
         if config_hashes:
-            raise Exception(f'Unused hashes: {config_hashes}')
+            raise RuntimeError(f'Unused hashes: {config_hashes}')
 
         for sequence in request.get('sequences'):
             sequence_config_names = sequence.get_config_file_names()
@@ -185,19 +184,18 @@ class RequestSubmitter(BaseSubmitter):
 
             if not sequence.get('config_id'):
                 sequence_name = sequence.get_name()
-                raise Exception(f'Missing hash for {sequence_name}')
+                raise ValueError(f'Missing hash for {sequence_name}')
 
             if sequence.needs_harvesting() and not sequence.get('harvesting_config_id'):
                 sequence_name = sequence.get_name()
-                raise Exception(f'Missing harvesting hash for {sequence_name}')
+                raise ValueError(f'Missing harvesting hash for {sequence_name}')
 
     def submit_request(self, request, controller):
         """
         Method that is used by submission workers. This is where the actual submission happens
         """
         prepid = request.get_prepid()
-        credentials_file = Config.get('credentials_file')
-        workspace_dir = Config.get('remote_path').rstrip('/')
+        workspace_dir = environment.REMOTE_PATH.rstrip('/')
         request_dir = f'{workspace_dir}/{prepid}'
         self.logger.debug('Will try to acquire lock for %s', prepid)
         with Locker().get_lock(prepid):
@@ -206,7 +204,11 @@ class RequestSubmitter(BaseSubmitter):
             request = controller.get(prepid)
             try:
                 self.check_for_submission(request)
-                with SSHExecutor('lxplus.cern.ch', credentials_file) as ssh:
+                with SSHExecutor(
+                    host=environment.REMOTE_SSH_NODE,
+                    username=environment.REMOTE_SSH_USERNAME,
+                    password=environment.REMOTE_SSH_PASSWORD
+                ) as ssh:
                     # Start executing commands
                     self.prepare_workspace(request, controller, ssh, request_dir)
                     # Create configs
@@ -221,9 +223,9 @@ class RequestSubmitter(BaseSubmitter):
                 self.update_sequences_with_config_hashes(request, config_hashes)
                 # Submit job dict to ReqMgr2
                 job_dict = controller.get_job_dict(request)
-                cmsweb_url = Config.get('cmsweb_url')
-                grid_cert = Config.get('grid_user_cert')
-                grid_key = Config.get('grid_user_key')
+                cmsweb_url = environment.CMSWEB_URL
+                grid_cert = environment.GRID_USER_CERT
+                grid_key = environment.GRID_USER_KEY
                 with ConnectionWrapper(cmsweb_url, grid_cert, grid_key) as connection:
                     workflow_name = self.submit_job_dict(job_dict, connection)
                     # Update request after successful submission
@@ -234,7 +236,7 @@ class RequestSubmitter(BaseSubmitter):
                     time.sleep(3)
                     self.approve_workflow(workflow_name, connection)
 
-                if not Config.get('development'):
+                if not environment.DEVELOPMENT:
                     refresh_workflows_in_stats([workflow_name])
 
             except Exception as ex:
@@ -243,7 +245,7 @@ class RequestSubmitter(BaseSubmitter):
 
             self.__handle_success(request)
 
-        if not Config.get('development'):
+        if not environment.DEVELOPMENT:
             controller.update_workflows(request)
 
         self.logger.info('Successfully finished %s submission', prepid)

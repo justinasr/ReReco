@@ -2,11 +2,11 @@
 Module that contains SubcampaignController class
 """
 import json
+import environment
 from core_lib.database.database import Database
 from core_lib.controller.controller_base import ControllerBase
 from core_lib.utils.cache import TimeoutCache
 from core_lib.utils.connection_wrapper import ConnectionWrapper
-from core_lib.utils.global_config import Config
 from core.model.subcampaign import Subcampaign
 from core.model.sequence import Sequence
 
@@ -29,8 +29,8 @@ class SubcampaignController(ControllerBase):
         requests_db = Database('requests')
         requests = requests_db.query(f'subcampaign={prepid}')
         if requests:
-            raise Exception(f'It is not allowed to delete subcampaigns that have existing '
-                            f'requests. {prepid} has {len(requests)} requests')
+            raise AssertionError(f'It is not allowed to delete subcampaigns that have existing '
+                                 f'requests. {prepid} has {len(requests)} requests')
 
         return True
 
@@ -70,8 +70,8 @@ class SubcampaignController(ControllerBase):
             return {}
 
 
-        grid_cert = Config.get('grid_user_cert')
-        grid_key = Config.get('grid_user_key')
+        grid_cert = environment.GRID_USER_CERT
+        grid_key = environment.GRID_USER_KEY
         with ConnectionWrapper('https://cms-service-dqmdc.web.cern.ch',
                                grid_cert,
                                grid_key) as connection:

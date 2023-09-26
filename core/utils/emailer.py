@@ -1,8 +1,8 @@
 """
 Module that handles all email notifications
 """
+import environment
 from core_lib.utils.emailer import Emailer as BaseEmailer
-from core_lib.utils.global_config import Config
 
 
 class Emailer(BaseEmailer):
@@ -12,7 +12,7 @@ class Emailer(BaseEmailer):
 
     def send(self, subject, body, recipients):
         body = body.strip()  + '\n\nSincerely,\nReReco Machine'
-        if Config.get('development'):
+        if environment.DEVELOPMENT:
             subject = f'[ReReco-DEV] {subject}'
         else:
             subject = f'[ReReco] {subject}'

@@ -56,27 +56,27 @@ class Ticket(ModelBase):
     def check_attribute(self, attribute_name, attribute_value):
         if attribute_name == 'steps':
             if not isinstance(attribute_value, list):
-                raise Exception(f'Expected {attribute_name} to be a list')
+                raise TypeError(f'Expected {attribute_name} to be a list')
 
             for step in attribute_value:
                 subcampaign = step['subcampaign']
                 if not ModelBase.lambda_check('subcampaign')(subcampaign):
-                    raise Exception(f'Bad subcampaign prepid {subcampaign}')
+                    raise ValueError(f'Bad subcampaign prepid {subcampaign}')
 
                 processing_string = step['processing_string']
                 if not ModelBase.lambda_check('processing_string')(processing_string):
-                    raise Exception(f'Bad processing string {processing_string}')
+                    raise ValueError(f'Bad processing string {processing_string}')
 
                 time_per_event = step['time_per_event']
                 if [t for t in time_per_event if t <= 0.0]:
-                    raise Exception('Time per event must be > 0')
+                    raise ValueError('Time per event must be > 0')
 
                 size_per_event = step['size_per_event']
                 if [s for s in size_per_event if s <= 0.0]:
-                    raise Exception('Size per event must be > 0')
+                    raise ValueError('Size per event must be > 0')
 
                 priority = step['priority']
                 if not ModelBase.lambda_check('priority')(priority):
-                    raise Exception(f'Bad priority {priority}')
+                    raise ValueError(f'Bad priority {priority}')
 
         return super().check_attribute(attribute_name, attribute_value)

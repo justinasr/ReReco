@@ -2,6 +2,7 @@
 Module that contains RequestController class
 """
 import json
+import environment
 from core_lib.database.database import Database
 from core_lib.utils.common_utils import (change_workflow_priority,
                                          cmsweb_reject_workflows,
@@ -12,7 +13,6 @@ from core_lib.utils.common_utils import (change_workflow_priority,
                                          get_workflows_from_stats,
                                          get_workflows_from_stats_for_prepid,
                                          refresh_workflows_in_stats, run_commands_in_cmsenv)
-from core_lib.utils.global_config import Config
 from core_lib.utils.settings import Settings
 from core_lib.controller.controller_base import ControllerBase
 from core.model.request import Request
@@ -42,7 +42,7 @@ class RequestController(ControllerBase):
         subcampaign_name = json_data.get('subcampaign')
         subcampaign_json = subcampaign_db.get(subcampaign_name)
         if not subcampaign_json:
-            raise Exception(f'Subcampaign "{subcampaign_name}" does not exist')
+            raise ValueError(f'Subcampaign "{subcampaign_name}" does not exist')
 
         request_db = Database(self.database_name)
         subcampaign = Subcampaign(json_input=subcampaign_json)
@@ -81,7 +81,7 @@ class RequestController(ControllerBase):
         # Only one must be provided
         self.logger.info('Input of request is %s', request_input)
         if input_dataset and input_request_prepid:
-            raise Exception('Request cannot have both input request and input dataset')
+            raise AssertionError('Request cannot have both input request and input dataset')
 
         if input_dataset and not input_request_prepid:
             input_dataset_parts = [x for x in input_dataset.split('/') if x]
@@ -90,13 +90,13 @@ class RequestController(ControllerBase):
         elif not input_dataset and input_request_prepid:
             input_request_json = request_db.get(input_request_prepid)
             if not input_request_json:
-                raise Exception(f'Request "{input_request_prepid}" does not exist')
+                raise ValueError(f'Request "{input_request_prepid}" does not exist')
 
             input_request = Request(json_input=input_request_json)
             era = input_request.get_era()
             dataset = input_request.get_dataset()
         else:
-            raise Exception('Request must have either a input request or input dataset')
+            raise AssertionError('Request must have either a input request or input dataset')
 
         processing_string = new_request.get('processing_string')
         prepid_middle_part = f'{era}-{dataset}-{processing_string}'
@@ -116,35 +116,38 @@ class RequestController(ControllerBase):
         size_per_event = obj.get('size_per_event')
         time_per_event = obj.get('time_per_event')
         if len(sequences) != len(size_per_event):
-            raise Exception(f'Expected {len(sequences)} size per event '
-                            f'values, found {len(size_per_event)}')
+            raise ValueError(f'Expected {len(sequences)} size per event '
+                             f'values, found {len(size_per_event)}')
 
         if len(sequences) != len(time_per_event):
-            raise Exception(f'Expected {len(sequences)} time per event '
-                            f'values, found {len(time_per_event)}')
+            raise ValueError(f'Expected {len(sequences)} time per event '
+                             f'values, found {len(time_per_event)}')
 
         return super().check_for_create(obj)
 
     def check_for_update(self, old_obj, new_obj, changed_values):
         if old_obj.get('status') == 'submitting':
-            raise Exception('You are now allowed to update request while it is being submitted')
+            raise AssertionError((
+                'You are now allowed to update request '
+                'while it is being submitted'
+            ))
 
         sequences = new_obj.get('sequences')
         size_per_event = new_obj.get('size_per_event')
         time_per_event = new_obj.get('time_per_event')
         if len(sequences) != len(size_per_event):
-            raise Exception(f'Expected {len(sequences)} size per event '
+            raise ValueError(f'Expected {len(sequences)} size per event '
                             f'values, found {len(size_per_event)}')
 
         if len(sequences) != len(time_per_event):
-            raise Exception(f'Expected {len(sequences)} time per event '
+            raise ValueError(f'Expected {len(sequences)} time per event '
                             f'values, found {len(time_per_event)}')
 
         return super().check_for_update(old_obj, new_obj, changed_values)
 
     def check_for_delete(self, obj):
         if obj.get('status') != 'new':
-            raise Exception('Request must be in status "new" before it is deleted')
+            raise AssertionError('Request must be in status "new" before it is deleted')
 
         requests_db = Database('requests')
         prepid = obj.get_prepid()
@@ -152,8 +155,8 @@ class RequestController(ControllerBase):
         subsequent_requests = requests_db.query(subsequent_requests_query)
         if subsequent_requests:
             subsequent_requests_prepids = ', '.join([r['prepid'] for r in subsequent_requests])
-            raise Exception(f'Request cannot be deleted because it is input request'
-                            f'for {subsequent_requests_prepids}. Delete these requests first')
+            raise AssertionError(f'Request cannot be deleted because it is input request'
+                                 f'for {subsequent_requests_prepids}. Delete these requests first')
 
         return True
 
@@ -232,7 +235,7 @@ class RequestController(ControllerBase):
         Get bash script that would upload config files to ReqMgr2
         """
         self.logger.debug('Getting config upload script for %s', request.get_prepid())
-        database_url = Config.get('cmsweb_url').replace('https://', '').replace('http://', '')
+        database_url = environment.CMSWEB_URL.replace('https://', '').replace('http://', '')
         bash = ['#!/bin/bash',
                 '']
         config_names = []
@@ -278,7 +281,7 @@ class RequestController(ControllerBase):
         prepid = request.get_prepid()
         self.logger.debug('Getting job dict for %s', prepid)
         sequences = request.get('sequences')
-        database_url = Config.get('cmsweb_url') + '/couchdb'
+        database_url = environment.CMSWEB_URL + '/couchdb'
         request_string = request.get_request_string()
         campaign_name = request.get('subcampaign').split('-')[0]
         job_dict = {}
@@ -303,7 +306,7 @@ class RequestController(ControllerBase):
             job_dict.update(self.get_job_dict_taskchain(request, sequences))
 
         if job_dict.get('EnableHarvesting'):
-            if not Config.get('development'):
+            if not environment.DEVELOPMENT:
                 # Do not upload to prod DQM GUI in dev
                 job_dict['DQMUploadUrl'] = 'https://cmsweb.cern.ch/dqm/offline'
             else:
@@ -511,11 +514,11 @@ class RequestController(ControllerBase):
             elif request.get('status') == 'approved':
                 self.move_request_to_submitting(request)
             elif request.get('status') == 'submitting':
-                raise Exception('Request is being submitted')
+                raise AssertionError('Request is being submitted')
             elif request.get('status') == 'submitted':
                 self.move_request_to_done(request)
             elif request.get('status') == 'done':
-                raise Exception('Request is already done')
+                raise AssertionError('Request is already done')
 
         return request
 
@@ -553,25 +556,25 @@ class RequestController(ControllerBase):
         input_dataset = request.get('input')['dataset']
         if not input_dataset.strip():
             prepid = request.get_prepid()
-            raise Exception(f'Could not move {prepid} to submitting '
-                            'because it does not have input dataset')
+            raise AssertionError(f'Could not move {prepid} to submitting '
+                                 'because it does not have input dataset')
 
         input_request_prepid = request.get('input')['request']
         if input_request_prepid:
             input_request = self.get(input_request_prepid)
             input_request_status = input_request.get('status')
             if input_request_status != 'done':
-                raise Exception(f'Input request {input_request_prepid} status is '
-                                f'"{input_request_status}", not "done"')
+                raise AssertionError(f'Input request {input_request_prepid} status is '
+                                     f'"{input_request_status}", not "done"')
 
         input_dataset_info = dbs_datasetlist([input_dataset])
         if not input_dataset_info:
-            raise Exception(f'Could not get info about input dataset "{input_dataset}"')
+            raise RuntimeError(f'Could not get info about input dataset "{input_dataset}"')
 
         dataset_access_type = input_dataset_info[0].get('dataset_access_type', 'unknown')
         self.logger.info('%s access type is %s', input_dataset, dataset_access_type)
         if dataset_access_type != 'VALID':
-            raise Exception(f'{input_dataset} type is {dataset_access_type}, it must be VALID')
+            raise AssertionError(f'{input_dataset} type is {dataset_access_type}, it must be VALID')
 
         RequestSubmitter().add(request, self)
         self.update_status(request, 'submitting')
@@ -591,8 +594,8 @@ class RequestController(ControllerBase):
                 dataset_type = output_dataset['type']
                 if dataset_type.lower() != 'valid':
                     dataset_name = output_dataset['name']
-                    raise Exception(f'Could not move {prepid} to "done" '
-                                    f'because {dataset_name} is {dataset_type}')
+                    raise AssertionError(f'Could not move {prepid} to "done" '
+                                         f'because {dataset_name} is {dataset_type}')
 
             for status in last_workflow['status_history']:
                 if status['status'].lower() in ('announced', 'normal-archived'):
@@ -600,14 +603,18 @@ class RequestController(ControllerBase):
                     break
             else:
                 last_workflow_name = last_workflow['name']
-                raise Exception(f'Could not move {prepid} to "done" because {last_workflow_name} '
-                                'is not yet "announced" or "normal-archived"')
+                raise AssertionError(
+                    (
+                        f'Could not move {prepid} to "done" because {last_workflow_name} '
+                        'is not yet "announced" or "normal-archived"'
+                    )
+                )
 
             self.update_status(request, 'done', completed_timestamp)
             # Submit all subsequent requests
             self.submit_subsequent_requests(request)
         else:
-            raise Exception(f'{prepid} does not have any workflows in computing')
+            raise AssertionError(f'{prepid} does not have any workflows in computing')
 
         return request
 
@@ -870,7 +877,7 @@ class RequestController(ControllerBase):
             all_workflows = {}
             for workflow in stats_workflows:
                 if not workflow or not workflow.get('RequestName'):
-                    raise Exception('Could not find workflow in Stats2')
+                    raise RuntimeError('Could not find workflow in Stats2')
 
                 name = workflow.get('RequestName')
                 all_workflows[name] = workflow
@@ -938,14 +945,14 @@ class RequestController(ControllerBase):
         with self.locker.get_nonblocking_lock(prepid):
             request = self.get(prepid)
             if request.get('status') != 'new':
-                raise Exception('It is not allowed to option reset '
-                                'requests that are not in status "new"')
+                raise AssertionError('It is not allowed to reset '
+                                     'requests that are not in status "new"')
 
             subcampaign_db = Database('subcampaigns')
             subcampaign_name = request.get('subcampaign')
             subcampaign_json = subcampaign_db.get(subcampaign_name)
             if not subcampaign_json:
-                raise Exception(f'Subcampaign "{subcampaign_name}" does not exist')
+                raise AssertionError(f'Subcampaign "{subcampaign_name}" does not exist')
 
             subcampaign = Subcampaign(json_input=subcampaign_json)
             request.set('memory', subcampaign.get('memory'))
@@ -965,8 +972,8 @@ class RequestController(ControllerBase):
         request_db = Database('requests')
         self.logger.info('Will try to change %s priority to %s', prepid, priority)
         if request.get('status') != 'submitted':
-            raise Exception('It is not allowed to change priority of '
-                            'requests that are not in status "submitted"')
+            raise AssertionError('It is not allowed to change priority of '
+                                 'requests that are not in status "submitted"')
 
         request.set('priority', priority)
         active_workflows = self.pick_active_workflows(request)

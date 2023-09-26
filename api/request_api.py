@@ -57,7 +57,7 @@ class DeleteRequestAPI(APIBase):
             for single_request_json in request_json:
                 results.append(request_controller.delete(single_request_json))
         else:
-            raise Exception('Expected a single request dict or a list of request dicts')
+            raise ValueError('Expected a single request dict or a list of request dicts')
 
         return self.output_text({'response': results, 'success': True, 'message': ''})
 
@@ -86,7 +86,7 @@ class UpdateRequestAPI(APIBase):
             for single_request_json in request_json:
                 results.append(request_controller.update(single_request_json))
         else:
-            raise Exception('Expected a single request dict or a list of request dicts')
+            raise ValueError('Expected a single request dict or a list of request dicts')
 
         return self.output_text({'response': results, 'success': True, 'message': ''})
 
@@ -234,7 +234,7 @@ class RequestNextStatus(APIBase):
 
             results = [x.get_json() for x in results]
         else:
-            raise Exception('Expected a single request dict or a list of request dicts')
+            raise ValueError('Expected a single request dict or a list of request dicts')
 
         return self.output_text({'response': results, 'success': True, 'message': ''})
 
@@ -270,7 +270,7 @@ class RequestPreviousStatus(APIBase):
 
             results = [x.get_json() for x in results]
         else:
-            raise Exception('Expected a single request dict or a list of request dicts')
+            raise ValueError('Expected a single request dict or a list of request dicts')
 
         return self.output_text({'response': results, 'success': True, 'message': ''})
 
@@ -372,7 +372,7 @@ class UpdateRequestWorkflowsAPI(APIBase):
 
             results = [x.get_json() for x in results]
         else:
-            raise Exception('Expected a single request dict or a list of request dicts')
+            raise ValueError('Expected a single request dict or a list of request dicts')
 
         return self.output_text({'response': results, 'success': True, 'message': ''})
 
@@ -403,6 +403,6 @@ class RequestOptionResetAPI(APIBase):
 
             results = [x.get_json() for x in results]
         else:
-            raise Exception('Expected a single request dict or a list of request dicts')
+            raise ValueError('Expected a single request dict or a list of request dicts')
 
         return self.output_text({'response': results, 'success': True, 'message': ''})

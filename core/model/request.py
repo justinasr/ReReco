@@ -102,7 +102,7 @@ class Request(ModelBase):
     def check_attribute(self, attribute_name, attribute_value):
         if attribute_name == 'input':
             if not attribute_value.get('dataset') and not attribute_value.get('request'):
-                raise Exception('Either input dataset or input request must be provided')
+                raise ValueError('Either input dataset or input request must be provided')
 
         return super().check_attribute(attribute_name, attribute_value)
 

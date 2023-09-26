@@ -102,10 +102,10 @@ class Sequence(ModelBase):
 
         # If sequence does not have HARVESTING step, eventcontent and datatier cannot be empty
         if not self.get('eventcontent'):
-            raise Exception('No eventcontent is allowed only with HARVESTING step')
+            raise AssertionError('No eventcontent is allowed only with HARVESTING step')
 
         if not self.get('datatier'):
-            raise Exception('No datatier is allowed only with HARVESTING step')
+            raise AssertionError('No datatier is allowed only with HARVESTING step')
 
         return super().check_attribute(attribute_name, attribute_value)
 
@@ -132,7 +132,7 @@ class Sequence(ModelBase):
             if self == sequence:
                 return index
 
-        raise Exception(f'Sequence is not a child of {self.parent().get_prepid()}')
+        raise AssertionError(f'Sequence is not a child of {self.parent().get_prepid()}')
 
     def get_name(self):
         """

@@ -4,6 +4,7 @@ Script to make time per event and size per event as lists in requests and ticket
 import sys
 import os.path
 import os
+# pylint: disable-next=wrong-import-position
 sys.path.append(os.path.abspath(os.path.pardir))
 from core_lib.database.database import Database
 
