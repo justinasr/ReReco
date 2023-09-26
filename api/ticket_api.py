@@ -110,7 +110,7 @@ class GetTicketDatasetsAPI(APIBase):
         """
         query = request.args.get('q')
         if not query:
-            raise Exception('No input was supplied')
+            raise ValueError('No input was supplied')
 
         exclude = request.args.get('exclude', '')
         exclude = clean_split(exclude)
@@ -134,7 +134,7 @@ class GetTicketRequestsAPI(APIBase):
         """
         query = request.args.get('q')
         if not query:
-            raise Exception('No input was supplied')
+            raise ValueError('No input was supplied')
 
         obj = ticket_controller.get_requests(query)
         return self.output_text({'response': obj, 'success': True, 'message': ''})
@@ -185,11 +185,11 @@ class CreateRequestsForTicketAPI(APIBase):
         prepid = request_data.get('prepid')
         if not prepid:
             self.logger.error('No prepid in given data: %s', json.dumps(request_data, indent=2))
-            raise Exception('No prepid in submitted data')
+            raise ValueError('No prepid in submitted data')
 
         ticket = ticket_controller.get(prepid)
         if not ticket:
-            raise Exception(f'Ticket "{prepid}" does not exist')
+            raise ValueError(f'Ticket "{prepid}" does not exist')
 
         result = ticket_controller.create_requests_for_ticket(ticket)
         return self.output_text({'response': result, 'success': True, 'message': ''})

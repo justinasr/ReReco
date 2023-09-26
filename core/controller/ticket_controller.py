@@ -49,7 +49,7 @@ class TicketController(ControllerBase):
         ticket_input = ticket.get('input')
         duplicates = list(set(x for x in ticket_input if ticket_input.count(x) > 1))
         if duplicates:
-            raise Exception(f'Duplicates in input: {", ".join(duplicates)}')
+            raise ValueError(f'Duplicates in input: {", ".join(duplicates)}')
 
         dataset_blacklist = set(Settings().get('dataset_blacklist'))
         request_controller = RequestController()
@@ -64,16 +64,20 @@ class TicketController(ControllerBase):
                 dataset = request.get_dataset()
 
             if dataset in dataset_blacklist:
-                raise Exception(f'Input dataset {input_item} is not '
-                                f'allowed because {dataset} is in blacklist')
+                raise AssertionError(f'Input dataset {input_item} is not '
+                                     f'allowed because {dataset} is in blacklist')
 
         dataset_info = {x['dataset']: x['dataset_access_type'] for x in dbs_datasetlist(datasets)}
         self.logger.info(dataset_info)
         for dataset in datasets:
             dataset_status = dataset_info.get(dataset, 'NONE')
             if dataset_status not in {'VALID', 'PRODUCTION'}:
-                raise Exception(f'Input dataset {dataset} status is {dataset_status} or it could '
-                                'not be found. Required status is either VALID or PRODUCTION')
+                raise AssertionError(
+                    (
+                        f'Input dataset {dataset} status is {dataset_status} or it could '
+                        'not be found. Required status is either VALID or PRODUCTION'
+                    )
+                )
 
     def check_steps(self, ticket):
         """
@@ -85,18 +89,18 @@ class TicketController(ControllerBase):
             subcampaign_name = step['subcampaign']
             subcampaign = subcampaign_database.get(subcampaign_name)
             if not subcampaign:
-                raise Exception(f'Subcampaign {subcampaign_name} does not exist')
+                raise ValueError(f'Subcampaign {subcampaign_name} does not exist')
 
             subcampaign_sequences = subcampaign['sequences']
             time_per_event = step['time_per_event']
             size_per_event = step['size_per_event']
             if len(time_per_event) != len(subcampaign_sequences):
-                raise Exception(f'Step {index + 1} has {len(time_per_event)} time per '
-                                f'event values, expected {len(subcampaign_sequences)}')
+                raise AssertionError(f'Step {index + 1} has {len(time_per_event)} time per '
+                                     f'event values, expected {len(subcampaign_sequences)}')
 
             if len(size_per_event) != len(subcampaign_sequences):
-                raise Exception(f'Step {index + 1} has {len(size_per_event)} size per '
-                                f'event values, expected {len(subcampaign_sequences)}')
+                raise AssertionError(f'Step {index + 1} has {len(size_per_event)} size per '
+                                     f'event values, expected {len(subcampaign_sequences)}')
 
     def check_for_create(self, obj):
         self.check_input(obj)
@@ -112,8 +116,8 @@ class TicketController(ControllerBase):
         created_requests = obj.get('created_requests')
         prepid = obj.get('prepid')
         if created_requests:
-            raise Exception(f'It is not allowed to delete tickets that have requests created. '
-                            f'{prepid} has {len(created_requests)} requests')
+            raise AssertionError(f'It is not allowed to delete tickets that have requests created. '
+                                 f'{prepid} has {len(created_requests)} requests')
 
         return True
 
@@ -185,8 +189,8 @@ class TicketController(ControllerBase):
             created_requests = ticket.get('created_requests')
             status = ticket.get('status')
             if status != 'new':
-                raise Exception(f'Ticket is not new, it already has '
-                                f'{len(created_requests)} requests created')
+                raise AssertionError(f'Ticket is not new, it already has '
+                                     f'{len(created_requests)} requests created')
 
             # In case black list was updated after ticket was created
             self.check_input(ticket)

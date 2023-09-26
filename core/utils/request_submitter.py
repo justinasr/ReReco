@@ -1,8 +1,8 @@
 """
 Module that has all classes used for request submission to computing
 """
-import environment
 import time
+import environment
 from core_lib.utils.ssh_executor import SSHExecutor
 from core_lib.utils.locker import Locker
 from core_lib.database.database import Database
@@ -103,13 +103,13 @@ class RequestSubmitter(BaseSubmitter):
         prepid = request.get_prepid()
         self.logger.debug('Final check before submission for %s', prepid)
         if request.get('status') != 'submitting':
-            raise Exception(f'Cannot submit a request with status {request.get("status")}')
+            raise AssertionError(f'Cannot submit a request with status {request.get("status")}')
 
         if not request.get('input')['dataset']:
             request_db = Database('requests')
             request.set('status', 'approved')
             request_db.save(request.get_json())
-            raise Exception('Cannot submit a request without input dataset')
+            raise AssertionError('Cannot submit a request without input dataset')
 
     def generate_configs(self, request, ssh_executor, request_dir):
         """
@@ -123,7 +123,7 @@ class RequestSubmitter(BaseSubmitter):
                    './config_generate.sh']
         stdout, stderr, exit_code = ssh_executor.execute_command(command)
         if exit_code != 0:
-            raise Exception(f'Error generating configs for {prepid}.\n{stderr}')
+            raise RuntimeError(f'Error generating configs for {prepid}.\n{stderr}')
 
         return stdout
 
@@ -139,7 +139,7 @@ class RequestSubmitter(BaseSubmitter):
                    './config_upload.sh']
         stdout, stderr, exit_code = ssh_executor.execute_command(command)
         if exit_code != 0:
-            raise Exception(f'Error uploading configs for {prepid}.\n{stderr}')
+            raise RuntimeError(f'Error uploading configs for {prepid}.\n{stderr}')
 
         stdout = [x for x in clean_split(stdout, '\n') if 'DocID' in x]
         # Get all lines that have DocID as tuples split by space
@@ -175,7 +175,7 @@ class RequestSubmitter(BaseSubmitter):
                                       sequence_name)
 
         if config_hashes:
-            raise Exception(f'Unused hashes: {config_hashes}')
+            raise RuntimeError(f'Unused hashes: {config_hashes}')
 
         for sequence in request.get('sequences'):
             sequence_config_names = sequence.get_config_file_names()
@@ -184,11 +184,11 @@ class RequestSubmitter(BaseSubmitter):
 
             if not sequence.get('config_id'):
                 sequence_name = sequence.get_name()
-                raise Exception(f'Missing hash for {sequence_name}')
+                raise ValueError(f'Missing hash for {sequence_name}')
 
             if sequence.needs_harvesting() and not sequence.get('harvesting_config_id'):
                 sequence_name = sequence.get_name()
-                raise Exception(f'Missing harvesting hash for {sequence_name}')
+                raise ValueError(f'Missing harvesting hash for {sequence_name}')
 
     def submit_request(self, request, controller):
         """
@@ -206,7 +206,7 @@ class RequestSubmitter(BaseSubmitter):
                 self.check_for_submission(request)
                 with SSHExecutor(
                     host=environment.REMOTE_SSH_NODE,
-                    username=environment.REMOTE_SSH_USERNAME, 
+                    username=environment.REMOTE_SSH_USERNAME,
                     password=environment.REMOTE_SSH_PASSWORD
                 ) as ssh:
                     # Start executing commands

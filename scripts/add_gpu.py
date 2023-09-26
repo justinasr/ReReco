@@ -4,6 +4,7 @@ Script to add GPU parameters to Subcampaigns and Requests
 import sys
 import os.path
 import os
+# pylint: disable-next=wrong-import-position
 sys.path.append(os.path.abspath(os.path.pardir))
 from core_lib.database.database import Database
 
@@ -20,7 +21,10 @@ print('Total subcampaigns: %s' % (total_subcampaigns))
 print('Total requests: %s' % (total_requests))
 
 for index, item in enumerate(subcampaigns_database.query(limit=total_subcampaigns)):
-    print('Processing entry %s/%s %s' % (index + 1, total_subcampaigns, item.get('prepid', '<no-id>')))
+    print(
+        'Processing entry %s/%s %s' 
+        % (index + 1, total_subcampaigns, item.get('prepid', '<no-id>'))
+    )
     for sequence in item['sequences']:
         sequence['gpu'] = {'requires': 'forbidden',
                            'gpu_memory': '',

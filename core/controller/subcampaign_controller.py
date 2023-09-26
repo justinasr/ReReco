@@ -1,8 +1,8 @@
 """
 Module that contains SubcampaignController class
 """
-import environment
 import json
+import environment
 from core_lib.database.database import Database
 from core_lib.controller.controller_base import ControllerBase
 from core_lib.utils.cache import TimeoutCache
@@ -29,8 +29,8 @@ class SubcampaignController(ControllerBase):
         requests_db = Database('requests')
         requests = requests_db.query(f'subcampaign={prepid}')
         if requests:
-            raise Exception(f'It is not allowed to delete subcampaigns that have existing '
-                            f'requests. {prepid} has {len(requests)} requests')
+            raise AssertionError(f'It is not allowed to delete subcampaigns that have existing '
+                                 f'requests. {prepid} has {len(requests)} requests')
 
         return True
 
