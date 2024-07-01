@@ -32,7 +32,7 @@
               <a @click="nextStatus(item)" v-if="role('manager') && item.status != 'done'" title="Move to next status">Next</a>
               <a @click="updateWorkflows(item)" v-if="role('administrator') && item.status == 'submitted' && !isDev" title="Update request information from Stats2">Update from Stats2</a>
               <a @click="optionReset(item)" v-if="role('manager') && item.status == 'new'" :title="'Refetch values from ' + item.subcampaign + ' subcampaign'">Option reset</a>
-              <a target="_blank" :href="'https://cms-pdmv.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done' && !isDev" title="Show workflows of this request in Stats2">Stats2</a>
+              <a target="_blank" :href="'https://cms-pdmv-prod.web.cern.ch/stats?prepid=' + item.prepid" v-if="item.status == 'submitted' || item.status == 'done' && !isDev" title="Show workflows of this request in Stats2">Stats2</a>
               <a :href="'tickets?created_requests=' + item.prepid" title="Show ticket that was used to create this request">Ticket</a>
             </div>
           </template>
@@ -98,7 +98,7 @@
                 <a v-if="!isDev" target="_blank" title="Open workflow in ReqMgr2" :href="'https://cmsweb.cern.ch/reqmgr2/fetch?rid=' + workflow.name">{{workflow.name}}</a>&nbsp;
                 <a v-if="isDev" target="_blank" title="Open workflow in ReqMgr2" :href="'https://cmsweb-testbed.cern.ch/reqmgr2/fetch?rid=' + workflow.name">{{workflow.name}}</a>&nbsp;
                 <template v-if="!isDev">
-                  <small> open in:</small> <a target="_blank" title="Open workflow in Stats2" :href="'https://cms-pdmv.cern.ch/stats?workflow_name=' + workflow.name">Stats2</a>&nbsp;
+                  <small> open in:</small> <a target="_blank" title="Open workflow in Stats2" :href="'https://cms-pdmv-prod.web.cern.ch/stats?workflow_name=' + workflow.name">Stats2</a>&nbsp;
                 </template>
                 <template v-if="workflow.status_history && workflow.status_history.length > 0">
                   <small> status:</small> {{workflow.status_history[workflow.status_history.length - 1].status}}
@@ -572,7 +572,7 @@ export default {
     },
     openPmpMany: function(requests) {
       let prepids = requests.map(x => x['prepid']);
-      let url = 'https://cms-pdmv.cern.ch/pmp/historical?r=' + prepids.join(',');
+      let url = 'https://cms-pdmv-prod.web.cern.ch/pmp/historical?r=' + prepids.join(',');
       window.open(url, '_blank');
     },
     editRequests: function(requests) {

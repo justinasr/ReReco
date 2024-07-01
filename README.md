@@ -6,8 +6,8 @@ Web based tool for Data ReReco production management
 ReReco machine is a web-based tool for creating, submitting and bookkeeping reprocessing workflows - ReReco requests. Only PdmV conveners have rights to perform actions in the ReReco machine.
 
 ### Links
-- ReReco Machine: https://cms-pdmv.cern.ch/rereco/
-- ReReco Machine (Development version): https://cms-pdmv-dev.cern.ch/rereco/
+- ReReco Machine: https://cms-pdmv-prod.web.cern.ch/rereco/
+- ReReco Machine (Development version): https://cms-pdmv-dev.web.cern.ch/rereco/
 - GitHub Repository: https://github.com/cms-PdmV/ReReco
 - GitHub issues/feature requests: https://github.com/cms-PdmV/ReReco/issues
 
@@ -61,7 +61,7 @@ Clicking on links will lead to pages of items of that type with that particular 
 ### Introduction
 Campaigns on computing side group together a big number of similar requests. This concept is also used in the ReReco machine where it is not only used to group, but also to act as a template for the requests. It would be tedious to create tens or hundreds of identical requests where only the input dataset is different. Such template can store the cmsDriver.py command values and requests then can be created by taking an input dataset and the cmsDriver.py. This way arguments are defined only once and can be reused multiple times. Unfortunately "Computing Campaigns" cannot be directly used in the ReReco machine because even though a campaign groups similar requests, it can contain different primary datasets and, subsequently, fundamentally different cmsDriver.py commands, e.g. "UltraLegacy2017" campaign could be used for both "Cosmics" and "ZeroBiasScouting" requests and their cmsDriver.py attributes are very different. This means that after submitting "Cosmics", the template would have to be discarded and created from scratch for "ZeroBiasScouting". If "Cosmics" had to be submitted again, then template once again would have to be scrapped and recreated. This is why it was decided to introduce a smaller unit of "Campaign" in ReReco machine - a subcampaign. Subcampaign still represents one of the campaigns in computing, but different subcampaigns can have different cmsDriver.py and not conflict with each other. In the example mentioned above, there would be two UltraLegacy2017 subcampaigns - one for Cosmics and one for ZeroBiasScouting. This way ReReco machine can preserve different cmsDriver.py arguments that are used in a single computing campaign. This is why this is called a subcampaign - it is like one snapshot of a campaign. subcampaign name is not submitted to computing, requests that are submitted to computing, use campaign name that given subcampaign is part of, so this new object type does not affect anything outside the ReReco machine.
 
-Subcampaigns in the ReReco machine: https://cms-pdmv.cern.ch/rereco/subcampaigns
+Subcampaigns in the ReReco machine: https://cms-pdmv-prod.web.cern.ch/rereco/subcampaigns
 
 ### Subcampaign naming
 It is important to understand how subcampaigns are and should be named. subcampaign name is always made of two parts that are joined with a dash ( - minus). First part is the campaign name in computing. Second part is subcampaign's identifier - string that gives more insight on what is the purpose of given subcampaign.
@@ -111,7 +111,7 @@ In order to ease up getting list of input datasets, ReReco machine offers a func
 
 In the popup user has two fields: query and comma-separated values to filter out. In the first field user must enter a query, usually with wildcards. It must satisfy such format "/*/*/DATATIER", e.g. /*Electron*/Run2016A-v*/RAW. However, this could include datasets that were produced by validation or pilot requests. In order to remove such datasets, user can specify "validation,pilot" in the second field. This field is a list of comma-separated values that will be used when filtering-out the datasets. If field has "validation,pilot", it means that after fetching the dataset names, all names that have either "validation" or "pilot" in them, will be removed. Note that these values are case sensitive. Some primary datasets are blacklisted in the ReReco machines, which means that dataset names with these primary datasets will be implicitly removed from the fetch results.
 
-The blacklist can be found here: https://cms-pdmv.cern.ch/rereco/api/settings/get/dataset_blacklist 
+The blacklist can be found here: https://cms-pdmv-prod.web.cern.ch/rereco/api/settings/get/dataset_blacklist 
 
 If list of datasets is not empty, user will have two options what to do with existing datasets: "Fetch and replace" will fetch dataset list from DBS and replace existing list or "Fetch and append" will fetch dataset list and append it to already existing list. If user chooses to append, only datasets that are not in existing list will be appended, i.e. appending will not duplicate dataset names.
 
