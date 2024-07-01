@@ -262,7 +262,7 @@ class TicketController(ControllerBase):
             acquisition_eras.setdefault(acquisition_era, []).append(request)
 
         output_strings = []
-        pmp_url = 'https://cms-pdmv.cern.ch/pmp/historical?r='
+        pmp_url = 'https://cms-pdmv-prod.web.cern.ch/pmp/historical?r='
         for acquisition_era in sorted(acquisition_eras.keys()):
             requests = acquisition_eras[acquisition_era]
             output_strings.append(f'---+++ !{acquisition_era}\n')
