@@ -240,6 +240,12 @@ class RequestSubmitter(BaseSubmitter):
                     refresh_workflows_in_stats([workflow_name])
 
             except Exception as ex:
+                self.logger.error(
+                    'Unable to submit request (%s): %s', 
+                    prepid, 
+                    ex, 
+                    exc_info=True
+                )
                 self.__handle_error(request, str(ex))
                 return
 
